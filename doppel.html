@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Doppel — vocal double alignment | REMI DSP</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#060608;--deep:#020203;--panel:#0e0e11;--line:#1d1d22;--txt:#f4f5f7;
+--dim:#8f939c;--gold:#e0a84e;--ice:#9fd8e8;--green:#5fe08a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(1200px 500px at 50% -10%,#101017,var(--deep)),var(--deep);
+color:var(--txt);font-family:Oswald,Arial,sans-serif;min-height:100vh}
+.wrap{max-width:1080px;margin:0 auto;padding:110px 28px 80px}
+h1{font-size:56px;letter-spacing:.10em;text-transform:uppercase}
+.sub{color:var(--gold);letter-spacing:.3em;text-transform:uppercase;font-size:13px;margin:10px 0 40px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:26px;margin-top:44px}
+.card{background:linear-gradient(180deg,#17171c,#0a0a0d);border:1px solid var(--line);
+border-radius:14px;padding:30px;transition:.25s;position:relative;overflow:hidden}
+.card:hover{border-color:var(--gold);transform:translateY(-3px)}
+.card h2{letter-spacing:.12em;text-transform:uppercase;font-size:24px}
+.tag{color:var(--dim);font-size:13px;letter-spacing:.08em;margin:8px 0 18px;line-height:1.6;font-weight:300}
+.btn{display:inline-block;padding:12px 26px;border-radius:8px;border:1px solid var(--gold);
+color:var(--gold);text-decoration:none;letter-spacing:.14em;text-transform:uppercase;font-size:12px}
+.btn:hover{background:var(--gold);color:#060608}
+.btn--ghost{border-color:#3a3a42;color:var(--dim);margin-left:10px}
+.edge{position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:2px}
+ul{list-style:none;margin:18px 0}
+li{color:var(--dim);font-weight:300;font-size:14px;padding:6px 0;border-bottom:1px solid #121217;letter-spacing:.03em}
+li b{color:var(--txt);font-weight:500}
+footer{color:#5a5e66;font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-top:70px;text-align:center}
+</style></head><body>
+<nav style="position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:28px;align-items:center;padding:14px 28px;background:rgba(4,4,6,.88);backdrop-filter:blur(12px);border-bottom:1px solid #1d1d22;font-family:Oswald,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;font-size:13px"><a href="index.html" style="color:#e0a84e;text-decoration:none;font-weight:600">Remi DSP</a><a href="index.html" style="color:#8f939c;text-decoration:none">Home</a><a href="guitar.html" style="color:#8f939c;text-decoration:none">Guitar Suite</a><a href="doppel.html" style="color:#8f939c;text-decoration:none">Doppel</a><span style="margin-left:auto;color:#5a5e66;font-size:11px">FREE PRO PLUGINS</span></nav>
+<div class="wrap">
+<h1>Doppel</h1>
+<div class="sub">Vocal double alignment — VST3 / AU / Standalone · ARA2 · macOS universal</div>
+<p style="color:var(--dim);font-weight:300;max-width:720px;line-height:1.8">
+Capture a guide and its doubles straight from your session (or bind it as ARA and skip
+the capture entirely), hit ALIGN, and every dub locks to the lead. Doppel splits both
+takes into phrases, flags anything <b style="color:#d84a4a">missing</b> from a dub or
+<b style="color:var(--gold)">extra</b> against the guide, and grades every transient
+green / gold / red for how tightly it landed.</p>
+<ul>
+<li><b>Wordfit-style engine</b> — timing changes hide in the gaps; words play at their natural rate</li>
+<li><b>Transient verdicts</b> — per-onset needles and cross-lane tethers show exactly what aligned</li>
+<li><b>Phrase detection</b> — backing vocals that skip phrases are sectioned and flagged, not smeared</li>
+<li><b>Pitch matching</b> — optional; unison or harmony-aware (a third stays a third), true formant handling</li>
+<li><b>Sync points &amp; protected areas</b> — rescue tools when material gets ambiguous</li>
+<li><b>ARA2 + capture</b> — one binary; ARA hosts read track audio directly, everyone else captures</li>
+</ul>
+<a class="btn" href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Download installer (macOS)</a>
+<footer>REMI DSP — DOPPEL CORE</footer>
+</div></body></html>

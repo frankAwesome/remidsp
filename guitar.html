@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>REMI DSP — Your entire guitar rig, free</title>
+<meta name="description" content="REMI DSP. The free all-in-one guitar rig: three captured amplifiers, a reorderable pedalboard, a console studio strip and 20 presets. Neural A2 amp captures, level-matched by construction. Windows, macOS, VST3 & AU." />
+<meta property="og:title" content="REMI DSP — Your entire guitar rig. Free." />
+<meta property="og:description" content="Three captured amps. A pedalboard that reorders itself. A studio strip that finishes the job. Neural A2 amp captures, level-matched by construction. Free." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://frankawesome.github.io/remi-amps-downloads/assets/img/amp-hero.png" />
+<link rel="icon" type="image/png" href="assets/img/icon-256.png" />
+<link rel="preload" href="assets/fonts/OswaldBold.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/fonts/Yellowtail.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/fonts/Dseg7.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/img/amp-hero.webp" as="image" type="image/webp" fetchpriority="high" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<nav style="position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:28px;align-items:center;padding:14px 28px;background:rgba(4,4,6,.88);backdrop-filter:blur(12px);border-bottom:1px solid #1d1d22;font-family:Oswald,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;font-size:13px"><a href="index.html" style="color:#e0a84e;text-decoration:none;font-weight:600">Remi DSP</a><a href="index.html" style="color:#8f939c;text-decoration:none">Home</a><a href="guitar.html" style="color:#8f939c;text-decoration:none">Guitar Suite</a><a href="doppel.html" style="color:#8f939c;text-decoration:none">Doppel</a><span style="margin-left:auto;color:#5a5e66;font-size:11px">FREE PRO PLUGINS</span></nav>
+<div style="height:52px"></div>
+
+<!-- ░░ boot / preloader ░░ -->
+<div class="boot" id="boot" aria-hidden="true">
+  <div class="boot__brand">REMI&nbsp;DSP</div>
+  <div class="boot__center">
+    <span class="boot__num" id="bootNum">00</span>
+    <span class="boot__pct">%</span>
+  </div>
+  <div class="boot__leds" id="bootLeds"></div>
+  <div class="boot__line">POWERING ON · A2 CAPTURE ENGINE · 48K</div>
+</div>
+
+<!-- ░░ static backdrop (painted once — zero per-frame cost) ░░ -->
+<div class="bg" aria-hidden="true"><div class="bg__grain"></div></div>
+
+<!-- ░░ fixed HUD chrome ░░ -->
+<div class="hud" aria-hidden="true">
+  <div class="hud__corner hud__corner--tl"></div>
+  <div class="hud__corner hud__corner--tr"></div>
+  <div class="hud__corner hud__corner--bl"></div>
+  <div class="hud__corner hud__corner--br"></div>
+  <div class="hud__item hud__item--bl">REMI&nbsp;DSP&nbsp;·&nbsp;NEURAL&nbsp;GUITAR&nbsp;SUITE</div>
+  <div class="hud__item hud__item--br"><span class="led" id="hudPct">000</span><span class="hud__pctsign">%</span></div>
+</div>
+<div class="scrollbar" aria-hidden="true"><span id="scrollFill"></span></div>
+
+<!-- ░░ custom cursor ░░ -->
+<div class="cursor" aria-hidden="true"><div class="cursor__dot"></div><div class="cursor__ring"></div></div>
+
+<!-- ░░ nav ░░ -->
+<header class="nav" id="nav">
+  <a href="#home" class="logo" aria-label="REMI DSP — home">
+    <span class="logo__mark">
+      <span class="logo__script">Remi</span>
+      <svg class="logo__swash" viewBox="0 0 120 14" aria-hidden="true"><path d="M2 9 C 30 13, 78 13, 118 2" /></svg>
+    </span>
+    <span class="logo__sub">DSP</span>
+  </a>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="#amps" data-scramble>Amps</a>
+    <a href="#board" data-scramble>Pedalboard</a>
+    <a href="#studio" data-scramble>Studio</a>
+    <a href="#engine" data-scramble>Engine</a>
+    <a href="#specs" data-scramble>Specs</a>
+  </nav>
+  <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download free</span></a>
+</header>
+
+<main>
+
+<!-- ░░ HERO ░░ -->
+<section class="hero" id="home">
+  <canvas class="hero__strings" id="strings" aria-hidden="true"></canvas>
+  <div class="hero__glow" aria-hidden="true"></div>
+
+  <div class="hero__inner">
+    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;FREE&nbsp;GUITAR&nbsp;SUITE</p>
+    <h1 class="hero__title" data-reveal-lines>
+      <span class="line"><span data-reveal-line style="--d:.05s">Your entire</span></span>
+      <span class="line"><span data-reveal-line style="--d:.13s">guitar rig.</span></span>
+      <span class="line"><span data-reveal-line class="hero__free" style="--d:.22s">Free.</span></span>
+    </h1>
+    <p class="hero__lede" data-reveal style="--d:.3s">
+      Three amplifiers captured from the real things. A pedalboard that reorders
+      itself. A studio strip that finishes the job. All of it running on neural
+      <strong>A2&nbsp;captures</strong> — level-matched by construction, so your
+      level never jumps between tones.
+    </p>
+    <div class="hero__cta" data-reveal style="--d:.42s">
+      <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
+        <svg viewBox="0 0 24 24" class="btn__os" aria-hidden="true"><path d="M3 5.5 10 4.4v7.1H3zM11 4.2 21 3v8.5h-10zM3 12.5h7v7.1L3 18.6zM11 12.5h10V21l-10-1.2z"/></svg>
+        <span>Windows</span>
+      </a>
+      <a href="#download" class="btn btn--ghost btn--lg" data-magnetic>
+        <svg viewBox="0 0 24 24" class="btn__os" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg>
+        <span>macOS</span>
+      </a>
+      <span class="hero__formats mono">VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;STANDALONE</span>
+    </div>
+    <p class="hero__note mono" data-reveal style="--d:.52s">100% FREE · NO ACCOUNT · NO NAGS</p>
+  </div>
+
+  <div class="hero__stage" data-reveal style="--d:.35s">
+    <div class="hero__frame" data-tilt>
+      <div class="hero__shot">
+        <img src="assets/img/amp-hero.webp" width="1920" height="1208" fetchpriority="high"
+             alt="The REMI DSP plugin window — AC30 Top Boost amplifier with VOICE selector" />
+        <div class="hero__glare"></div>
+      </div>
+      <span class="hero__bracket hero__bracket--tl"></span>
+      <span class="hero__bracket hero__bracket--tr"></span>
+      <span class="hero__bracket hero__bracket--bl"></span>
+      <span class="hero__bracket hero__bracket--br"></span>
+    </div>
+    <p class="hero__caption mono">REMI&nbsp;DSP&nbsp;v0.2.0&nbsp;—&nbsp;NEURAL&nbsp;CORE&nbsp;·&nbsp;<span class="led">44.1–96</span>&nbsp;kHz</p>
+  </div>
+
+  <a href="#marquee" class="hero__scrollcue" aria-label="Scroll down">
+    <span class="mono">SCROLL</span><i></i>
+  </a>
+</section>
+
+<!-- ░░ MARQUEE ░░ -->
+<section class="marquee" id="marquee" aria-hidden="true">
+  <div class="marquee__band">
+    <div class="marquee__track">
+      <span>AC30 Top Boost</span><i>✦</i><span>Plexi Super Lead</span><i>✦</i><span>5150</span><i>✦</i><span>Rectifier</span><i>✦</i><span>Dual Capture Drive</span><i>✦</i><span>CE-2 Chorus</span><i>✦</i><span>Tape-Warm Echo</span><i>✦</i><span>Reverb</span><i>✦</i><span>REMI 4000 EQ</span><i>✦</i><span>2026 FET Comp</span><i>✦</i>
+    </div>
+    <div class="marquee__track" aria-hidden="true">
+      <span>AC30 Top Boost</span><i>✦</i><span>Plexi Super Lead</span><i>✦</i><span>5150</span><i>✦</i><span>Rectifier</span><i>✦</i><span>Dual Capture Drive</span><i>✦</i><span>CE-2 Chorus</span><i>✦</i><span>Tape-Warm Echo</span><i>✦</i><span>Reverb</span><i>✦</i><span>REMI 4000 EQ</span><i>✦</i><span>2026 FET Comp</span><i>✦</i>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ STATEMENT — scroll-scrubbed fill ░░ -->
+<section class="statement" id="capture">
+  <h2 class="statement__big" id="fillText" aria-label="Not modeled. Captured.">
+    <span class="fill-line"><span class="fill-ghost">Not modeled.</span><span class="fill-ink" id="fillA">Not modeled.</span></span>
+    <span class="fill-line"><span class="fill-ghost fill-ghost--accent">Captured.</span><span class="fill-ink fill-ink--accent" id="fillB">Captured.</span></span>
+  </h2>
+  <p class="statement__sub" data-reveal>
+    Every sound in REMI is a neural capture of a real, mic'd-up rig — the chime, the
+    sag, the way it breaks up. Captured with the state-of-the-art <strong>A2</strong>
+    architecture: in a 1,000-player blind test, A2 scored closest to the real amps —
+    ahead of the industry's biggest names.
+  </p>
+  <div class="statement__chips" data-reveal style="--d:.15s">
+    <span class="chip mono">A2 ARCHITECTURE</span>
+    <span class="chip mono">BLIND-TEST WINNER</span>
+    <span class="chip mono">LEVEL-MATCHED BY CONSTRUCTION</span>
+  </div>
+</section>
+
+<!-- ░░ AMPS — channel switcher ░░ -->
+<section class="amps" id="amps">
+  <div class="amps__sticky">
+    <div class="amps__index led" id="ampIndex" aria-hidden="true">01</div>
+
+    <div class="amps__copy">
+      <p class="kicker" data-reveal>THE AMPLIFIERS</p>
+      <h2 data-reveal style="--d:.06s">Three legends.<br>One window.</h2>
+
+      <div class="amps__panels" id="ampPanels">
+        <div class="amps__panel is-active" data-amp="0">
+          <h3>AC30 Top Boost</h3>
+          <p>The chime that built the British Invasion — and the delay-soaked stadiums
+             after it. One real Top Boost, pushed three ways.</p>
+          <div class="amps__voices mono"><span>CLEAN</span><span>DRIVEN</span><span>MAX</span></div>
+        </div>
+        <div class="amps__panel" data-amp="1">
+          <h3>Plexi Super Lead</h3>
+          <p>Four Marshalls in one head — a '66 JTM45 Super 100, a '69 JMP50 Lead,
+             a '68 Major 200 and a hot-rodded Dragon. Turn the voice, swap the stack.</p>
+          <div class="amps__voices mono"><span>JTM45</span><span>JMP50</span><span>MAJOR</span><span>DRAGON</span></div>
+        </div>
+        <div class="amps__panel" data-amp="2">
+          <h3>Modern High Gain</h3>
+          <p>A 5150 and a Rectifier behind one perforated grille. Tight lows, endless
+             sustain — palm mutes that land like a dropped anvil.</p>
+          <div class="amps__voices mono"><span>5150</span><span>RECTO</span></div>
+        </div>
+      </div>
+
+      <ul class="amps__tabs" id="ampTabs" role="tablist" aria-label="Amplifiers">
+        <li><button data-goto="0" class="is-active" role="tab" aria-selected="true">AC30</button></li>
+        <li><button data-goto="1" role="tab" aria-selected="false">PLEXI</button></li>
+        <li><button data-goto="2" role="tab" aria-selected="false">HIGH GAIN</button></li>
+      </ul>
+    </div>
+
+    <div class="amps__visual">
+      <div class="amps__frame" id="ampFrame" data-tilt>
+        <img class="amps__face is-active" src="assets/img/amp-ac30.webp"  width="1920" height="930" alt="AC30 Top Boost amp panel with VOICE selector" />
+        <img class="amps__face" src="assets/img/amp-plexi.webp" width="1920" height="930" alt="Plexi Super Lead amp panel with VOICE selector" loading="lazy" />
+        <img class="amps__face" src="assets/img/amp-heavy.webp" width="1920" height="930" alt="Modern High Gain amp panel with 5150 and Recto voices" loading="lazy" />
+      </div>
+      <div class="amps__rail" aria-hidden="true"><span id="ampRail"></span></div>
+      <p class="amps__railnote mono">ALL&nbsp;FULL-RIG&nbsp;A2&nbsp;CAPTURES&nbsp;·&nbsp;CAB&nbsp;BAKED&nbsp;IN</p>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ PEDALBOARD — horizontal rail ░░ -->
+<section class="board" id="board">
+  <div class="board__head">
+    <p class="kicker" data-reveal>THE PEDALBOARD</p>
+    <h2 data-reveal style="--d:.06s">A board that reorders itself.</h2>
+    <p class="board__sub" data-reveal style="--d:.12s">Ten slots, any order — drag a block, rewire the rig. Every pedal hand-drawn, photoreal, built from scratch.</p>
+  </div>
+  <div class="board__pin" id="boardPin">
+    <div class="board__viewport">
+      <div class="board__track" id="boardTrack">
+        <article class="pcard" style="--tint:#d2a43a" data-card>
+          <div class="pcard__img"><img src="assets/img/pedal.webp" width="1920" height="1208" loading="lazy" alt="REMI DSP Drive pedal — Victory! gold enclosure" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">01</span>
+            <h3>Drive</h3>
+            <p class="pcard__tag mono">DUAL CAPTURE</p>
+            <p>Two capture slots — a Morning Glory and a Klon KTR out of the box. Drop any A2 capture profile straight in.</p>
+          </div>
+        </article>
+        <article class="pcard" style="--tint:#8b6bc0" data-card>
+          <div class="pcard__img"><img src="assets/img/chorus.webp" width="1920" height="1208" loading="lazy" alt="REMI DSP Chorus pedal — purple aviator enclosure" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">02</span>
+            <h3>Chorus</h3>
+            <p class="pcard__tag mono">CE-2 ANALOG · 3 VOICES</p>
+            <p>Three voices on one shared bucket line — mono-safe, stereo-wide, thick as paint.</p>
+          </div>
+        </article>
+        <article class="pcard" style="--tint:#3fa8a8" data-card>
+          <div class="pcard__img"><img src="assets/img/delay.webp" width="1920" height="1208" loading="lazy" alt="REMI DSP Delay — tape-warm echo with astronaut artwork" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">03</span>
+            <h3>Delay</h3>
+            <p class="pcard__tag mono">TAPE-WARM ECHO · A/B ENGINES</p>
+            <p>Dual engines in series or parallel, tempo-synced, with a GRIT knob that drives the repeats into beautiful decay — plus wet-only HP/LP to EQ the echoes, and a live tempo lamp whose two LEDs pulse out each engine's echo pattern.</p>
+          </div>
+        </article>
+        <article class="pcard" style="--tint:#5b8fd4" data-card>
+          <div class="pcard__img"><img src="assets/img/reverb.webp" width="1920" height="1208" loading="lazy" alt="REMI DSP Reverb — astronaut on the moon artwork" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">04</span>
+            <h3>Reverb</h3>
+            <p class="pcard__tag mono">ONE LUSH SPACE · 3-D</p>
+            <p>Early reflections into a 16-line modulated hall — three-dimensional, enveloping tails, a shimmer that actually blooms, opt-in ducking, and wet-only HP/LP to shape the tail.</p>
+          </div>
+        </article>
+        <article class="pcard" style="--tint:#a8402e" data-card>
+          <div class="pcard__img"><img src="assets/img/sauce.webp" width="1920" height="1208" loading="lazy" alt="REMI DSP Sauce — spectral finalizer with a live before/after analyser" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">05</span>
+            <h3>Sauce</h3>
+            <p class="pcard__tag mono">SPECTRAL FINALIZER</p>
+            <p>Tone shaping on steroids, with a live before/after spectrum analyser: an R-Bass-style sub-harmonic for real low-end weight, a threshold-tracked high-end de-esser, transient PUNCH and a dynamic 3&nbsp;kHz de-harsh — watch every push and cut in real time.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+    <div class="board__progress" aria-hidden="true">
+      <span class="board__count led" id="boardCount">01</span>
+      <div class="board__bar"><span id="boardFill"></span></div>
+      <span class="board__count led">05</span>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ STUDIO ░░ -->
+<section class="studio" id="studio">
+  <div class="studio__media" data-reveal-wipe>
+    <img src="assets/img/studio.webp" width="1920" height="1208" loading="lazy"
+         alt="REMI DSP studio strip — REMI 4000 channel EQ and 2026 FET compressor" />
+  </div>
+  <div class="studio__copy">
+    <p class="kicker" data-reveal>THE STUDIO STRIP</p>
+    <h2 data-reveal style="--d:.06s">Mix-ready, the moment you plug in.</h2>
+    <p data-reveal style="--d:.12s">
+      Your tone lands finished, not raw: a <strong>REMI&nbsp;4000</strong> console EQ —
+      E-series curves, 18&nbsp;dB/oct filter — into a <strong>2026&nbsp;FET</strong>
+      compressor with a live VU needle. The end of the chain, the start of a record.
+    </p>
+    <div class="studio__chips" data-reveal style="--d:.2s">
+      <span class="chip mono">4-BAND PARAMETRIC</span><span class="chip mono">18 dB/OCT HPF</span>
+      <span class="chip mono">4:1 — 20:1</span><span class="chip mono">PARALLEL MIX</span>
+    </div>
+    <div class="vu" data-reveal style="--d:.28s" aria-hidden="true">
+      <svg viewBox="0 0 200 110">
+        <path class="vu__arc" d="M25 95 A 85 85 0 0 1 175 95" />
+        <g class="vu__ticks" id="vuTicks"></g>
+        <line class="vu__needle" id="vuNeedle" x1="100" y1="98" x2="100" y2="26" />
+        <circle class="vu__pin" cx="100" cy="98" r="5" />
+      </svg>
+      <p class="mono vu__label">VU — SCROLL VELOCITY</p>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ ENGINE ░░ -->
+<section class="nam" id="engine">
+  <div class="nam__ticker" aria-hidden="true">
+    <div class="nam__tickertrack mono">
+      <span>ac30_clean.nam</span><span>ac30_driven.nam</span><span>ac30_max.nam</span><span>marshall_jtm45.nam</span><span>marshall_jmp50.nam</span><span>marshall_major.nam</span><span>marshall_dragon.nam</span><span>heavy_5150.nam</span><span>heavy_recto.nam</span><span>drive1.nam</span><span>drive2.nam</span>
+      <span>ac30_clean.nam</span><span>ac30_driven.nam</span><span>ac30_max.nam</span><span>marshall_jtm45.nam</span><span>marshall_jmp50.nam</span><span>marshall_major.nam</span><span>marshall_dragon.nam</span><span>heavy_5150.nam</span><span>heavy_recto.nam</span><span>drive1.nam</span><span>drive2.nam</span>
+    </div>
+  </div>
+
+  <div class="nam__inner">
+    <p class="kicker" data-reveal>THE ENGINE</p>
+    <h2 class="nam__big" data-reveal style="--d:.06s">
+      Captured, not modeled.
+    </h2>
+    <div class="nam__cols nam__cols--one">
+      <div class="nam__col" data-reveal style="--d:.12s">
+        <h3 class="mono">A2 CAPTURE ARCHITECTURE</h3>
+        <p>Every amp and drive in the box is a neural capture of a real, mic'd-up rig,
+           running the latest <strong>A2 architecture</strong> — level-matched by
+           construction, so switching tones never jumps your level. The
+           <strong>QUALITY</strong> knob slims the network when you need your CPU back,
+           and you can drop any A2 capture profile straight in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ SPECS ░░ -->
+<section class="specs" id="specs">
+  <div class="specs__stats" data-reveal>
+    <div class="stat"><span class="stat__num led" data-count="3">0</span><span class="stat__label">Amplifiers</span></div>
+    <div class="stat"><span class="stat__num led" data-count="9">0</span><span class="stat__label">Amp voices</span></div>
+    <div class="stat"><span class="stat__num led" data-count="11">0</span><span class="stat__label">A2 captures</span></div>
+    <div class="stat"><span class="stat__num led" data-count="21">0</span><span class="stat__label">Presets</span></div>
+    <div class="stat"><span class="stat__num led" data-count="0" data-prefix="$">$0</span><span class="stat__label">Forever</span></div>
+  </div>
+
+  <div class="specs__grid">
+    <div class="feature" data-reveal><h3>Ten slots, any order</h3><p>Gate, comp, drive, amp, cab, sauce, studio, chorus, delay, reverb — drag any block anywhere in the chain.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><h3>A reverb with depth</h3><p>Early reflections into a 16-line modulated hall — three-dimensional, enveloping tails with a shimmer that actually blooms.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><h3>The "Sauce" finalizer</h3><p>Tone shaping on steroids on a live before/after analyser — an R-Bass sub-harmonic, a threshold-tracked high-end de-esser, transient punch and a dynamic de-harsh.</p></div>
+    <div class="feature" data-reveal><h3>A tuner that locks</h3><p>Strobe-accurate to a hundredth of a cent, and it tracks a soft note through hiss — the modern low-volume lock.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><h3>Any sample rate</h3><p>44.1, 48, 88.2, 96&nbsp;kHz — the amp captures resample to their trained rate and every effect follows the host. No 48k lock-in.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><h3>A gate that hunts hum</h3><p>Phase-locked 50/60&nbsp;Hz harmonic tracking kills single-coil buzz without eating your tails.</p></div>
+    <div class="feature" data-reveal><h3>Presets are files</h3><p>Every preset is a JSON file. Drop one in a folder and it appears in the menu — the folder <em>is</em> the menu.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><h3>Auto cab sense</h3><p>Full-rig captures bypass the cab by themselves; amp-only captures pull the right IR.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><h3>Quality on a dial</h3><p>A slimmable neural network on one knob — full fidelity in the studio, featherweight live.</p></div>
+  </div>
+</section>
+
+<!-- ░░ DOWNLOAD ░░ -->
+<section class="download" id="download">
+  <div class="download__ghost" aria-hidden="true">FREE</div>
+  <div class="download__head" data-reveal>
+    <span class="badge">100% FREE</span>
+    <h2>Grab your rig.</h2>
+    <p>Pick a platform. Install. Plug in. That's the whole story — no account, no trial, no catch.</p>
+  </div>
+
+  <div class="download__cards">
+    <article class="dcard" data-reveal data-card>
+      <div class="dcard__os"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5 10 4.4v7.1H3zM11 4.2 21 3v8.5h-10zM3 12.5h7v7.1L3 18.6zM11 12.5h10V21l-10-1.2z"/></svg></div>
+      <h3>Windows</h3>
+      <p class="dcard__req mono">WINDOWS 10 / 11 · 64-BIT</p>
+      <a class="btn btn--amber dcard__btn" href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-magnetic><span>Download installer</span></a>
+      <p class="dcard__note">One installer · Standalone app <strong>+</strong> VST3</p>
+    </article>
+
+    <article class="dcard" data-reveal style="--d:.08s" data-card>
+      <div class="dcard__os"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg></div>
+      <h3>macOS</h3>
+      <p class="dcard__req mono">MACOS 11+ · INTEL &amp; APPLE SILICON</p>
+      <a class="btn btn--amber dcard__btn" href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-magnetic><span>Download installer</span></a>
+      <p class="dcard__note">One installer · App <strong>+</strong> AU <strong>+</strong> VST3</p>
+    </article>
+
+    <article class="dcard dcard--box" data-reveal style="--d:.16s" data-card>
+      <div class="dcard__os dcard__os--plug"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2v6m6-6v6M7 8h10v4a5 5 0 0 1-5 5 5 5 0 0 1-5-5zm5 9v5"/></svg></div>
+      <h3>In the box</h3>
+      <p class="dcard__req mono">ONE FREE DOWNLOAD · NO ACCOUNT</p>
+      <ul class="dcard__list">
+        <li>Standalone, VST3 &amp; Audio Unit</li>
+        <li>3 amps · 9 voices · 11 A2 captures</li>
+        <li>Pedalboard, studio strip &amp; the Sauce finalizer</li>
+        <li>20 usable-tone presets · strobe tuner</li>
+        <li>Runs at 44.1–96&nbsp;kHz</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<!-- ░░ FOOTER ░░ -->
+<footer class="footer">
+  <div class="footer__brand">
+    <span class="logo logo--footer">
+      <span class="logo__mark">
+        <span class="logo__script">Remi</span>
+        <svg class="logo__swash" viewBox="0 0 120 14" aria-hidden="true"><path d="M2 9 C 30 13, 78 13, 118 2" /></svg>
+      </span>
+      <span class="logo__sub">DSP</span>
+    </span>
+    <p class="footer__tag">The all-in-one guitar suite.</p>
+  </div>
+  <div class="footer__cols">
+    <div><h4>Download</h4><a href="#download">Windows</a><a href="#download">macOS</a><a href="#download">Formats</a></div>
+    <div><h4>Explore</h4><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio</a><a href="#engine">Engine</a></div>
+    <div><h4>Formats</h4><a href="#download">Windows</a><a href="#download">macOS</a><a href="#download">VST3 &amp; AU</a></div>
+  </div>
+  <p class="footer__legal">
+    © <span id="year">2026</span> Francois de Klerk · REMI DSP. Built for players. Free forever.<br>
+    <span class="footer__fine">Powered by NAM, open-source capture technology by Steven Atkinson.
+    REMI DSP is an independent free project.</span>
+  </p>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
