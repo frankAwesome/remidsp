@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Free pro plugins</title>
-<meta name="description" content="REMI DSP — free pro audio plugins. A full neural guitar suite and Doppel, the vocal double aligner. No accounts, no dongles, no cut-down lite versions." />
+<meta name="description" content="REMI DSP — free pro audio plugins. A full neural guitar suite, Doppel the vocal double aligner, and Quell the dynamic resonance suppressor. No accounts, no dongles, no cut-down lite versions." />
 <meta property="og:title" content="REMI DSP — Free pro plugins" />
-<meta property="og:description" content="A full neural guitar suite and Doppel, the vocal double aligner. Free — no accounts, no dongles, no lite versions." />
+<meta property="og:description" content="A full neural guitar suite, Doppel the vocal double aligner, and Quell the dynamic resonance suppressor. Free — no accounts, no dongles, no lite versions." />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://frankawesome.github.io/remidsp/assets/img/doppel-hero.png" />
 <link rel="icon" type="image/png" href="assets/img/icon-256.png" />
@@ -21,7 +21,8 @@
 .products__head{max-width:40em;margin-bottom:clamp(2.4rem,5vw,3.6rem)}
 .products__head h2{margin-bottom:1rem}
 .products__head p{color:var(--muted);font-size:1.1rem}
-.prods{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(1.4rem,3vw,2.2rem)}
+.prods{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1.4rem,3vw,2.2rem)}
+@media (max-width:1080px){.prods{grid-template-columns:repeat(2,1fr)}}
 .prod{position:relative;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:20px;
   overflow:hidden;background:linear-gradient(180deg,var(--panel-2),var(--panel));
   box-shadow:0 40px 90px -50px rgba(0,0,0,.95);--mx:50%;--my:20%;
@@ -85,6 +86,7 @@
     <a href="#products" data-scramble>Plugins</a>
     <a href="guitar.html" data-scramble>Guitar Suite</a>
     <a href="doppel.html" data-scramble>Doppel</a>
+    <a href="quell.html" data-scramble>Quell</a>
   </nav>
   <a href="#products" class="btn btn--amber nav__cta" data-magnetic><span>Get the plugins</span></a>
 </header>
@@ -104,12 +106,13 @@
     </h1>
     <p class="hero__lede" data-reveal style="--d:.3s">
       No accounts. No dongles. No cut-down <strong>“lite”</strong> versions. A full neural
-      guitar rig and a vocal double aligner that would cost you real money anywhere else —
-      built by hand and given away.
+      guitar rig, a vocal double aligner and a dynamic resonance suppressor that would cost you
+      real money anywhere else — built by hand and given away.
     </p>
     <div class="hero__cta" data-reveal style="--d:.42s">
       <a href="guitar.html" class="btn btn--amber btn--lg" data-magnetic><span>Guitar Suite</span></a>
       <a href="doppel.html" class="btn btn--ghost btn--lg" data-magnetic><span>Doppel</span></a>
+      <a href="quell.html" class="btn btn--ghost btn--lg" data-magnetic><span>Quell</span></a>
       <span class="hero__formats mono">WINDOWS&nbsp;·&nbsp;MACOS&nbsp;·&nbsp;VST3&nbsp;·&nbsp;AU</span>
     </div>
     <p class="hero__note mono" data-reveal style="--d:.52s">100% FREE · NO ACCOUNT · NO NAGS</p>
@@ -124,10 +127,10 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Pitch Matching</span><i>✦</i><span>Free Forever</span><i>✦</i>
+      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Resonance Suppression</span><i>✦</i><span>Unmasking</span><i>✦</i><span>Free Forever</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Pitch Matching</span><i>✦</i><span>Free Forever</span><i>✦</i>
+      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Resonance Suppression</span><i>✦</i><span>Unmasking</span><i>✦</i><span>Free Forever</span><i>✦</i>
     </div>
   </div>
 </section>
@@ -136,8 +139,8 @@
 <section class="products" id="products">
   <div class="products__head">
     <p class="kicker" data-reveal>THE PLUGINS</p>
-    <h2 data-reveal style="--d:.06s">Two tools. Zero cost.</h2>
-    <p data-reveal style="--d:.12s">Everything here is the full version — every amp, every verdict, every format. Pick one, or take both.</p>
+    <h2 data-reveal style="--d:.06s">Three tools. Zero cost.</h2>
+    <p data-reveal style="--d:.12s">Everything here is the full version — every amp, every verdict, every band, every format. Pick one, or take all three.</p>
   </div>
 
   <div class="prods">
@@ -188,6 +191,31 @@
         </div>
       </div>
     </article>
+
+    <!-- Quell -->
+    <article class="prod" data-card data-reveal style="--d:.2s">
+      <span class="prod__edge" style="background:var(--red)"></span>
+      <a class="prod__shot" href="quell.html" aria-label="Explore Quell">
+        <picture><source srcset="assets/img/quell-hero.webp" type="image/webp">
+          <img src="assets/img/quell-hero.png" width="1920" height="1117" loading="lazy"
+               alt="Quell — dynamic resonance suppressor with input spectrum, per-band reduction meter and an editable depth curve"></picture>
+        <span class="prod__glare"></span>
+      </a>
+      <div class="prod__body">
+        <span class="prod__kicker" style="color:var(--red)">DYNAMIC RESONANCE SUPPRESSOR</span>
+        <h3>Quell</h3>
+        <p>Hundreds of self-tuning dynamic notches, aimed by psychoacoustic detection. Tame
+           harshness, boxiness and sibilance without dulling the source — spectral or true
+           zero-latency, with a spectral-ducking sidechain.</p>
+        <div class="prod__meta">
+          <span class="chip mono">PSYCHOACOUSTIC</span><span class="chip mono">ZERO-LATENCY MODE</span><span class="chip mono">WIN · MAC</span>
+        </div>
+        <div class="prod__cta">
+          <a class="btn btn--amber" href="quell.html" data-magnetic><span>Explore</span></a>
+          <a class="btn btn--ghost" href="https://github.com/frankAwesome/remidsp/releases/latest/download/Quell-macOS.pkg" data-magnetic><span>Download</span></a>
+        </div>
+      </div>
+    </article>
   </div>
 </section>
 
@@ -206,8 +234,8 @@
     <p class="footer__tag">Handmade plugins, given away.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Plugins</h4><a href="guitar.html">Guitar Suite</a><a href="doppel.html">Doppel</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Guitar (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Doppel (macOS)</a></div>
+    <div><h4>Plugins</h4><a href="guitar.html">Guitar Suite</a><a href="doppel.html">Doppel</a><a href="quell.html">Quell</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Guitar (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Doppel (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Quell-macOS.pkg">Quell (macOS)</a></div>
     <div><h4>Formats</h4><a href="#products">Windows</a><a href="#products">macOS</a><a href="#products">VST3 &amp; AU</a></div>
   </div>
   <p class="footer__legal">
