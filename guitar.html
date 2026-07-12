@@ -17,19 +17,6 @@
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-<nav style="position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:28px;align-items:center;padding:14px 28px;background:rgba(4,4,6,.88);backdrop-filter:blur(12px);border-bottom:1px solid #1d1d22;font-family:Oswald,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;font-size:13px"><a href="index.html" style="color:#e0a84e;text-decoration:none;font-weight:600">Remi DSP</a><a href="index.html" style="color:#8f939c;text-decoration:none">Home</a><a href="guitar.html" style="color:#8f939c;text-decoration:none">Guitar Suite</a><a href="doppel.html" style="color:#8f939c;text-decoration:none">Doppel</a><span style="margin-left:auto;color:#5a5e66;font-size:11px">FREE PRO PLUGINS</span></nav>
-<div style="height:52px"></div>
-
-<!-- ░░ boot / preloader ░░ -->
-<div class="boot" id="boot" aria-hidden="true">
-  <div class="boot__brand">REMI&nbsp;DSP</div>
-  <div class="boot__center">
-    <span class="boot__num" id="bootNum">00</span>
-    <span class="boot__pct">%</span>
-  </div>
-  <div class="boot__leds" id="bootLeds"></div>
-  <div class="boot__line">POWERING ON · A2 CAPTURE ENGINE · 48K</div>
-</div>
 
 <!-- ░░ static backdrop (painted once — zero per-frame cost) ░░ -->
 <div class="bg" aria-hidden="true"><div class="bg__grain"></div></div>
@@ -50,7 +37,7 @@
 
 <!-- ░░ nav ░░ -->
 <header class="nav" id="nav">
-  <a href="#home" class="logo" aria-label="REMI DSP — home">
+  <a href="index.html" class="logo" aria-label="REMI DSP — home">
     <span class="logo__mark">
       <span class="logo__script">Remi</span>
       <svg class="logo__swash" viewBox="0 0 120 14" aria-hidden="true"><path d="M2 9 C 30 13, 78 13, 118 2" /></svg>
@@ -75,7 +62,7 @@
   <div class="hero__glow" aria-hidden="true"></div>
 
   <div class="hero__inner">
-    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;FREE&nbsp;GUITAR&nbsp;SUITE</p>
+    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;NEURAL&nbsp;GUITAR&nbsp;SUITE</p>
     <h1 class="hero__title" data-reveal-lines>
       <span class="line"><span data-reveal-line style="--d:.05s">Your entire</span></span>
       <span class="line"><span data-reveal-line style="--d:.13s">guitar rig.</span></span>
@@ -98,7 +85,7 @@
       </a>
       <span class="hero__formats mono">VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;STANDALONE</span>
     </div>
-    <p class="hero__note mono" data-reveal style="--d:.52s">100% FREE · NO ACCOUNT · NO NAGS</p>
+    <p class="hero__note mono" data-reveal style="--d:.52s">FREE DOWNLOAD · NO ACCOUNT REQUIRED</p>
   </div>
 
   <div class="hero__stage" data-reveal style="--d:.35s">
@@ -350,9 +337,9 @@
 <section class="download" id="download">
   <div class="download__ghost" aria-hidden="true">FREE</div>
   <div class="download__head" data-reveal>
-    <span class="badge">100% FREE</span>
+    <span class="badge">FREE</span>
     <h2>Grab your rig.</h2>
-    <p>Pick a platform. Install. Plug in. That's the whole story — no account, no trial, no catch.</p>
+    <p>Pick a platform, install, and plug in. No account required — the full version, every format.</p>
   </div>
 
   <div class="download__cards">
@@ -407,7 +394,7 @@
     <div><h4>Formats</h4><a href="#download">Windows</a><a href="#download">macOS</a><a href="#download">VST3 &amp; AU</a></div>
   </div>
   <p class="footer__legal">
-    © <span id="year">2026</span> Francois de Klerk · REMI DSP. Built for players. Free forever.<br>
+    © <span id="year">2026</span> Francois de Klerk · REMI DSP. Built for players.<br>
     <span class="footer__fine">Powered by NAM, open-source capture technology by Steven Atkinson.
     REMI DSP is an independent free project.</span>
   </p>
