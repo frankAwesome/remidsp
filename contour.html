@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Contour — note-based vocal editing, free | REMI DSP</title>
-<meta name="description" content="Contour — the free note-based vocal pitch & time editor, in early access. Your vocal on a piano roll: pitch, drift, vibrato, formants and timing as notes you can hold. ARA2 · VST3 / AU / Standalone · macOS." />
+<meta name="description" content="Contour — the free note-based vocal pitch & time editor, in early access. pYIN pitch detection draws your vocal as note blobs on a piano roll, with the full Melodyne-style tool set: pitch, vibrato, drift, formants, level, timing and cuts. ARA2 · VST3 / AU / Standalone · macOS." />
 <meta property="og:title" content="Contour — note-based vocal editing. Free." />
 <meta property="og:description" content="Your vocal on a piano roll — pitch, vibrato, formants and timing as notes you can hold. Early access, free." />
 <meta property="og:type" content="website" />
@@ -82,10 +82,11 @@
     </h1>
     <p class="hero__lede" data-reveal style="--d:.3s">
       Contour puts a recorded vocal on a piano roll — every note a blob you can hold.
-      Pitch centre, drift and vibrato, formants and timing, each on its own handle,
-      rendered back through the DAW over <strong>ARA2</strong>. In early access now:
-      the stage, the scale grid and the ARA foundation — the note engine is in
-      active development, and every update is free.
+      pYIN pitch detection splits the take into notes with their pitch curves drawn
+      through them, and eight tools edit centre, vibrato, drift, formants, level and
+      timing — over <strong>ARA2</strong> or standalone. In early access now: the full
+      editor with edits previewed on the curves; the audio render engine is in active
+      development, and every update is free.
     </p>
     <div class="hero__cta" data-reveal style="--d:.42s">
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
@@ -103,7 +104,7 @@
         <picture>
           <source srcset="assets/img/contour-hero.webp" type="image/webp">
           <img src="assets/img/contour-hero.png" width="1920" height="959" fetchpriority="high"
-               alt="The Contour plugin window — a vocal take drawn as a violet ribbon across a piano-roll stage, with key and scale selectors on the control deck." />
+               alt="The Contour plugin window — a vocal analysed into violet note blobs on a piano-roll stage, pitch curves running through each note, with the eight-tool rail on the control deck." />
         </picture>
         <div class="hero__glare"></div>
       </div>
@@ -139,9 +140,9 @@
     <span class="fill-line"><span class="fill-ghost fill-ghost--accent">Shape it.</span><span class="fill-ink fill-ink--accent" id="fillB">Shape it.</span></span>
   </h2>
   <p class="statement__sub" data-reveal>
-    A vocal isn't a waveform — it's notes. Contour's engine is being built to hear it
-    that way: pYIN pitch tracking splits a take into note blobs, and each blob separates
-    its <strong>centre</strong>, its slow <strong>drift</strong> and its <strong>vibrato</strong>
+    A vocal isn't a waveform — it's notes, and Contour hears it that way. pYIN pitch
+    tracking splits a take into note blobs, and each blob separates its
+    <strong>centre</strong>, its slow <strong>drift</strong> and its <strong>vibrato</strong>
     so you can correct one without flattening the others. The natural micro-jitter of a
     real voice is left untouched — that's the part naive tuners destroy.
   </p>
@@ -158,22 +159,22 @@
     <picture>
       <source srcset="assets/img/contour-detail.webp" type="image/webp">
       <img src="assets/img/contour-detail.png" width="1512" height="592"
-           alt="Close-up of the Contour stage zoomed to phrase level — the violet take ribbon over scale-aware piano-roll lanes with a gold-marked root." />
+           alt="Close-up of the Contour stage — selected note blobs with pitch curves, a ghost outline where a note was moved up a third, and a gold formant beam." />
     </picture>
   </div>
   <div class="studio__copy">
     <p class="kicker" data-reveal>THE STAGE</p>
-    <h2 data-reveal style="--d:.06s">A take you can read.</h2>
+    <h2 data-reveal style="--d:.06s">Notes you can hold.</h2>
     <p data-reveal style="--d:.12s">
-      The stage is already here: your take drawn as a living ribbon across piano-roll
-      lanes, with the <strong class="tint-gold">root</strong> marked in gold and the
-      chosen scale lit under the voice. Pick a key, pick a mode, zoom to a syllable.
-      When the note engine lands, blobs appear on these same lanes —
-      <strong class="tint-violet">grab one and move it</strong>.
+      Every note sits on its pitch with its curve drawn through it — the blob is the
+      handle, the curve is the truth. Moved notes leave a ghost of the original, the
+      <strong class="tint-gold">gold beam</strong> is a formant shift, and the
+      <strong class="tint-violet">flattened curve</strong> is the vibrato tool at 0%.
+      Zoom X and Y independently, down to a single syllable.
     </p>
     <div class="studio__chips" data-reveal style="--d:.2s">
-      <span class="chip mono">PIANO-ROLL LANES</span><span class="chip mono">SCALE GRID</span>
-      <span class="chip mono">SYLLABLE ZOOM</span><span class="chip mono">ARA SOURCE VIEW</span>
+      <span class="chip mono">NOTE BLOBS</span><span class="chip mono">PITCH CURVES</span>
+      <span class="chip mono">GHOST ORIGINALS</span><span class="chip mono">X + Y ZOOM</span>
     </div>
   </div>
 </section>
@@ -184,17 +185,17 @@
     <div class="stat"><span class="stat__num led" data-count="3">0</span><span class="stat__label">Formats · ARA2</span></div>
     <div class="stat"><span class="stat__num led" data-count="12">0</span><span class="stat__label">Keys · 9 scales</span></div>
     <div class="stat"><span class="stat__num led" data-count="96">0</span><span class="stat__label">kHz max</span></div>
-    <div class="stat"><span class="stat__num led" data-count="1">0</span><span class="stat__label">Binary · ARA + insert</span></div>
+    <div class="stat"><span class="stat__num led" data-count="8">0</span><span class="stat__label">Editing tools</span></div>
     <div class="stat"><span class="stat__num led" data-count="0" data-prefix="$">$0</span><span class="stat__label">Forever</span></div>
   </div>
 
   <div class="specs__grid">
-    <div class="feature" data-reveal><h3>The stage — here now</h3><p>Piano-roll lanes with a scale-aware grid, keyboard gutter and the take drawn as a violet ribbon. Loads files in the standalone, reads the track over ARA in a DAW.</p></div>
+    <div class="feature" data-reveal><h3>Note detection — here now</h3><p>pYIN pitch tracking with Viterbi decoding and octave-error suppression splits the take into note blobs with full pitch curves — the reference approach for monophonic voice.</p></div>
     <div class="feature" data-reveal style="--d:.06s"><h3>ARA2 foundation — here now</h3><p>Full ARA2 document lifecycle: model graph, archiving and sample-accurate playback rendering, validated against the ARA SDK test host and pluginval at maximum strictness.</p></div>
-    <div class="feature" data-reveal style="--d:.12s"><h3>Note detection <span class="chip chip--soon mono">ROADMAP</span></h3><p>pYIN pitch tracking with Viterbi decoding segments the take into note blobs with full pitch curves — the reference algorithm for monophonic voice.</p></div>
-    <div class="feature" data-reveal><h3>Pitch tools <span class="chip chip--soon mono">ROADMAP</span></h3><p>Per-note centre, drift and vibrato on separate handles, chromatic or scale snap, adjustable transitions — with formants preserved or shifted on their own axis.</p></div>
-    <div class="feature" data-reveal style="--d:.06s"><h3>Time tools <span class="chip chip--soon mono">ROADMAP</span></h3><p>Split, glue, and drag note boundaries with Melodyne-style neighbour stretch. Plosives move as atomic slices; sibilants are never pitch-shifted.</p></div>
-    <div class="feature" data-reveal style="--d:.12s"><h3>Voice-first DSP <span class="chip chip--soon mono">ROADMAP</span></h3><p>TD-PSOLA on voiced material, WSOLA on breath and sibilance, phase-locked vocoder fallback — an engine routed by what the voice is doing at every instant.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><h3>Eight tools — here now</h3><p>Main, pitch, vibrato, drift, formant, level, time and cut — drag a blob, flatten a wobble, split a note, snap to scale. Undo everything. Edits preview on the curves today.</p></div>
+    <div class="feature" data-reveal><h3>Centre + drift + vibrato</h3><p>Each note separates its centre, slow drift and vibrato so you correct one without flattening the others — and the micro-jitter that keeps a voice human is never touched.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><h3>Audio render <span class="chip chip--soon mono">ROADMAP</span></h3><p>TD-PSOLA rendering of every edit back through the DAW — formant-true shifts, sibilant-safe timing, atomic plosives. The engine the tools are waiting for.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><h3>Voice-first DSP <span class="chip chip--soon mono">ROADMAP</span></h3><p>PSOLA on voiced material, WSOLA on breath and sibilance, phase-locked vocoder fallback — routed by what the voice is doing at every instant, never one algorithm for everything.</p></div>
   </div>
 </section>
 
@@ -204,7 +205,7 @@
   <div class="download__head" data-reveal>
     <span class="badge">EARLY ACCESS</span>
     <h2>Get Contour.</h2>
-    <p>Install, drop a vocal on the stage, and watch the take light up. Early access — the note engine arrives as free updates. No account required.</p>
+    <p>Install, drop a vocal on the stage, and grab a note. Early access — the audio render engine arrives as a free update. No account required.</p>
   </div>
 
   <div class="download__cards">
@@ -222,10 +223,10 @@
       <p class="dcard__req mono">V0.1 EARLY ACCESS · FREE UPDATES</p>
       <ul class="dcard__list">
         <li>Standalone, VST3 &amp; Audio Unit · ARA2</li>
-        <li>The stage: piano-roll lanes + take ribbon</li>
-        <li>12 keys, 9 scales on the pitch grid</li>
-        <li>File loading, drag &amp; drop, syllable zoom</li>
-        <li>Note engine in development · 44.1–96&nbsp;kHz</li>
+        <li>pYIN note detection with pitch curves</li>
+        <li>8 tools: pitch, vibrato, drift, formant, level, time, cut</li>
+        <li>12 keys, 9 scales, X+Y zoom, undo</li>
+        <li>Render engine in development · 44.1–96&nbsp;kHz</li>
       </ul>
     </article>
   </div>
