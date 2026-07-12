@@ -1,50 +1,257 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Doppel — vocal double alignment | REMI DSP</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doppel — vocal double alignment, free | REMI DSP</title>
+<meta name="description" content="Doppel — the free vocal double aligner. Lock doubles, stacks and ADR to the lead: a Wordfit-style timing engine, phrase detection that flags missing lines instead of smearing them, transient-level verdicts and optional pitch matching. VST3 / AU / Standalone · ARA2 · macOS." />
+<meta property="og:title" content="Doppel — vocal double alignment. Free." />
+<meta property="og:description" content="Lock doubles, stacks and ADR to the lead — timing, phrase analysis and transient-level verdicts. Free." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://frankawesome.github.io/remidsp/assets/img/doppel-hero.png" />
+<link rel="icon" type="image/png" href="assets/img/doppel-icon.png" />
+<link rel="preload" href="assets/fonts/OswaldBold.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/fonts/Yellowtail.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/fonts/Dseg7.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/img/doppel-hero.webp" as="image" type="image/webp" fetchpriority="high" />
+<link rel="stylesheet" href="css/style.css" />
 <style>
-:root{--bg:#060608;--deep:#020203;--panel:#0e0e11;--line:#1d1d22;--txt:#f4f5f7;
---dim:#8f939c;--gold:#e0a84e;--ice:#9fd8e8;--green:#5fe08a}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:radial-gradient(1200px 500px at 50% -10%,#101017,var(--deep)),var(--deep);
-color:var(--txt);font-family:Oswald,Arial,sans-serif;min-height:100vh}
-.wrap{max-width:1080px;margin:0 auto;padding:110px 28px 80px}
-h1{font-size:56px;letter-spacing:.10em;text-transform:uppercase}
-.sub{color:var(--gold);letter-spacing:.3em;text-transform:uppercase;font-size:13px;margin:10px 0 40px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:26px;margin-top:44px}
-.card{background:linear-gradient(180deg,#17171c,#0a0a0d);border:1px solid var(--line);
-border-radius:14px;padding:30px;transition:.25s;position:relative;overflow:hidden}
-.card:hover{border-color:var(--gold);transform:translateY(-3px)}
-.card h2{letter-spacing:.12em;text-transform:uppercase;font-size:24px}
-.tag{color:var(--dim);font-size:13px;letter-spacing:.08em;margin:8px 0 18px;line-height:1.6;font-weight:300}
-.btn{display:inline-block;padding:12px 26px;border-radius:8px;border:1px solid var(--gold);
-color:var(--gold);text-decoration:none;letter-spacing:.14em;text-transform:uppercase;font-size:12px}
-.btn:hover{background:var(--gold);color:#060608}
-.btn--ghost{border-color:#3a3a42;color:var(--dim);margin-left:10px}
-.edge{position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:2px}
-ul{list-style:none;margin:18px 0}
-li{color:var(--dim);font-weight:300;font-size:14px;padding:6px 0;border-bottom:1px solid #121217;letter-spacing:.03em}
-li b{color:var(--txt);font-weight:500}
-footer{color:#5a5e66;font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-top:70px;text-align:center}
-</style></head><body>
-<nav style="position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:28px;align-items:center;padding:14px 28px;background:rgba(4,4,6,.88);backdrop-filter:blur(12px);border-bottom:1px solid #1d1d22;font-family:Oswald,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;font-size:13px"><a href="index.html" style="color:#e0a84e;text-decoration:none;font-weight:600">Remi DSP</a><a href="index.html" style="color:#8f939c;text-decoration:none">Home</a><a href="guitar.html" style="color:#8f939c;text-decoration:none">Guitar Suite</a><a href="doppel.html" style="color:#8f939c;text-decoration:none">Doppel</a><span style="margin-left:auto;color:#5a5e66;font-size:11px">FREE PRO PLUGINS</span></nav>
-<div class="wrap">
-<h1>Doppel</h1>
-<div class="sub">Vocal double alignment — VST3 / AU / Standalone · ARA2 · macOS universal</div>
-<p style="color:var(--dim);font-weight:300;max-width:720px;line-height:1.8">
-Capture a guide and its doubles straight from your session (or bind it as ARA and skip
-the capture entirely), hit ALIGN, and every dub locks to the lead. Doppel splits both
-takes into phrases, flags anything <b style="color:#d84a4a">missing</b> from a dub or
-<b style="color:var(--gold)">extra</b> against the guide, and grades every transient
-green / gold / red for how tightly it landed.</p>
-<ul>
-<li><b>Wordfit-style engine</b> — timing changes hide in the gaps; words play at their natural rate</li>
-<li><b>Transient verdicts</b> — per-onset needles and cross-lane tethers show exactly what aligned</li>
-<li><b>Phrase detection</b> — backing vocals that skip phrases are sectioned and flagged, not smeared</li>
-<li><b>Pitch matching</b> — optional; unison or harmony-aware (a third stays a third), true formant handling</li>
-<li><b>Sync points &amp; protected areas</b> — rescue tools when material gets ambiguous</li>
-<li><b>ARA2 + capture</b> — one binary; ARA hosts read track audio directly, everyone else captures</li>
-</ul>
-<a class="btn" href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Download installer (macOS)</a>
-<footer>REMI DSP — DOPPEL CORE</footer>
-</div></body></html>
+/* Doppel accent: the plugin's ice-blue ALIGNED lane, used sparingly next to
+   the shared REMI amber so the page reads as part of the suite. */
+:root{--ice:#9fd8e8;--green:#5fe08a}
+.hero__free--doppel{background:linear-gradient(180deg,#eaf7fb,var(--ice) 52%,#5aa6bc);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 26px rgba(159,216,232,.32))}
+.tint-ice{color:var(--ice)}.tint-red{color:var(--red)}.tint-green{color:var(--green)}
+.hero__shot--doppel{transform:perspective(1600px) rotateY(-8deg) rotateX(3deg)}
+@media (max-width:1080px){.hero__shot--doppel{transform:perspective(1600px) rotateY(-4deg) rotateX(2deg)}}
+</style>
+</head>
+<body>
+
+<!-- ░░ static backdrop ░░ -->
+<div class="bg" aria-hidden="true"><div class="bg__grain"></div></div>
+
+<!-- ░░ fixed HUD chrome ░░ -->
+<div class="hud" aria-hidden="true">
+  <div class="hud__corner hud__corner--tl"></div>
+  <div class="hud__corner hud__corner--tr"></div>
+  <div class="hud__corner hud__corner--bl"></div>
+  <div class="hud__corner hud__corner--br"></div>
+  <div class="hud__item hud__item--bl">REMI&nbsp;DSP&nbsp;·&nbsp;DOPPEL&nbsp;·&nbsp;VOCAL&nbsp;ALIGNMENT</div>
+  <div class="hud__item hud__item--br"><span class="led" id="hudPct">000</span><span class="hud__pctsign">%</span></div>
+</div>
+<div class="scrollbar" aria-hidden="true"><span id="scrollFill"></span></div>
+
+<!-- ░░ custom cursor ░░ -->
+<div class="cursor" aria-hidden="true"><div class="cursor__dot"></div><div class="cursor__ring"></div></div>
+
+<!-- ░░ nav ░░ -->
+<header class="nav" id="nav">
+  <a href="index.html" class="logo" aria-label="REMI DSP — home">
+    <span class="logo__mark">
+      <span class="logo__script">Remi</span>
+      <svg class="logo__swash" viewBox="0 0 120 14" aria-hidden="true"><path d="M2 9 C 30 13, 78 13, 118 2" /></svg>
+    </span>
+    <span class="logo__sub">DSP</span>
+  </a>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="index.html" data-scramble>Home</a>
+    <a href="guitar.html" data-scramble>Guitar Suite</a>
+    <a href="#verdicts" data-scramble>Verdicts</a>
+    <a href="#features" data-scramble>Features</a>
+  </nav>
+  <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download free</span></a>
+</header>
+
+<main>
+
+<!-- ░░ HERO ░░ -->
+<section class="hero" id="home">
+  <canvas class="hero__strings" id="strings" aria-hidden="true"></canvas>
+  <div class="hero__glow" aria-hidden="true"></div>
+
+  <div class="hero__inner">
+    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;VOCAL&nbsp;DOUBLE&nbsp;ALIGNMENT</p>
+    <h1 class="hero__title" data-reveal-lines>
+      <span class="line"><span data-reveal-line style="--d:.05s">Lock every</span></span>
+      <span class="line"><span data-reveal-line style="--d:.13s">double to</span></span>
+      <span class="line"><span data-reveal-line class="hero__free hero__free--doppel" style="--d:.22s">the lead.</span></span>
+    </h1>
+    <p class="hero__lede" data-reveal style="--d:.3s">
+      Load a guide and its double, hit <strong>Align</strong>, and every dub snaps to the
+      lead's timing. Doppel splits both takes into phrases, flags a line the dub
+      <strong>skipped</strong> instead of smearing its neighbour across the gap, and grades
+      every transient for how tightly it landed.
+    </p>
+    <div class="hero__cta" data-reveal style="--d:.42s">
+      <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
+        <svg viewBox="0 0 24 24" class="btn__os" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg>
+        <span>Download for macOS</span>
+      </a>
+      <span class="hero__formats mono">VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;STANDALONE&nbsp;·&nbsp;ARA2</span>
+    </div>
+    <p class="hero__note mono" data-reveal style="--d:.52s">100% FREE · NO ACCOUNT · NO NAGS</p>
+  </div>
+
+  <div class="hero__stage" data-reveal style="--d:.35s">
+    <div class="hero__frame" data-tilt>
+      <div class="hero__shot hero__shot--doppel">
+        <picture>
+          <source srcset="assets/img/doppel-hero.webp" type="image/webp">
+          <img src="assets/img/doppel-hero.png" width="1920" height="960" fetchpriority="high"
+               alt="The Doppel plugin window — guide, dub and aligned lanes with phrase sections, a MISSING line flagged red, and green transient tethers locking each phrase to its match." />
+        </picture>
+        <div class="hero__glare"></div>
+      </div>
+      <span class="hero__bracket hero__bracket--tl"></span>
+      <span class="hero__bracket hero__bracket--tr"></span>
+      <span class="hero__bracket hero__bracket--bl"></span>
+      <span class="hero__bracket hero__bracket--br"></span>
+    </div>
+    <p class="hero__caption mono">REMI&nbsp;DSP&nbsp;·&nbsp;DOPPEL&nbsp;CORE&nbsp;—&nbsp;<span class="led">44.1–96</span>&nbsp;kHz</p>
+  </div>
+
+  <a href="#capture" class="hero__scrollcue" aria-label="Scroll down">
+    <span class="mono">SCROLL</span><i></i>
+  </a>
+</section>
+
+<!-- ░░ MARQUEE ░░ -->
+<section class="marquee" aria-hidden="true">
+  <div class="marquee__band">
+    <div class="marquee__track">
+      <span>Doubles</span><i>✦</i><span>Stacks</span><i>✦</i><span>ADR</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Transient Verdicts</span><i>✦</i><span>Wordfit Engine</span><i>✦</i><span>Pitch Matching</span><i>✦</i><span>Sync Points</span><i>✦</i><span>ARA2</span><i>✦</i>
+    </div>
+    <div class="marquee__track" aria-hidden="true">
+      <span>Doubles</span><i>✦</i><span>Stacks</span><i>✦</i><span>ADR</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Transient Verdicts</span><i>✦</i><span>Wordfit Engine</span><i>✦</i><span>Pitch Matching</span><i>✦</i><span>Sync Points</span><i>✦</i><span>ARA2</span><i>✦</i>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ STATEMENT — scroll-scrubbed fill ░░ -->
+<section class="statement" id="capture">
+  <h2 class="statement__big" aria-label="Not nudged. Rebuilt.">
+    <span class="fill-line"><span class="fill-ghost">Not nudged.</span><span class="fill-ink" id="fillA">Not nudged.</span></span>
+    <span class="fill-line"><span class="fill-ghost fill-ghost--accent">Rebuilt.</span><span class="fill-ink fill-ink--accent" id="fillB">Rebuilt.</span></span>
+  </h2>
+  <p class="statement__sub" data-reveal>
+    Doppel doesn't just slide a clip until the peaks line up. It builds a warp between the
+    two performances and re-times the dub through it — the timing changes hide in the gaps,
+    so <strong>words keep their natural rate</strong> while the spaces between them absorb the
+    drift. A double that was never going to sit ends up glued to the lead.
+  </p>
+  <div class="statement__chips" data-reveal style="--d:.15s">
+    <span class="chip mono">WORDFIT-STYLE WARP</span>
+    <span class="chip mono">GAP-CONCENTRATED STRETCH</span>
+    <span class="chip mono">TRANSIENT-ACCURATE</span>
+  </div>
+</section>
+
+<!-- ░░ VERDICTS — the detail shot ░░ -->
+<section class="studio" id="verdicts">
+  <div class="studio__media" data-reveal-wipe>
+    <picture>
+      <source srcset="assets/img/doppel-verdicts.webp" type="image/webp">
+      <img src="assets/img/doppel-verdicts.png" width="1512" height="592"
+           alt="Close-up of Doppel's lanes — green tethers link each guide phrase to its dub, one phrase burns red as MISSING, and each stays inside its own phrase." />
+    </picture>
+  </div>
+  <div class="studio__copy">
+    <p class="kicker" data-reveal>THE VERDICTS</p>
+    <h2 data-reveal style="--d:.06s">See exactly what aligned.</h2>
+    <p data-reveal style="--d:.12s">
+      Every guide onset draws a tether to the dub transient it locked onto —
+      <strong class="tint-green">green</strong> when it nailed it, gold when it drifted,
+      <strong class="tint-red">red</strong> when the line was never there. A phrase the dub
+      skipped is sectioned off and flagged <strong class="tint-red">missing</strong>, then
+      rendered silent — never a smear of the phrase next to it.
+    </p>
+    <div class="studio__chips" data-reveal style="--d:.2s">
+      <span class="chip mono">PER-ONSET TETHERS</span><span class="chip mono">PHRASE SECTIONS</span>
+      <span class="chip mono">MISSING / EXTRA FLAGS</span><span class="chip mono">NO CROSSING</span>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ FEATURES / SPECS ░░ -->
+<section class="specs" id="features">
+  <div class="specs__stats" data-reveal>
+    <div class="stat"><span class="stat__num led" data-count="3">0</span><span class="stat__label">Formats</span></div>
+    <div class="stat"><span class="stat__num led" data-count="4">0</span><span class="stat__label">Presets</span></div>
+    <div class="stat"><span class="stat__num led" data-count="96">0</span><span class="stat__label">kHz max</span></div>
+    <div class="stat"><span class="stat__num led" data-count="1">0</span><span class="stat__label">Binary · ARA + capture</span></div>
+    <div class="stat"><span class="stat__num led" data-count="0" data-prefix="$">$0</span><span class="stat__label">Forever</span></div>
+  </div>
+
+  <div class="specs__grid">
+    <div class="feature" data-reveal><h3>Wordfit-style engine</h3><p>Timing changes hide in the gaps between words, so voiced material plays at its natural rate while the spaces absorb the drift.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><h3>Transient verdicts</h3><p>Per-onset needles and cross-lane tethers, colour-graded by residual error — the whole alignment readable at a glance.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><h3>Phrase detection</h3><p>Backing vocals that skip a line are sectioned and flagged missing, then rendered silent — the neighbour is never smeared across the gap.</p></div>
+    <div class="feature" data-reveal><h3>Pitch matching</h3><p>Optional and off by default. Unison or harmony-aware — a third stays a third — with true formant handling anchored to the dub's register.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><h3>Sync points &amp; protected areas</h3><p>Drop a sync point to pin an anchor, or mark a region to pass through untouched when the material gets ambiguous.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><h3>ARA2 + capture</h3><p>One binary for every host: ARA hosts read the track audio directly, everyone else captures from the session. VST3, AU &amp; Standalone.</p></div>
+  </div>
+</section>
+
+<!-- ░░ DOWNLOAD ░░ -->
+<section class="download" id="download">
+  <div class="download__ghost" aria-hidden="true">FREE</div>
+  <div class="download__head" data-reveal>
+    <span class="badge">100% FREE</span>
+    <h2>Get Doppel.</h2>
+    <p>Install, load your lead and its double, hit Align. No account, no trial, no catch.</p>
+  </div>
+
+  <div class="download__cards">
+    <article class="dcard" data-reveal data-card>
+      <div class="dcard__os"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg></div>
+      <h3>macOS</h3>
+      <p class="dcard__req mono">MACOS 11+ · INTEL &amp; APPLE SILICON</p>
+      <a class="btn btn--amber dcard__btn" href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg" data-magnetic><span>Download installer</span></a>
+      <p class="dcard__note">One installer · App <strong>+</strong> AU <strong>+</strong> VST3</p>
+    </article>
+
+    <article class="dcard dcard--box" data-reveal style="--d:.16s" data-card>
+      <div class="dcard__os dcard__os--plug"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2v6m6-6v6M7 8h10v4a5 5 0 0 1-5 5 5 5 0 0 1-5-5zm5 9v5"/></svg></div>
+      <h3>In the box</h3>
+      <p class="dcard__req mono">ONE FREE DOWNLOAD · NO ACCOUNT</p>
+      <ul class="dcard__list">
+        <li>Standalone, VST3 &amp; Audio Unit · ARA2</li>
+        <li>Timing alignment with phrase detection</li>
+        <li>Transient verdicts &amp; cross-lane tethers</li>
+        <li>Optional unison / harmony pitch matching</li>
+        <li>Sync points, protected areas · 44.1–96&nbsp;kHz</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<!-- ░░ FOOTER ░░ -->
+<footer class="footer">
+  <div class="footer__brand">
+    <span class="logo logo--footer">
+      <span class="logo__mark">
+        <span class="logo__script">Remi</span>
+        <svg class="logo__swash" viewBox="0 0 120 14" aria-hidden="true"><path d="M2 9 C 30 13, 78 13, 118 2" /></svg>
+      </span>
+      <span class="logo__sub">DSP</span>
+    </span>
+    <p class="footer__tag">Vocal double alignment, given away.</p>
+  </div>
+  <div class="footer__cols">
+    <div><h4>Doppel</h4><a href="#verdicts">Verdicts</a><a href="#features">Features</a><a href="#download">Download</a></div>
+    <div><h4>Suite</h4><a href="index.html">Home</a><a href="guitar.html">Guitar Suite</a><a href="doppel.html">Doppel</a></div>
+    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">VST3 &amp; AU</a><a href="#download">ARA2</a></div>
+  </div>
+  <p class="footer__legal">
+    © <span id="year">2026</span> Francois de Klerk · REMI DSP. Built for the mix. Free forever.<br>
+    <span class="footer__fine">Powered by Signalsmith Stretch. REMI DSP is an independent free project.</span>
+  </p>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

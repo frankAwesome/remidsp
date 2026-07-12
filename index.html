@@ -1,49 +1,221 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Free pro plugins</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&display=swap" rel="stylesheet">
+<meta name="description" content="REMI DSP — free pro audio plugins. A full neural guitar suite and Doppel, the vocal double aligner. No accounts, no dongles, no cut-down lite versions." />
+<meta property="og:title" content="REMI DSP — Free pro plugins" />
+<meta property="og:description" content="A full neural guitar suite and Doppel, the vocal double aligner. Free — no accounts, no dongles, no lite versions." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://frankawesome.github.io/remidsp/assets/img/doppel-hero.png" />
+<link rel="icon" type="image/png" href="assets/img/icon-256.png" />
+<link rel="preload" href="assets/fonts/OswaldBold.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/fonts/Yellowtail.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/fonts/Dseg7.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="stylesheet" href="css/style.css" />
 <style>
-:root{--bg:#060608;--deep:#020203;--panel:#0e0e11;--line:#1d1d22;--txt:#f4f5f7;
---dim:#8f939c;--gold:#e0a84e;--ice:#9fd8e8;--green:#5fe08a}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:radial-gradient(1200px 500px at 50% -10%,#101017,var(--deep)),var(--deep);
-color:var(--txt);font-family:Oswald,Arial,sans-serif;min-height:100vh}
-.wrap{max-width:1080px;margin:0 auto;padding:110px 28px 80px}
-h1{font-size:56px;letter-spacing:.10em;text-transform:uppercase}
-.sub{color:var(--gold);letter-spacing:.3em;text-transform:uppercase;font-size:13px;margin:10px 0 40px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:26px;margin-top:44px}
-.card{background:linear-gradient(180deg,#17171c,#0a0a0d);border:1px solid var(--line);
-border-radius:14px;padding:30px;transition:.25s;position:relative;overflow:hidden}
-.card:hover{border-color:var(--gold);transform:translateY(-3px)}
-.card h2{letter-spacing:.12em;text-transform:uppercase;font-size:24px}
-.tag{color:var(--dim);font-size:13px;letter-spacing:.08em;margin:8px 0 18px;line-height:1.6;font-weight:300}
-.btn{display:inline-block;padding:12px 26px;border-radius:8px;border:1px solid var(--gold);
-color:var(--gold);text-decoration:none;letter-spacing:.14em;text-transform:uppercase;font-size:12px}
-.btn:hover{background:var(--gold);color:#060608}
-.btn--ghost{border-color:#3a3a42;color:var(--dim);margin-left:10px}
-.edge{position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:2px}
-ul{list-style:none;margin:18px 0}
-li{color:var(--dim);font-weight:300;font-size:14px;padding:6px 0;border-bottom:1px solid #121217;letter-spacing:.03em}
-li b{color:var(--txt);font-weight:500}
-footer{color:#5a5e66;font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-top:70px;text-align:center}
-</style></head><body>
-<nav style="position:fixed;top:0;left:0;right:0;z-index:999;display:flex;gap:28px;align-items:center;padding:14px 28px;background:rgba(4,4,6,.88);backdrop-filter:blur(12px);border-bottom:1px solid #1d1d22;font-family:Oswald,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;font-size:13px"><a href="index.html" style="color:#e0a84e;text-decoration:none;font-weight:600">Remi DSP</a><a href="index.html" style="color:#8f939c;text-decoration:none">Home</a><a href="guitar.html" style="color:#8f939c;text-decoration:none">Guitar Suite</a><a href="doppel.html" style="color:#8f939c;text-decoration:none">Doppel</a><span style="margin-left:auto;color:#5a5e66;font-size:11px">FREE PRO PLUGINS</span></nav>
-<div class="wrap">
-<h1>Remi <span style="color:var(--gold)">DSP</span></h1>
-<div class="sub">Free pro plugins — no accounts, no dongles, no cut-down "lite" versions</div>
-<div class="cards">
-<div class="card"><span class="edge" style="background:var(--gold)"></span>
-<h2>Guitar Suite</h2>
-<div class="tag">Your entire guitar rig: amps, cabs, pedals, studio effects — a full chain
-with neural amp captures and photoreal gear.</div>
-<a class="btn" href="guitar.html">Explore</a>
-<a class="btn btn--ghost" href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Download</a></div>
-<div class="card"><span class="edge" style="background:var(--ice)"></span>
-<h2>Doppel</h2>
-<div class="tag">Vocal double alignment: lock doubles, stacks and ADR to the lead —
-timing, pitch and phrase analysis with transient-level verdicts.</div>
-<a class="btn" href="doppel.html">Explore</a>
-<a class="btn btn--ghost" href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Download</a></div>
+:root{--ice:#9fd8e8}
+/* ── product showcase ── */
+.products{max-width:var(--maxw);margin:0 auto;padding:clamp(3rem,7vw,5.5rem) var(--pad) clamp(5rem,10vw,8rem)}
+.products__head{max-width:40em;margin-bottom:clamp(2.4rem,5vw,3.6rem)}
+.products__head h2{margin-bottom:1rem}
+.products__head p{color:var(--muted);font-size:1.1rem}
+.prods{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(1.4rem,3vw,2.2rem)}
+.prod{position:relative;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:20px;
+  overflow:hidden;background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  box-shadow:0 40px 90px -50px rgba(0,0,0,.95);--mx:50%;--my:20%;
+  transition:border-color .45s var(--ease),transform .45s var(--ease)}
+.prod:hover{border-color:rgba(224,168,78,.42);transform:translateY(-5px)}
+.prod::after{content:"";position:absolute;inset:0;z-index:4;opacity:0;pointer-events:none;
+  background:radial-gradient(420px circle at var(--mx) var(--my),rgba(255,255,255,.06),transparent 60%);
+  transition:opacity .35s}
+.prod:hover::after{opacity:1}
+.prod__edge{position:absolute;left:0;top:20px;bottom:20px;width:3px;border-radius:2px;z-index:3}
+.prod__shot{position:relative;overflow:hidden;aspect-ratio:2/1;border-bottom:1px solid var(--line);
+  background:#07070a}
+.prod__shot img{width:100%;height:100%;object-fit:cover;object-position:center;
+  transition:transform .8s var(--ease)}
+.prod:hover .prod__shot img{transform:scale(1.035)}
+.prod__glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.12),transparent 40%);
+  pointer-events:none}
+.prod__body{position:relative;z-index:2;padding:clamp(1.6rem,3vw,2.2rem);display:flex;flex-direction:column;gap:.7rem;flex:1}
+.prod__kicker{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.24em;text-transform:uppercase}
+.prod__body h3{font-size:1.7rem;color:#fff}
+.prod__body > p{color:var(--muted);font-size:1rem;flex:1}
+.prod__meta{display:flex;flex-wrap:wrap;gap:.5rem;margin:.2rem 0 .4rem}
+.prod__cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.4rem}
+@media (max-width:880px){.prods{grid-template-columns:1fr}}
+
+.home__hero{min-height:auto;grid-template-columns:1fr;padding-bottom:2rem;text-align:center;place-items:center}
+.home__hero .hero__inner{max-width:52rem}
+.home__hero .hero__lede{margin-left:auto;margin-right:auto}
+.home__hero .hero__cta{justify-content:center}
+</style>
+</head>
+<body>
+
+<!-- ░░ static backdrop ░░ -->
+<div class="bg" aria-hidden="true"><div class="bg__grain"></div></div>
+
+<!-- ░░ fixed HUD chrome ░░ -->
+<div class="hud" aria-hidden="true">
+  <div class="hud__corner hud__corner--tl"></div>
+  <div class="hud__corner hud__corner--tr"></div>
+  <div class="hud__corner hud__corner--bl"></div>
+  <div class="hud__corner hud__corner--br"></div>
+  <div class="hud__item hud__item--bl">REMI&nbsp;DSP&nbsp;·&nbsp;FREE&nbsp;PRO&nbsp;PLUGINS</div>
+  <div class="hud__item hud__item--br"><span class="led" id="hudPct">000</span><span class="hud__pctsign">%</span></div>
 </div>
-<footer>REMI DSP — handmade plugins, given away</footer>
-</div></body></html>
+<div class="scrollbar" aria-hidden="true"><span id="scrollFill"></span></div>
+
+<!-- ░░ custom cursor ░░ -->
+<div class="cursor" aria-hidden="true"><div class="cursor__dot"></div><div class="cursor__ring"></div></div>
+
+<!-- ░░ nav ░░ -->
+<header class="nav" id="nav">
+  <a href="index.html" class="logo" aria-label="REMI DSP — home">
+    <span class="logo__mark">
+      <span class="logo__script">Remi</span>
+      <svg class="logo__swash" viewBox="0 0 120 14" aria-hidden="true"><path d="M2 9 C 30 13, 78 13, 118 2" /></svg>
+    </span>
+    <span class="logo__sub">DSP</span>
+  </a>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="#products" data-scramble>Plugins</a>
+    <a href="guitar.html" data-scramble>Guitar Suite</a>
+    <a href="doppel.html" data-scramble>Doppel</a>
+  </nav>
+  <a href="#products" class="btn btn--amber nav__cta" data-magnetic><span>Get the plugins</span></a>
+</header>
+
+<main>
+
+<!-- ░░ HERO ░░ -->
+<section class="hero home__hero" id="home">
+  <canvas class="hero__strings" id="strings" aria-hidden="true"></canvas>
+  <div class="hero__glow" aria-hidden="true"></div>
+
+  <div class="hero__inner">
+    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;HANDMADE&nbsp;PLUGINS</p>
+    <h1 class="hero__title" data-reveal-lines>
+      <span class="line"><span data-reveal-line style="--d:.05s">Pro plugins.</span></span>
+      <span class="line"><span data-reveal-line class="hero__free" style="--d:.16s">Free.</span></span>
+    </h1>
+    <p class="hero__lede" data-reveal style="--d:.3s">
+      No accounts. No dongles. No cut-down <strong>“lite”</strong> versions. A full neural
+      guitar rig and a vocal double aligner that would cost you real money anywhere else —
+      built by hand and given away.
+    </p>
+    <div class="hero__cta" data-reveal style="--d:.42s">
+      <a href="guitar.html" class="btn btn--amber btn--lg" data-magnetic><span>Guitar Suite</span></a>
+      <a href="doppel.html" class="btn btn--ghost btn--lg" data-magnetic><span>Doppel</span></a>
+      <span class="hero__formats mono">WINDOWS&nbsp;·&nbsp;MACOS&nbsp;·&nbsp;VST3&nbsp;·&nbsp;AU</span>
+    </div>
+    <p class="hero__note mono" data-reveal style="--d:.52s">100% FREE · NO ACCOUNT · NO NAGS</p>
+  </div>
+
+  <a href="#products" class="hero__scrollcue" aria-label="Scroll down">
+    <span class="mono">SCROLL</span><i></i>
+  </a>
+</section>
+
+<!-- ░░ MARQUEE ░░ -->
+<section class="marquee" aria-hidden="true">
+  <div class="marquee__band">
+    <div class="marquee__track">
+      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Pitch Matching</span><i>✦</i><span>Free Forever</span><i>✦</i>
+    </div>
+    <div class="marquee__track" aria-hidden="true">
+      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Pitch Matching</span><i>✦</i><span>Free Forever</span><i>✦</i>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ PRODUCTS ░░ -->
+<section class="products" id="products">
+  <div class="products__head">
+    <p class="kicker" data-reveal>THE PLUGINS</p>
+    <h2 data-reveal style="--d:.06s">Two tools. Zero cost.</h2>
+    <p data-reveal style="--d:.12s">Everything here is the full version — every amp, every verdict, every format. Pick one, or take both.</p>
+  </div>
+
+  <div class="prods">
+    <!-- Guitar Suite -->
+    <article class="prod" data-card data-reveal>
+      <span class="prod__edge" style="background:var(--gold)"></span>
+      <a class="prod__shot" href="guitar.html" aria-label="Explore the Guitar Suite">
+        <picture><source srcset="assets/img/amp-hero.webp" type="image/webp">
+          <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
+               alt="REMI DSP Guitar Suite — AC30 Top Boost amplifier panel"></picture>
+        <span class="prod__glare"></span>
+      </a>
+      <div class="prod__body">
+        <span class="prod__kicker" style="color:var(--gold)">NEURAL GUITAR RIG</span>
+        <h3>Guitar Suite</h3>
+        <p>Three amps captured from the real things, a pedalboard that reorders itself and a
+           studio strip that finishes the job — all on neural A2 captures, level-matched by construction.</p>
+        <div class="prod__meta">
+          <span class="chip mono">3 AMPS · 9 VOICES</span><span class="chip mono">PEDALBOARD</span><span class="chip mono">WIN · MAC</span>
+        </div>
+        <div class="prod__cta">
+          <a class="btn btn--amber" href="guitar.html" data-magnetic><span>Explore</span></a>
+          <a class="btn btn--ghost" href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-magnetic><span>Download</span></a>
+        </div>
+      </div>
+    </article>
+
+    <!-- Doppel -->
+    <article class="prod" data-card data-reveal style="--d:.1s">
+      <span class="prod__edge" style="background:var(--ice)"></span>
+      <a class="prod__shot" href="doppel.html" aria-label="Explore Doppel">
+        <picture><source srcset="assets/img/doppel-hero.webp" type="image/webp">
+          <img src="assets/img/doppel-hero.png" width="1920" height="960" loading="lazy"
+               alt="Doppel — guide, dub and aligned lanes with phrase sections and transient tethers"></picture>
+        <span class="prod__glare"></span>
+      </a>
+      <div class="prod__body">
+        <span class="prod__kicker" style="color:var(--ice)">VOCAL DOUBLE ALIGNMENT</span>
+        <h3>Doppel</h3>
+        <p>Lock doubles, stacks and ADR to the lead. A Wordfit-style timing engine, phrase
+           detection that flags skipped lines instead of smearing them, and a transient verdict on every onset.</p>
+        <div class="prod__meta">
+          <span class="chip mono">PHRASE DETECTION</span><span class="chip mono">ARA2</span><span class="chip mono">MACOS</span>
+        </div>
+        <div class="prod__cta">
+          <a class="btn btn--amber" href="doppel.html" data-magnetic><span>Explore</span></a>
+          <a class="btn btn--ghost" href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg" data-magnetic><span>Download</span></a>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+</main>
+
+<!-- ░░ FOOTER ░░ -->
+<footer class="footer">
+  <div class="footer__brand">
+    <span class="logo logo--footer">
+      <span class="logo__mark">
+        <span class="logo__script">Remi</span>
+        <svg class="logo__swash" viewBox="0 0 120 14" aria-hidden="true"><path d="M2 9 C 30 13, 78 13, 118 2" /></svg>
+      </span>
+      <span class="logo__sub">DSP</span>
+    </span>
+    <p class="footer__tag">Handmade plugins, given away.</p>
+  </div>
+  <div class="footer__cols">
+    <div><h4>Plugins</h4><a href="guitar.html">Guitar Suite</a><a href="doppel.html">Doppel</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Guitar (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Doppel (macOS)</a></div>
+    <div><h4>Formats</h4><a href="#products">Windows</a><a href="#products">macOS</a><a href="#products">VST3 &amp; AU</a></div>
+  </div>
+  <p class="footer__legal">
+    © <span id="year">2026</span> Francois de Klerk · REMI DSP. Built for players and producers. Free forever.<br>
+    <span class="footer__fine">REMI DSP is an independent free project.</span>
+  </p>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
