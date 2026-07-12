@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Free pro plugins</title>
-<meta name="description" content="REMI DSP — professional audio plugins. A neural guitar suite, Doppel the vocal double aligner, and Quell the dynamic resonance suppressor. Full versions, free to download for Windows and macOS." />
+<meta name="description" content="REMI DSP — professional audio plugins. A neural guitar suite, Doppel the vocal double aligner, Quell the dynamic resonance suppressor, and Contour the note-based vocal editor. Full versions, free to download for Windows and macOS." />
 <meta property="og:title" content="REMI DSP — Professional audio plugins" />
-<meta property="og:description" content="A neural guitar suite, Doppel the vocal double aligner, and Quell the dynamic resonance suppressor. Full professional plugins, free to download." />
+<meta property="og:description" content="A neural guitar suite, Doppel the vocal double aligner, Quell the dynamic resonance suppressor, and Contour the note-based vocal editor. Full professional plugins, free to download." />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://frankawesome.github.io/remidsp/assets/img/doppel-hero.png" />
 <link rel="icon" type="image/png" href="assets/img/icon-256.png" />
@@ -15,13 +15,13 @@
 <link rel="preload" href="assets/fonts/Dseg7.ttf" as="font" type="font/ttf" crossorigin />
 <link rel="stylesheet" href="css/style.css" />
 <style>
-:root{--ice:#9fd8e8}
+:root{--ice:#9fd8e8;--violet:#b48ee8}
 /* ── product showcase ── */
 .products{max-width:var(--maxw);margin:0 auto;padding:clamp(3rem,7vw,5.5rem) var(--pad) clamp(5rem,10vw,8rem)}
 .products__head{max-width:40em;margin-bottom:clamp(2.4rem,5vw,3.6rem)}
 .products__head h2{margin-bottom:1rem}
 .products__head p{color:var(--muted);font-size:1.1rem}
-.prods{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(1.4rem,3vw,2.2rem)}
+.prods{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(1.4rem,3vw,2.2rem)}
 @media (max-width:1080px){.prods{grid-template-columns:repeat(2,1fr)}}
 .prod{position:relative;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:20px;
   overflow:hidden;background:linear-gradient(180deg,var(--panel-2),var(--panel));
@@ -91,6 +91,7 @@
     <a href="guitar.html" data-scramble>Guitar Suite</a>
     <a href="doppel.html" data-scramble>Doppel</a>
     <a href="quell.html" data-scramble>Quell</a>
+    <a href="contour.html" data-scramble>Contour</a>
   </nav>
   <a href="#products" class="btn btn--amber nav__cta" data-magnetic><span>Get the plugins</span></a>
 </header>
@@ -109,14 +110,15 @@
       <span class="line"><span data-reveal-line class="hero__free" style="--d:.16s">Free.</span></span>
     </h1>
     <p class="hero__lede" data-reveal style="--d:.3s">
-      A neural guitar rig, a vocal double aligner and a dynamic resonance suppressor — three
-      full professional plugins for Windows and macOS. Every feature, every format, free to
-      download. No account required.
+      A neural guitar rig, a vocal double aligner, a dynamic resonance suppressor and a
+      note-based vocal editor — four professional plugins for Windows and macOS. Every
+      feature, every format, free to download. No account required.
     </p>
     <div class="hero__cta" data-reveal style="--d:.42s">
       <a href="guitar.html" class="btn btn--amber btn--lg" data-magnetic><span>Guitar Suite</span></a>
       <a href="doppel.html" class="btn btn--ghost btn--lg" data-magnetic><span>Doppel</span></a>
       <a href="quell.html" class="btn btn--ghost btn--lg" data-magnetic><span>Quell</span></a>
+      <a href="contour.html" class="btn btn--ghost btn--lg" data-magnetic><span>Contour</span></a>
       <span class="hero__formats mono">WINDOWS&nbsp;·&nbsp;MACOS&nbsp;·&nbsp;VST3&nbsp;·&nbsp;AU</span>
     </div>
     <p class="hero__note mono" data-reveal style="--d:.52s">FREE DOWNLOAD · NO ACCOUNT REQUIRED</p>
@@ -131,10 +133,10 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Resonance Suppression</span><i>✦</i><span>Unmasking</span><i>✦</i><span>Windows &amp; macOS</span><i>✦</i>
+      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Resonance Suppression</span><i>✦</i><span>Unmasking</span><i>✦</i><span>Vocal Editing</span><i>✦</i><span>Pitch Contours</span><i>✦</i><span>Windows &amp; macOS</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Resonance Suppression</span><i>✦</i><span>Unmasking</span><i>✦</i><span>Windows &amp; macOS</span><i>✦</i>
+      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Resonance Suppression</span><i>✦</i><span>Unmasking</span><i>✦</i><span>Vocal Editing</span><i>✦</i><span>Pitch Contours</span><i>✦</i><span>Windows &amp; macOS</span><i>✦</i>
     </div>
   </div>
 </section>
@@ -143,8 +145,8 @@
 <section class="products" id="products">
   <div class="products__head">
     <p class="kicker" data-reveal>THE PLUGINS</p>
-    <h2 data-reveal style="--d:.06s">Three tools. Zero cost.</h2>
-    <p data-reveal style="--d:.12s">Everything here is the full version — every amp, every verdict, every band, every format. Pick one, or take all three.</p>
+    <h2 data-reveal style="--d:.06s">Four tools. Zero cost.</h2>
+    <p data-reveal style="--d:.12s">Everything here is the full version — every amp, every verdict, every band, every note. Pick one, or take all four.</p>
   </div>
 
   <div class="prods">
@@ -220,6 +222,30 @@
         </div>
       </div>
     </article>
+
+    <!-- Contour -->
+    <article class="prod" data-card data-reveal style="--d:.3s">
+      <span class="prod__edge" style="background:var(--violet)"></span>
+      <a class="prod__shot" href="contour.html" aria-label="Explore Contour">
+        <picture><source srcset="assets/img/contour-hero.webp" type="image/webp">
+          <img src="assets/img/contour-hero.png" width="1920" height="959" loading="lazy"
+               alt="Contour — a vocal take drawn as a violet ribbon across a piano-roll stage with a scale-aware pitch grid"></picture>
+        <span class="prod__glare"></span>
+      </a>
+      <div class="prod__body">
+        <span class="prod__kicker" style="color:var(--violet)">NOTE-BASED VOCAL EDITOR</span>
+        <h3>Contour</h3>
+        <p>Your vocal on a piano roll — pitch, drift, vibrato, formants and timing as notes
+           you can hold. The stage and ARA2 foundation are here now; the note engine lands as free updates.</p>
+        <div class="prod__meta">
+          <span class="chip mono">PIANO-ROLL STAGE</span><span class="chip mono">ARA2</span><span class="chip mono">EARLY ACCESS · MAC</span>
+        </div>
+        <div class="prod__cta">
+          <a class="btn btn--amber" href="contour.html" data-magnetic><span>Explore</span></a>
+          <a class="btn btn--ghost" href="https://github.com/frankAwesome/remidsp/releases/latest/download/Contour-macOS.pkg" data-magnetic><span>Download</span></a>
+        </div>
+      </div>
+    </article>
   </div>
 </section>
 
@@ -238,8 +264,8 @@
     <p class="footer__tag">Professional audio plugins.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Plugins</h4><a href="guitar.html">Guitar Suite</a><a href="doppel.html">Doppel</a><a href="quell.html">Quell</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Guitar (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Doppel (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Quell-macOS.pkg">Quell (macOS)</a></div>
+    <div><h4>Plugins</h4><a href="guitar.html">Guitar Suite</a><a href="doppel.html">Doppel</a><a href="quell.html">Quell</a><a href="contour.html">Contour</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Guitar (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Doppel (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Quell-macOS.pkg">Quell (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Contour-macOS.pkg">Contour (macOS)</a></div>
     <div><h4>Formats</h4><a href="#products">Windows</a><a href="#products">macOS</a><a href="#products">VST3 &amp; AU</a></div>
   </div>
   <p class="footer__legal">
