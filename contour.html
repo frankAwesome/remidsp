@@ -81,12 +81,12 @@
       <span class="line"><span data-reveal-line class="hero__free hero__free--contour" style="--d:.22s">note.</span></span>
     </h1>
     <p class="hero__lede" data-reveal style="--d:.3s">
-      Contour puts a recorded vocal on a piano roll — every note a blob you can hold.
-      pYIN pitch detection splits the take into notes with their pitch curves drawn
-      through them, and eight tools edit centre, vibrato, drift, formants, level and
-      timing — over <strong>ARA2</strong> or standalone. In early access now: the full
-      editor with edits previewed on the curves; the audio render engine is in active
-      development, and every update is free.
+      Contour draws the pitch line as the star — every wobble and vibrato cycle at
+      full resolution, weighted by the voice's level, with notes as quiet glass
+      handles underneath. Eight tools shape the line, and the one-knob
+      <strong>Auto-Tune</strong> goes from gentle correction to fully locked
+      hard-tune — over <strong>ARA2</strong> or standalone. Early access: edits
+      preview on the curves; the audio render engine is in active development.
     </p>
     <div class="hero__cta" data-reveal style="--d:.42s">
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
@@ -104,7 +104,7 @@
         <picture>
           <source srcset="assets/img/contour-hero.webp" type="image/webp">
           <img src="assets/img/contour-hero.png" width="1920" height="959" fetchpriority="high"
-               alt="The Contour plugin window — a vocal analysed into violet note blobs on a piano-roll stage, pitch curves running through each note, with the eight-tool rail on the control deck." />
+               alt="The Contour plugin window — the vocal drawn as luminous pitch lines on a piano-roll stage, every vibrato cycle visible, notes as quiet glass capsules." />
         </picture>
         <div class="hero__glare"></div>
       </div>
@@ -125,10 +125,10 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Note Blobs</span><i>✦</i><span>Pitch Centre</span><i>✦</i><span>Drift</span><i>✦</i><span>Vibrato</span><i>✦</i><span>Formants</span><i>✦</i><span>Note Timing</span><i>✦</i><span>Scale Snap</span><i>✦</i><span>Sibilant-Safe</span><i>✦</i><span>ARA2</span><i>✦</i>
+      <span>The Pitch Line</span><i>✦</i><span>One-Knob Auto-Tune</span><i>✦</i><span>Pitch Centre</span><i>✦</i><span>Drift</span><i>✦</i><span>Vibrato</span><i>✦</i><span>Formants</span><i>✦</i><span>Note Timing</span><i>✦</i><span>Scale Snap</span><i>✦</i><span>Sibilant-Safe</span><i>✦</i><span>ARA2</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Note Blobs</span><i>✦</i><span>Pitch Centre</span><i>✦</i><span>Drift</span><i>✦</i><span>Vibrato</span><i>✦</i><span>Formants</span><i>✦</i><span>Note Timing</span><i>✦</i><span>Scale Snap</span><i>✦</i><span>Sibilant-Safe</span><i>✦</i><span>ARA2</span><i>✦</i>
+      <span>The Pitch Line</span><i>✦</i><span>One-Knob Auto-Tune</span><i>✦</i><span>Pitch Centre</span><i>✦</i><span>Drift</span><i>✦</i><span>Vibrato</span><i>✦</i><span>Formants</span><i>✦</i><span>Note Timing</span><i>✦</i><span>Scale Snap</span><i>✦</i><span>Sibilant-Safe</span><i>✦</i><span>ARA2</span><i>✦</i>
     </div>
   </div>
 </section>
@@ -159,22 +159,22 @@
     <picture>
       <source srcset="assets/img/contour-detail.webp" type="image/webp">
       <img src="assets/img/contour-detail.png" width="1512" height="592"
-           alt="Close-up of the Contour stage — selected note blobs with pitch curves, a ghost outline where a note was moved up a third, and a gold formant beam." />
+           alt="The Contour stage after one press of Auto-Tune — every pitch line snapped flat to its scale lane with dashed ghosts marking the original performance." />
     </picture>
   </div>
   <div class="studio__copy">
     <p class="kicker" data-reveal>THE STAGE</p>
-    <h2 data-reveal style="--d:.06s">Notes you can hold.</h2>
+    <h2 data-reveal style="--d:.06s">One knob. In key.</h2>
     <p data-reveal style="--d:.12s">
-      Every note sits on its pitch with its curve drawn through it — the blob is the
-      handle, the curve is the truth. Moved notes leave a ghost of the original, the
-      <strong class="tint-gold">gold beam</strong> is a formant shift, and the
-      <strong class="tint-violet">flattened curve</strong> is the vibrato tool at 0%.
-      Zoom X and Y independently, down to a single syllable.
+      This is one press of <strong class="tint-violet">Auto-Tune</strong> at 85%:
+      every note recut at its plateaus, snapped to the key, drift removed, wild
+      vibrato reined in — and a dashed ghost marking where each line used to be.
+      The <strong class="tint-gold">strength knob</strong> runs from gentle
+      correction to fully locked hard-tune. One knob, one press, undoable.
     </p>
     <div class="studio__chips" data-reveal style="--d:.2s">
-      <span class="chip mono">NOTE BLOBS</span><span class="chip mono">PITCH CURVES</span>
-      <span class="chip mono">GHOST ORIGINALS</span><span class="chip mono">X + Y ZOOM</span>
+      <span class="chip mono">STRENGTH 0–100%</span><span class="chip mono">PLATEAU RECUT</span>
+      <span class="chip mono">SCALE SNAP</span><span class="chip mono">HARD-TUNE ZONE</span>
     </div>
   </div>
 </section>
@@ -191,7 +191,7 @@
 
   <div class="specs__grid">
     <div class="feature" data-reveal><h3>Note detection — here now</h3><p>Full pYIN: beta-prior thresholding, Viterbi decoding and phase-based refinement hold steady tones inside 1.5 cents and an 80–880 Hz sweep under 5 — verified by a 25-test battery on synthetic and real vocals.</p></div>
-    <div class="feature" data-reveal style="--d:.06s"><h3>ARA2 foundation — here now</h3><p>Full ARA2 document lifecycle: model graph, archiving and sample-accurate playback rendering, validated against the ARA SDK test host and pluginval at maximum strictness.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><h3>One-knob Auto-Tune — here now</h3><p>Analyses every note and applies strength-scaled fixes: scale snap, drift removal, over-the-top vibrato taming and plateau recutting — up to fully locked hard-tune at 100%. Snap All pins the whole take to your key.</p></div>
     <div class="feature" data-reveal style="--d:.12s"><h3>Eight tools — here now</h3><p>Main, pitch, vibrato, drift, formant, level, time and cut — drag a blob, flatten a wobble, split a note, snap to scale. Undo everything. Edits preview on the curves today.</p></div>
     <div class="feature" data-reveal><h3>Centre + drift + vibrato</h3><p>Each note separates its centre, slow drift and vibrato so you correct one without flattening the others — and the micro-jitter that keeps a voice human is never touched.</p></div>
     <div class="feature" data-reveal style="--d:.06s"><h3>Audio render <span class="chip chip--soon mono">ROADMAP</span></h3><p>TD-PSOLA rendering of every edit back through the DAW — formant-true shifts, sibilant-safe timing, atomic plosives. The engine the tools are waiting for.</p></div>
@@ -225,7 +225,7 @@
         <li>Standalone, VST3 &amp; Audio Unit · ARA2</li>
         <li>pYIN note detection with pitch curves</li>
         <li>8 tools: pitch, vibrato, drift, formant, level, time, cut</li>
-        <li>12 keys, 9 scales, X+Y zoom, undo</li>
+        <li>One-knob Auto-Tune + Snap All · 12 keys, 9 scales</li>
         <li>Render engine in development · 44.1–96&nbsp;kHz</li>
       </ul>
     </article>
