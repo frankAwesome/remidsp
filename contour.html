@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Contour — note-based vocal editing, free | REMI DSP</title>
-<meta name="description" content="Contour — the free note-based vocal pitch & time editor, in early access. pYIN pitch detection draws your vocal as note blobs on a piano roll, with the full Melodyne-style tool set: pitch, vibrato, drift, formants, level, timing and cuts. ARA2 · VST3 / AU / Standalone · macOS." />
+<meta name="description" content="Contour — the free note-based vocal pitch & time editor, in early access. pYIN pitch detection draws your vocal as note blobs on a piano roll, with a full note-editing tool set: pitch, vibrato, drift, formants, level, timing and cuts — and a TD-PSOLA render engine that plays your edits back through the DAW. ARA2 · VST3 / AU / Standalone · macOS." />
 <meta property="og:title" content="Contour — note-based vocal editing. Free." />
 <meta property="og:description" content="Your vocal on a piano roll — pitch, vibrato, formants and timing as notes you can hold. Early access, free." />
 <meta property="og:type" content="website" />
@@ -85,8 +85,9 @@
       full resolution, weighted by the voice's level, with notes as quiet glass
       handles underneath. Eight tools shape the line, and the one-knob
       <strong>Auto-Tune</strong> goes from gentle correction to fully locked
-      hard-tune — over <strong>ARA2</strong> or standalone. Early access: edits
-      preview on the curves; the audio render engine is in active development.
+      hard-tune — over <strong>ARA2</strong> or standalone. Every edit renders
+      through the <strong>TD-PSOLA engine</strong> and plays back in your DAW,
+      with bit-exact passthrough wherever you didn't touch the take.
     </p>
     <div class="hero__cta" data-reveal style="--d:.42s">
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
@@ -192,9 +193,9 @@
   <div class="specs__grid">
     <div class="feature" data-reveal><h3>Note detection — here now</h3><p>Full pYIN: beta-prior thresholding, Viterbi decoding and phase-based refinement hold steady tones inside 1.5 cents and an 80–880 Hz sweep under 5 — verified by a 25-test battery on synthetic and real vocals.</p></div>
     <div class="feature" data-reveal style="--d:.06s"><h3>One-knob Auto-Tune — here now</h3><p>Analyses every note and applies strength-scaled fixes: scale snap, drift removal, over-the-top vibrato taming and plateau recutting — up to fully locked hard-tune at 100%. Snap All pins the whole take to your key.</p></div>
-    <div class="feature" data-reveal style="--d:.12s"><h3>Eight tools — here now</h3><p>Main, pitch, vibrato, drift, formant, level, time and cut — drag a blob, flatten a wobble, split a note, snap to scale. Undo everything. Edits preview on the curves today.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><h3>Eight tools — here now</h3><p>Main, pitch, vibrato, drift, formant, level, time and cut — drag a blob, flatten a wobble, split a note, snap to scale. Undo everything. Every edit is audible on the next playback pass.</p></div>
     <div class="feature" data-reveal><h3>Centre + drift + vibrato</h3><p>Each note separates its centre, slow drift and vibrato so you correct one without flattening the others — and the micro-jitter that keeps a voice human is never touched.</p></div>
-    <div class="feature" data-reveal style="--d:.06s"><h3>Audio render <span class="chip chip--soon mono">ROADMAP</span></h3><p>TD-PSOLA rendering of every edit back through the DAW — formant-true shifts, sibilant-safe timing, atomic plosives. The engine the tools are waiting for.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><h3>Audio render — here now</h3><p>TD-PSOLA rendering of every edit back through the DAW: correlation-locked pitch marks, envelope-preserving overlap-add (no level pumping), formant-true shifts — and bit-exact passthrough outside edited notes, so breaths and consonants are never touched.</p></div>
     <div class="feature" data-reveal style="--d:.12s"><h3>Voice-first DSP <span class="chip chip--soon mono">ROADMAP</span></h3><p>PSOLA on voiced material, WSOLA on breath and sibilance, phase-locked vocoder fallback — routed by what the voice is doing at every instant, never one algorithm for everything.</p></div>
   </div>
 </section>
@@ -222,11 +223,11 @@
       <h3>In the box today</h3>
       <p class="dcard__req mono">V0.1 EARLY ACCESS · FREE UPDATES</p>
       <ul class="dcard__list">
-        <li>Standalone, VST3 &amp; Audio Unit · ARA2</li>
+        <li>Standalone, VST3 &amp; Audio Unit · ARA2 (REAPER, Logic, Studio One, Cubase)</li>
         <li>pYIN note detection with pitch curves</li>
         <li>8 tools: pitch, vibrato, drift, formant, level, time, cut</li>
         <li>One-knob Auto-Tune + Snap All · 12 keys, 9 scales</li>
-        <li>Render engine in development · 44.1–96&nbsp;kHz</li>
+        <li>TD-PSOLA render engine — edits play in your DAW · 44.1–96&nbsp;kHz</li>
       </ul>
     </article>
   </div>
