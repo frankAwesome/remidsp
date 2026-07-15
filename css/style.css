@@ -333,9 +333,11 @@ em{font-style:normal;color:var(--gold-hi)}
   transition:opacity .35s}
 .pcard:hover::after{opacity:1}
 /* Pedal shots are pre-cropped to just the pedal panel (no chain ribbon / header /
-   footer), so a plain cover-fit centres the pedal in the square card. */
-.pcard__img{position:relative;z-index:1;aspect-ratio:1/1;overflow:hidden}
-.pcard__img img{width:100%;height:100%;object-fit:cover;object-position:center}
+   footer). The card's image well matches the shot's native ratio so the whole
+   pedal shows at full width — no side crop — and the black plate blends any
+   sub-pixel letterbox into the card. */
+.pcard__img{position:relative;z-index:1;aspect-ratio:1920/907;overflow:hidden;background:#0a0a0b}
+.pcard__img img{width:100%;height:100%;object-fit:contain;object-position:center}
 .pcard__meta{position:relative;z-index:2;padding:1.3rem 1.6rem 1.7rem;border-top:1px solid var(--line);
   background:linear-gradient(180deg,rgba(5,5,6,.4),rgba(5,5,6,.75))}
 .pcard__no{font-size:.85rem;color:var(--tint);filter:brightness(1.5)}
@@ -445,6 +447,9 @@ em{font-style:normal;color:var(--gold-hi)}
 .download__head h2{margin-bottom:1rem}
 .download__head p{color:var(--muted);font-size:1.12rem;max-width:34em;margin:0 auto}
 .download__cards{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;text-align:left}
+/* Two-card layout (e.g. macOS + In the box while Windows is on hold): centre the
+   pair instead of leaving an empty third column. */
+.download__cards--pair{grid-template-columns:repeat(2,1fr);max-width:720px;margin-inline:auto}
 .dcard{position:relative;padding:2rem 1.8rem;border:1px solid var(--line);border-radius:20px;overflow:hidden;
   background:linear-gradient(180deg,var(--panel-2),var(--panel));display:flex;flex-direction:column;gap:.55rem;
   box-shadow:0 30px 70px -40px rgba(0,0,0,.9);--mx:50%;--my:20%}
