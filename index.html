@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Pro audio plugins</title>
-<meta name="description" content="REMI DSP — professional audio plugins. A neural guitar suite, Doppel the vocal double aligner, Quell the dynamic resonance suppressor, Contour the note-based vocal editor, and TruthMeter the honest bit-transparent mastering analyzer. In early access for Windows and macOS." />
+<meta name="description" content="REMI DSP — professional audio plugins. Maine the neural guitar suite, Doppel the vocal double aligner, Quell the dynamic resonance suppressor, Contour the note-based vocal editor, and TruthMeter the honest bit-transparent mastering analyzer. In early access for Windows and macOS." />
 <meta property="og:title" content="REMI DSP — Professional audio plugins" />
-<meta property="og:description" content="A neural guitar suite, Doppel the vocal double aligner, Quell the dynamic resonance suppressor, Contour the note-based vocal editor, and TruthMeter the honest mastering analyzer. Professional plugins in early access." />
+<meta property="og:description" content="Maine the neural guitar suite, Doppel the vocal double aligner, Quell the dynamic resonance suppressor, Contour the note-based vocal editor, and TruthMeter the honest mastering analyzer. Professional plugins in early access." />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://frankawesome.github.io/remidsp/assets/img/amp-hero.png" />
 <link rel="icon" type="image/png" href="assets/img/icon-256.png" />
@@ -38,9 +38,9 @@
 .prod__shot img{width:100%;height:100%;object-fit:cover;object-position:center top;
   transition:transform .8s var(--ease)}
 .prod:hover .prod__shot img{transform:scale(1.035)}
-/* Guitar shot is a 1.59:1 full-window grab; anchor the 2:1 crop to the bottom so
-   the amp + its control drawer stay in frame (only the generic top chrome trims). */
-.prod__shot--foot img{object-position:center bottom}
+/* Guitar shot is a 1.59:1 full-window grab. Frame the 2:1 crop so it runs from the
+   top of the plugin down to the amp's floor — the bottom control drawer stays out. */
+.prod__shot--foot img{object-position:center 24%}
 .prod__glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.12),transparent 40%);
   pointer-events:none}
 .prod__body{position:relative;z-index:2;padding:clamp(1.6rem,3vw,2.2rem);display:flex;flex-direction:column;gap:.7rem;flex:1}
@@ -88,7 +88,7 @@
   </a>
   <nav class="nav__links" aria-label="Primary">
     <a href="#products" data-scramble>Plugins</a>
-    <a href="guitar.html" data-scramble>Guitar Suite</a>
+    <a href="guitar.html" data-scramble>Maine</a>
     <a href="doppel.html" data-scramble>Doppel</a>
     <a href="quell.html" data-scramble>Quell</a>
     <a href="contour.html" data-scramble>Contour</a>
@@ -115,7 +115,7 @@
       for Windows and macOS, free while in early access. No account required.
     </p>
     <div class="hero__cta" data-reveal style="--d:.42s">
-      <a href="guitar.html" class="btn btn--amber btn--lg" data-magnetic><span>Guitar Suite</span></a>
+      <a href="guitar.html" class="btn btn--amber btn--lg" data-magnetic><span>Maine</span></a>
       <a href="doppel.html" class="btn btn--ghost btn--lg" data-magnetic><span>Doppel</span></a>
       <a href="quell.html" class="btn btn--ghost btn--lg" data-magnetic><span>Quell</span></a>
       <a href="contour.html" class="btn btn--ghost btn--lg" data-magnetic><span>Contour</span></a>
@@ -151,18 +151,18 @@
   </div>
 
   <div class="prods">
-    <!-- Guitar Suite -->
+    <!-- Maine (guitar suite) -->
     <article class="prod" data-card data-reveal>
       <span class="prod__edge" style="background:var(--gold)"></span>
-      <a class="prod__shot prod__shot--foot" href="guitar.html" aria-label="Explore the Guitar Suite">
+      <a class="prod__shot prod__shot--foot" href="guitar.html" aria-label="Explore Maine">
         <picture><source srcset="assets/img/amp-hero.webp" type="image/webp">
           <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
-               alt="REMI DSP Guitar Suite — AC30 Top Boost amplifier panel"></picture>
+               alt="REMI DSP Maine — AC30 Top Boost amplifier panel"></picture>
         <span class="prod__glare"></span>
       </a>
       <div class="prod__body">
         <span class="prod__kicker" style="color:var(--gold)">NEURAL GUITAR RIG</span>
-        <h3>Guitar Suite</h3>
+        <h3>Maine</h3>
         <p>Three amps captured from the real things, a pedalboard that reorders itself and a
            studio strip that finishes the job — all on neural A2 captures, level-matched by construction.</p>
         <div class="prod__meta">
@@ -287,7 +287,7 @@
     <p class="footer__tag">Professional audio plugins.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Plugins</h4><a href="guitar.html">Guitar Suite</a><a href="doppel.html">Doppel</a><a href="quell.html">Quell</a><a href="contour.html">Contour</a><a href="truthmeter.html">TruthMeter</a></div>
+    <div><h4>Plugins</h4><a href="guitar.html">Maine</a><a href="doppel.html">Doppel</a><a href="quell.html">Quell</a><a href="contour.html">Contour</a><a href="truthmeter.html">TruthMeter</a></div>
     <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Guitar (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Doppel (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Quell-macOS.pkg">Quell (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Contour-macOS.pkg">Contour (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/TruthMeter-macOS.pkg">TruthMeter (macOS)</a></div>
     <div><h4>Formats</h4><a href="#products">Windows</a><a href="#products">macOS</a><a href="#products">VST3 &amp; AU</a></div>
   </div>
