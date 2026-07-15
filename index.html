@@ -38,9 +38,11 @@
 .prod__shot img{width:100%;height:100%;object-fit:cover;object-position:center top;
   transition:transform .8s var(--ease)}
 .prod:hover .prod__shot img{transform:scale(1.035)}
-/* Guitar shot is a 1.59:1 full-window grab. Frame the 2:1 crop so it runs from the
-   top of the plugin down to the amp's floor — the bottom control drawer stays out. */
-.prod__shot--foot img{object-position:center 24%}
+/* Guitar shot is pre-cropped to header→amp floor (the control drawer is trimmed
+   off the source). Match the well to its 1920:1028 ratio so the whole thing shows
+   — logo at the top, amp floor at the bottom, nothing clipped. */
+.prod__shot--foot{aspect-ratio:1920/1028}
+.prod__shot--foot img{object-position:center top}
 .prod__glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.12),transparent 40%);
   pointer-events:none}
 .prod__body{position:relative;z-index:2;padding:clamp(1.6rem,3vw,2.2rem);display:flex;flex-direction:column;gap:.7rem;flex:1}
@@ -109,13 +111,13 @@ a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="tr
   <div class="hero__inner">
     <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;PROFESSIONAL&nbsp;PLUGINS</p>
     <h1 class="hero__title" data-reveal-lines>
-      <span class="line"><span data-reveal-line style="--d:.05s">Pro plugins.</span></span>
+      <span class="line"><span data-reveal-line style="--d:.05s">Your entire rig.</span></span>
       <span class="line"><span data-reveal-line class="hero__free" style="--d:.16s">Early access.</span></span>
     </h1>
     <p class="hero__lede" data-reveal style="--d:.3s">
-      A neural guitar rig, a vocal double aligner, a dynamic resonance suppressor, a
-      note-based vocal editor and an honest mastering analyzer — five professional plugins
-      for Windows and macOS, free while in early access. No account required.
+      Maine — three amplifiers captured from the real things, a pedalboard that reorders
+      itself and a studio strip that finishes the job. All on neural A2 captures,
+      level-matched by construction. Free on macOS while in early access. No account required.
     </p>
     <div class="hero__cta" data-reveal style="--d:.42s">
       <a href="guitar.html" class="btn btn--amber btn--lg" data-magnetic><span>Maine</span></a>
@@ -123,7 +125,7 @@ a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="tr
       <a href="quell.html" class="btn btn--ghost btn--lg" data-magnetic><span>Quell</span></a>
       <a href="contour.html" class="btn btn--ghost btn--lg" data-magnetic><span>Contour</span></a>
       <a href="truthmeter.html" class="btn btn--ghost btn--lg" data-magnetic><span>TruthMeter</span></a>
-      <span class="hero__formats mono">WINDOWS&nbsp;·&nbsp;MACOS&nbsp;·&nbsp;VST3&nbsp;·&nbsp;AU</span>
+      <span class="hero__formats mono">MACOS&nbsp;·&nbsp;VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;STANDALONE</span>
     </div>
     <p class="hero__note mono" data-reveal style="--d:.52s">EARLY ACCESS · NO ACCOUNT REQUIRED</p>
   </div>
@@ -137,10 +139,10 @@ a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="tr
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Resonance Suppression</span><i>✦</i><span>Unmasking</span><i>✦</i><span>Vocal Editing</span><i>✦</i><span>Pitch Contours</span><i>✦</i><span>Loudness &amp; True Peak</span><i>✦</i><span>Windows &amp; macOS</span><i>✦</i>
+      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Neural A2 Captures</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>20 Presets</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>Sauce Finalizer</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Vocal Alignment</span><i>✦</i><span>Phrase Detection</span><i>✦</i><span>Resonance Suppression</span><i>✦</i><span>Unmasking</span><i>✦</i><span>Vocal Editing</span><i>✦</i><span>Pitch Contours</span><i>✦</i><span>Loudness &amp; True Peak</span><i>✦</i><span>Windows &amp; macOS</span><i>✦</i>
+      <span>Neural Amps</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Neural A2 Captures</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>20 Presets</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>Sauce Finalizer</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
     </div>
   </div>
 </section>
@@ -148,9 +150,9 @@ a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="tr
 <!-- ░░ PRODUCTS ░░ -->
 <section class="products" id="products">
   <div class="products__head">
-    <p class="kicker" data-reveal>THE PLUGINS</p>
-    <h2 data-reveal style="--d:.06s">Five tools. One studio.</h2>
-    <p data-reveal style="--d:.12s">Every one is the full version — every amp, every verdict, every band, every note. Pick one, or take all five.</p>
+    <p class="kicker" data-reveal>THE RIG</p>
+    <h2 data-reveal style="--d:.06s">One rig. Every tone.</h2>
+    <p data-reveal style="--d:.12s">The full version — every amp, every pedal, every band. One download, no account. More plugins are on the way.</p>
   </div>
 
   <div class="prods">
@@ -159,7 +161,7 @@ a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="tr
       <span class="prod__edge" style="background:var(--gold)"></span>
       <a class="prod__shot prod__shot--foot" href="guitar.html" aria-label="Explore Maine">
         <picture><source srcset="assets/img/amp-hero.webp" type="image/webp">
-          <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
+          <img src="assets/img/amp-hero.png" width="1920" height="1028" loading="lazy"
                alt="REMI DSP Maine — Camden amplifier panel"></picture>
         <span class="prod__glare"></span>
       </a>
@@ -169,7 +171,7 @@ a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="tr
         <p>Three amps captured from the real things, a pedalboard that reorders itself and a
            studio strip that finishes the job — all on neural A2 captures, level-matched by construction.</p>
         <div class="prod__meta">
-          <span class="chip mono">3 AMPS · 9 VOICES</span><span class="chip mono">PEDALBOARD</span><span class="chip mono">WIN · MAC</span>
+          <span class="chip mono">3 AMPS · 9 VOICES</span><span class="chip mono">PEDALBOARD</span><span class="chip mono">MACOS</span>
         </div>
         <div class="prod__cta">
           <a class="btn btn--amber" href="guitar.html" data-magnetic><span>Explore</span></a>
@@ -291,8 +293,8 @@ a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="tr
   </div>
   <div class="footer__cols">
     <div><h4>Plugins</h4><a href="guitar.html">Maine</a><a href="doppel.html">Doppel</a><a href="quell.html">Quell</a><a href="contour.html">Contour</a><a href="truthmeter.html">TruthMeter</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Guitar (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Doppel-macOS.pkg">Doppel (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Quell-macOS.pkg">Quell (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/Contour-macOS.pkg">Contour (macOS)</a><a href="https://github.com/frankAwesome/remidsp/releases/latest/download/TruthMeter-macOS.pkg">TruthMeter (macOS)</a></div>
-    <div><h4>Formats</h4><a href="#products">Windows</a><a href="#products">macOS</a><a href="#products">VST3 &amp; AU</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Maine (macOS)</a></div>
+    <div><h4>Formats</h4><a href="#products">macOS</a><a href="#products">VST3 &amp; AU</a><a href="#products">Standalone</a></div>
   </div>
   <p class="footer__legal">
     © <span id="year">2026</span> Francois de Klerk · REMI DSP. Built for players and producers.<br>
