@@ -155,7 +155,7 @@ em{font-style:normal;color:var(--gold-hi)}
 .logo__img{height:34px;width:auto;display:block;
   filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))}
 .logo__word{font-family:var(--font-display);font-weight:600;font-size:.92rem;
-  letter-spacing:.34em;color:var(--text);padding-left:.06em}
+  letter-spacing:.34em;color:var(--text);padding-left:.06em;white-space:nowrap}
 .logo--footer{gap:.85rem}
 .logo--footer .logo__img{height:56px}
 .logo--footer .logo__word{font-size:1.18rem}
@@ -507,9 +507,15 @@ em{font-style:normal;color:var(--gold-hi)}
   .hero__eyebrow{letter-spacing:.28em;font-size:.62rem;margin-bottom:1.1rem}
   .hero__cta .btn{flex:1 1 44%}
   .nav{gap:.8rem}
+  /* Keep the header on one clean line: tighter wordmark + compact CTA. */
+  .logo__word{letter-spacing:.2em;font-size:.8rem}
+  .nav__cta{white-space:nowrap;font-size:.74rem;padding:.66rem 1rem;letter-spacing:.05em}
   .marquee__track span{font-size:1.6rem;padding:0 1rem}
   .statement__sub,.amps__panel p,.board__sub,.studio__copy > p{font-size:1rem}
 }
+/* Smallest phones: in the nav, the R-monogram alone carries the brand so the
+   header never wraps (the footer wordmark keeps its room). */
+@media (max-width:400px){ .nav .logo__word{display:none} }
 
 /* ════════ reduced motion — kill motion, collapse scroll pins ════════ */
 @media (prefers-reduced-motion:reduce){
