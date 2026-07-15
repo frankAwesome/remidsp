@@ -38,9 +38,9 @@
 .prod__shot img{width:100%;height:100%;object-fit:cover;object-position:center top;
   transition:transform .8s var(--ease)}
 .prod:hover .prod__shot img{transform:scale(1.035)}
-/* Guitar shot is pre-cropped to header→amp floor (the control drawer is trimmed
-   off the source). Match the well to its 1920:1028 ratio so the whole thing shows
-   — logo at the top, amp floor at the bottom, nothing clipped. */
+/* Guitar shot is the full 1920:1208 plugin window. Crop the well to 1920:1028 and
+   anchor to the top so the card runs from the header (logo) down to the amp's
+   floor — the bottom control drawer is cropped out. */
 .prod__shot--foot{aspect-ratio:1920/1028}
 .prod__shot--foot img{object-position:center top}
 .prod__glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.12),transparent 40%);
@@ -161,7 +161,7 @@ a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="tr
       <span class="prod__edge" style="background:var(--gold)"></span>
       <a class="prod__shot prod__shot--foot" href="guitar.html" aria-label="Explore Maine">
         <picture><source srcset="assets/img/amp-hero.webp" type="image/webp">
-          <img src="assets/img/amp-hero.png" width="1920" height="1028" loading="lazy"
+          <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
                alt="REMI DSP Maine — Camden amplifier panel"></picture>
         <span class="prod__glare"></span>
       </a>
