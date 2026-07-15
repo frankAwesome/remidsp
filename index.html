@@ -59,6 +59,9 @@
    cue would land on the CTA / marquee — hide it here; the tall product-page
    heroes keep theirs. */
 .home__hero .hero__scrollcue{display:none}
+/* Home screen shows only Maine for now — hide the other product cards + links. */
+.prods .prod ~ .prod{display:none}
+a[href$="doppel.html"],a[href$="quell.html"],a[href$="contour.html"],a[href$="truthmeter.html"]{display:none}
 </style>
 </head>
 <body>
@@ -157,7 +160,7 @@
       <a class="prod__shot prod__shot--foot" href="guitar.html" aria-label="Explore Maine">
         <picture><source srcset="assets/img/amp-hero.webp" type="image/webp">
           <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
-               alt="REMI DSP Maine — AC30 Top Boost amplifier panel"></picture>
+               alt="REMI DSP Maine — Camden amplifier panel"></picture>
         <span class="prod__glare"></span>
       </a>
       <div class="prod__body">
