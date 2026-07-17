@@ -273,12 +273,10 @@ em{font-style:normal;color:var(--gold-hi)}
 .rig__stage{position:relative;z-index:1;justify-self:end;width:100%;max-width:900px;
   margin-right:calc(-1 * var(--pad));
   display:flex;flex-direction:column;align-items:center}
-/* The amp name, huge and stroked, sitting behind the head it names. */
-.rig__word{position:absolute;z-index:0;top:44%;left:50%;transform:translate(-50%,-50%);
-  font-family:var(--font-display);font-weight:700;font-size:clamp(4rem,11vw,9.5rem);
-  letter-spacing:-.02em;line-height:1;white-space:nowrap;pointer-events:none;user-select:none;
-  color:transparent;-webkit-text-stroke:1px color-mix(in oklab,var(--amp-glow) 34%,transparent);
-  transition:-webkit-text-stroke-color 1.1s var(--ease)}
+/* NOTE: nothing hard-edged may sit behind the head. Baking black to alpha leaves
+   the body only ~0.8% fully opaque (alpha = max(r,g,b), so every dark pixel is
+   part-transparent) — a ghost wordmark behind it read straight through the
+   cabinet like a printing error. Soft radial light survives this; type does not. */
 /* isolate: the sheen's `overlay` must land on the heads inside this group, not
    on the page behind them. */
 .rig__amps{position:relative;z-index:1;width:100%;aspect-ratio:1672/941;isolation:isolate}
@@ -324,7 +322,6 @@ em{font-style:normal;color:var(--gold-hi)}
   /* drop the right-edge bleed: stacked, it just shoves the head off centre */
   .rig__stage{justify-self:center;width:100%;max-width:640px;margin-top:1.6rem;margin-right:0}
   .rig__glow{top:62%;right:50%;transform:translate(50%,-50%);width:min(120vw,760px)}
-  .rig__word{font-size:clamp(3.4rem,15vw,7rem)}
 }
 
 /* ════════ SHOWCASE — the single-product replacement for the card grid ════════ */
@@ -661,7 +658,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .cursor{display:none}
   /* the rig hero stops auto-cycling in JS; keep the tabs usable but instant */
   .rig__amp{transition:none!important;transform:none!important}
-  .rig__glow,.rig__word,.rig__voiceset span{transition:none!important}
+  .rig__glow,.rig__voiceset span{transition:none!important}
   .rig__sheen{display:none}
   /* the pinned amp + pedal scenes are scroll-driven; with the scroll loop off,
      collapse them to the same static tab/swipe views the mobile layout uses. */

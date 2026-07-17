@@ -37,23 +37,12 @@
      SCRAMBLE — mono/tech text shuffle (kickers once, nav on hover)
      ──────────────────────────────────────────────────────────── */
   const GLYPHS = "▮▯/\\_#01XZA";
-  // `text` re-targets the element at a NEW string (the rig word changes on every
-  // amp change). Without it the first run would cache the original forever and
-  // every later scramble would resolve back to the wrong name. Each run takes a
-  // generation token so a re-target supersedes an in-flight run instead of
-  // losing a race with it.
-  function scramble(el, dur = 620, text) {
-    if (reduce) return;
-    if (text === undefined && el.dataset.scrambling) return;   // hover re-entry
-    const original = text !== undefined
-      ? (el.dataset.orig = text)
-      : (el.dataset.orig || (el.dataset.orig = el.textContent));
-    const gen = String((+el.dataset.gen || 0) + 1);
-    el.dataset.gen = gen;
+  function scramble(el, dur = 620) {
+    if (reduce || el.dataset.scrambling) return;
+    const original = el.dataset.orig || (el.dataset.orig = el.textContent);
     el.dataset.scrambling = "1";
     const t0 = performance.now();
     (function frame(t) {
-      if (el.dataset.gen !== gen) return;                      // superseded
       const p = clamp((t - t0) / dur, 0, 1);
       const solved = Math.floor(p * original.length);
       let out = "";
@@ -360,11 +349,9 @@
     const sec = $(".rig"), stage = $("#rig");
     if (!sec || !stage) return { i: 0, live: false };
 
-    const word  = $("#rigWord");
     const amps  = $$(".rig__amp");
     const tabs  = $$("#rigTabs button");
     const vsets = $$(".rig__voiceset");
-    const NAMES = ["CAMDEN", "PORTLAND", "KATAHDIN"];
     // [halo, falloff] — pulled off each head: Camden's seafoam panel, Portland's
     // gold-on-marble, Katahdin's warm cherub carving.
     const GLOW  = [["#8fd8cf", "#4a8f96"], ["#e8c877", "#8f6f2e"], ["#e0a878", "#96552e"]];
@@ -389,7 +376,6 @@
       // the reel is held while the pointer is over the stage, so the mask never
       // changes mid-hover, and the sheen is invisible when it isn't.
       sec.style.setProperty("--amp-mask", `url("${amps[n].currentSrc || amps[n].src}")`);
-      if (word) { if (reduce) word.textContent = NAMES[n]; else scramble(word, 520, NAMES[n]); }
     }
 
     const stop = () => { clearInterval(timer); timer = 0; };
