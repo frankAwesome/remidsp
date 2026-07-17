@@ -1,0 +1,10 @@
+# REMI DSP
+# Unreleased product pages are withheld via <meta name="robots" content="noindex">
+# on the pages themselves, NOT by Disallow here. A Disallow would block crawling,
+# which would stop Google from ever *reading* the noindex — the page could then
+# still be listed as a bare URL. Let them be crawled so the noindex is obeyed.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://frankawesome.github.io/remidsp/sitemap.xml
