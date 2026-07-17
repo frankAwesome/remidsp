@@ -106,7 +106,11 @@
 </section>
 
 <!-- ░░ SHOWCASE — one product, so show the product ░░ -->
-<section class="showcase" id="plugin" data-bg="#07080c">
+<!-- data-product scopes every event fired inside this section to Maine. The
+     home page's <body> stays untagged on purpose, so a home visit is a
+     site-wide pageview, not a Maine one. A second plugin = a second section
+     with its own data-product; the analytics code does not change. -->
+<section class="showcase" id="plugin" data-bg="#07080c" data-product="maine">
   <div class="showcase__head">
     <p class="kicker" data-reveal>THE PLUGIN</p>
     <h2 data-reveal style="--d:.06s">One window.<br>The whole rig.</h2>
@@ -169,7 +173,7 @@
   </div>
   <div class="footer__cols">
     <div><h4>Maine</h4><a href="guitar.html">Overview</a><a href="guitar.html#amps">Amps</a><a href="guitar.html#board">Pedalboard</a><a href="guitar.html#studio">Studio strip</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg">Maine (macOS)</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-product="maine" data-placement="footer">Maine (macOS)</a></div>
     <div><h4>Formats</h4><a href="guitar.html#download">macOS</a><a href="guitar.html#download">VST3 &amp; AU</a><a href="guitar.html#download">Standalone</a></div>
   </div>
   <p class="footer__legal">
@@ -179,5 +183,8 @@
 </footer>
 
 <script src="js/main.js"></script>
+<!-- metrics: type=module so it can import Firebase from gstatic (no bundler
+     here); defer-by-default, so it never blocks the hero -->
+<script type="module" src="js/analytics.js"></script>
 </body>
 </html>

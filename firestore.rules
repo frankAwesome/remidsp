@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// REMI DSP — analytics rules
+//
+// The browser writes these collections unauthenticated, so the rules are the
+// only thing standing between a public endpoint and someone scripting your
+// bill upward. Posture: create-only, never readable, shape-validated, size-
+// capped. Reading or correcting events is console / Admin SDK work.
+//
+// Pair with App Check *enforced* (Firestore → Settings) once a reCAPTCHA key
+// is set in js/analytics.js — validation alone cannot stop a determined
+// scripter, it only stops a lazy one. See ANALYTICS.md.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function envelopeOk() {
+      let d = request.resource.data;
+      return d.schema is int && d.schema > 0 && d.schema <= 10
+        // serverTimestamp() only — a client cannot backdate or forge an event
+        && d.ts == request.time
+        && d.session is string && d.session.size() <= 64
+        && (d.product == null || (d.product is string && d.product.size() <= 40))
+        && d.page is map && d.page.size() <= 8
+        && d.device is map && d.device.size() <= 16
+        && d.geo is map && d.geo.size() <= 8
+        && d.utm is map && d.utm.size() <= 8
+        // Structural guarantee, not a convention: no IP may ever be written.
+        // If someone later "just adds" one, the write fails instead of quietly
+        // turning this into personal data that needs a consent banner.
+        && !('ip' in d.geo) && !('ip' in d)
+        && d.size() <= 24;
+    }
+
+    function createOnly() {
+      return request.method == 'create' && envelopeOk();
+    }
+
+    match /pageviews/{id} {
+      allow create: if createOnly();
+      allow read, update, delete: if false;
+    }
+
+    match /downloads/{id} {
+      allow create: if createOnly()
+        && request.resource.data.asset is string
+        && request.resource.data.asset.size() <= 120;
+      allow read, update, delete: if false;
+    }
+
+    match /clicks/{id} {
+      allow create: if createOnly();
+      allow read, update, delete: if false;
+    }
+
+    // Everything else is closed. (This is already the default; stated so the
+    // intent survives the next person editing this file.)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

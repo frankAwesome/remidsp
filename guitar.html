@@ -16,7 +16,9 @@
 <link rel="preload" href="assets/img/amp-hero.webp" as="image" type="image/webp" fetchpriority="high" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<!-- data-product tags every event fired from this page. Adding a plugin =
+     a new page with its own data-product; no analytics code changes. -->
+<body data-product="maine">
 
 <!-- ░░ static backdrop (painted once — zero per-frame cost) ░░ -->
 <div class="bg" aria-hidden="true"><div class="bg__grain"></div></div>
@@ -393,5 +395,8 @@
 </footer>
 
 <script src="js/main.js"></script>
+<!-- metrics: type=module so it can import Firebase from gstatic (no bundler
+     here); defer-by-default, so it never blocks the hero -->
+<script type="module" src="js/analytics.js"></script>
 </body>
 </html>
