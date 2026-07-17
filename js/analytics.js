@@ -22,13 +22,13 @@
    Never throws into the page: a failed metric must never break the site.
    ══════════════════════════════════════════════════════════════ */
 import { initializeApp }
-  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
 import { getAnalytics, logEvent, setConsent }
-  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+  from "https://www.gstatic.com/firebasejs/12.16.0/firebase-analytics.js";
 import { initializeAppCheck, ReCaptchaV3Provider }
-  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app-check.js";
+  from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app-check.js";
 import { getFirestore, collection, addDoc, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
 /* ── config ─────────────────────────────────────────────────────
    Firebase web config is public by design — it identifies the project, it
