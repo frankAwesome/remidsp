@@ -93,8 +93,8 @@
     const LEDS = 26;
     for (let i = 0; i < LEDS; i++) ledsEl.appendChild(document.createElement("i"));
     const leds = [...ledsEl.children];
-    const lines = ["POWERING ON · NAM A2 ENGINE · 48K", "WARMING TUBES…",
-                   "LOADING A2 CAPTURES…", "LEVEL-MATCHING…", "ON AIR"];
+    const lines = ["POWERING ON · CAPTURE ENGINE · 48K", "WARMING TUBES…",
+                   "LOADING CAPTURES…", "LEVEL-MATCHING…", "ON AIR"];
     let li = 0;
     const lineTimer = setInterval(() => { lineEl.textContent = lines[li = (li + 1) % (lines.length - 1)]; }, 460);
 
