@@ -166,18 +166,6 @@ em{font-style:normal;color:var(--gold-hi)}
 .logo--footer .logo__img{height:56px}
 .logo--footer .logo__word{font-size:1.18rem}
 
-/* Product name beside the studio wordmark. Rule + tighter gap so it reads as
-   "REMI DSP — the studio | Maine — the product", not one long wordmark. Mixed
-   case against the tracked caps of the logo does that work visually. */
-.nav__product{font-family:var(--font-display);font-weight:500;font-size:1rem;
-  letter-spacing:.02em;color:var(--muted);white-space:nowrap;
-  margin-left:-1.25rem;padding-left:.85rem;border-left:1px solid var(--line);
-  transition:color .3s}
-.nav:hover .nav__product{color:var(--text)}
-@media (max-width:600px){
-  .nav__product{font-size:.9rem;margin-left:-1.4rem;padding-left:.65rem}
-}
-
 /* ════════ NAV ════════ */
 .nav{position:fixed;top:0;left:0;right:0;z-index:120;display:flex;align-items:center;gap:2rem;
   padding:1.05rem var(--pad);border-bottom:1px solid transparent;
