@@ -37,12 +37,23 @@
      SCRAMBLE — mono/tech text shuffle (kickers once, nav on hover)
      ──────────────────────────────────────────────────────────── */
   const GLYPHS = "▮▯/\\_#01XZA";
-  function scramble(el, dur = 620) {
-    if (reduce || el.dataset.scrambling) return;
-    const original = el.dataset.orig || (el.dataset.orig = el.textContent);
+  // `text` re-targets the element at a NEW string (the rig word changes on every
+  // amp change). Without it the first run would cache the original forever and
+  // every later scramble would resolve back to the wrong name. Each run takes a
+  // generation token so a re-target supersedes an in-flight run instead of
+  // losing a race with it.
+  function scramble(el, dur = 620, text) {
+    if (reduce) return;
+    if (text === undefined && el.dataset.scrambling) return;   // hover re-entry
+    const original = text !== undefined
+      ? (el.dataset.orig = text)
+      : (el.dataset.orig || (el.dataset.orig = el.textContent));
+    const gen = String((+el.dataset.gen || 0) + 1);
+    el.dataset.gen = gen;
     el.dataset.scrambling = "1";
     const t0 = performance.now();
     (function frame(t) {
+      if (el.dataset.gen !== gen) return;                      // superseded
       const p = clamp((t - t0) / dur, 0, 1);
       const solved = Math.floor(p * original.length);
       let out = "";
@@ -159,7 +170,10 @@
   const marqBand  = $(".marquee__band");
   const marqTracks= $$(".marquee__track");
 
-  const AMP_BGS   = ["#0e0906", "#0c0a05", "#05070d"];       // AC30 / Plexi / Heavy
+  // Camden / Portland / Katahdin — keyed to each head's own colour: Camden's
+  // cool seafoam, Portland's gold-on-marble, Katahdin's warm carving. Shared by
+  // the home rig hero and the Maine amps section, which show the same three amps.
+  const AMP_BGS   = ["#05090b", "#0b0906", "#0b0705"];
   const CARD_BGS  = ["#0d0a04", "#0a0712", "#04100f", "#060a12"]; // drive/chorus/delay/reverb
   const BASE_BG   = "#050506";
 
@@ -190,11 +204,12 @@
     if (marqTracks[0]) M.marqW = marqTracks[0].scrollWidth;
     // theme ranges: every [data-bg] section + amps + board
     M.ranges = [];
-    $$("[data-bg],.amps,.board").forEach(el => {
+    $$("[data-bg],.amps,.board,.rig").forEach(el => {
       M.ranges.push({ top: top(el), bot: top(el) + el.offsetHeight,
                       bg: el.dataset.bg || null,
                       kind: el.classList.contains("amps") ? "amps"
-                          : el.classList.contains("board") ? "board" : "flat" });
+                          : el.classList.contains("board") ? "board"
+                          : el.classList.contains("rig") ? "rig" : "flat" });
     });
     M.ranges.sort((a, b) => a.top - b.top);
   }
@@ -217,6 +232,7 @@
     for (const r of M.ranges) {
       if (mid < r.top || mid >= r.bot) continue;
       if (r.kind === "amps")  return AMP_BGS[clamp(Math.floor(ampP * 3), 0, 2)];
+      if (r.kind === "rig")   return AMP_BGS[clamp(rig.i, 0, 2)];   // page washes with the live head
       if (r.kind === "board") return mqWide.matches ? CARD_BGS[clamp(Math.floor(boardP * 4), 0, 3)] : BASE_BG;
       return r.bg;
     }
@@ -248,10 +264,12 @@
     if (stuck !== navStuck && nav) { nav.classList.toggle("is-stuck", stuck); navStuck = stuck; }
 
     if (!reduce) {
-      /* hero exit parallax — decorative trail, content-safe */
+      /* hero exit parallax — decorative trail, content-safe.
+         The home hero has no .hero__stage (it uses .rig__stage, which stays put
+         while the amp cycles), so guard rather than assume the pair exists. */
       if (y < M.hero && heroInner) {
         heroInner.style.transform = `translate3d(0,${(y * 0.16).toFixed(1)}px,0)`;
-        heroStage.style.transform = `translate3d(0,${(y * 0.08).toFixed(1)}px,0)`;
+        if (heroStage) heroStage.style.transform = `translate3d(0,${(y * 0.08).toFixed(1)}px,0)`;
       }
 
       /* statement fill — 1:1 with scroll */
@@ -332,6 +350,63 @@
       scrollTo({ top: M.ampsTop + M.ampsTravel * (i / 3 + 1 / 6), behavior: "smooth" });
     } else setAmpStage(i);
   }));
+
+  /* ────────────────────────────────────────────────────────────
+     THE RIG — home hero amp cycler. One source of truth for the
+     active head; everything else (glow, ghost word, tabs, voice
+     chips, page wash) reads off it.
+     ──────────────────────────────────────────────────────────── */
+  const rig = (() => {
+    const sec = $(".rig"), stage = $("#rig");
+    if (!sec || !stage) return { i: 0, live: false };
+
+    const word  = $("#rigWord");
+    const amps  = $$(".rig__amp");
+    const tabs  = $$("#rigTabs button");
+    const vsets = $$(".rig__voiceset");
+    const NAMES = ["CAMDEN", "PORTLAND", "KATAHDIN"];
+    // [halo, falloff] — pulled off each head: Camden's seafoam panel, Portland's
+    // gold-on-marble, Katahdin's warm cherub carving.
+    const GLOW  = [["#8fd8cf", "#4a8f96"], ["#e8c877", "#8f6f2e"], ["#e0a878", "#96552e"]];
+    const PERIOD = 5200;
+
+    const api = { i: 0, live: false };
+    let timer = 0, onScreen = false, held = false;
+
+    // seed the sheen mask for the head that ships active in the markup
+    if (amps[0]) sec.style.setProperty("--amp-mask", `url("${amps[0].currentSrc || amps[0].src}")`);
+
+    function set(n) {
+      n = ((n % amps.length) + amps.length) % amps.length;
+      if (n === api.i) return;
+      api.i = n;
+      amps .forEach((a, k) => a.classList.toggle("is-active", k === n));
+      vsets.forEach((v, k) => v.classList.toggle("is-active", k === n));
+      tabs .forEach((t, k) => { t.classList.toggle("is-active", k === n); t.setAttribute("aria-selected", k === n); });
+      sec.style.setProperty("--amp-glow",   GLOW[n][0]);
+      sec.style.setProperty("--amp-glow-2", GLOW[n][1]);
+      // Clip the specular sweep to this head's silhouette. Safe to swap outright:
+      // the reel is held while the pointer is over the stage, so the mask never
+      // changes mid-hover, and the sheen is invisible when it isn't.
+      sec.style.setProperty("--amp-mask", `url("${amps[n].currentSrc || amps[n].src}")`);
+      if (word) { if (reduce) word.textContent = NAMES[n]; else scramble(word, 520, NAMES[n]); }
+    }
+
+    const stop = () => { clearInterval(timer); timer = 0; };
+    const play = () => { stop(); if (!reduce && onScreen && !held) timer = setInterval(() => set(api.i + 1), PERIOD); };
+
+    tabs.forEach(btn => btn.addEventListener("click", () => { set(+btn.dataset.goto); play(); }));
+    // Hold the reel while the visitor is actually looking at a head.
+    stage.addEventListener("pointerenter", () => { held = true;  stop(); });
+    stage.addEventListener("pointerleave", () => { held = false; play(); });
+
+    new IntersectionObserver(es => es.forEach(e => {
+      onScreen = api.live = e.isIntersecting;
+      onScreen ? play() : stop();
+    }), { threshold: 0.15 }).observe(sec);
+
+    return api;
+  })();
 
   /* ────────────────────────────────────────────────────────────
      STATS — LED odometer count-up

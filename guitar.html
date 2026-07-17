@@ -170,10 +170,20 @@
     </div>
 
     <div class="amps__visual">
-      <div class="amps__frame" id="ampFrame" data-tilt>
-        <img class="amps__face is-active" src="assets/img/amp-ac30.webp"  width="1920" height="930" alt="Camden amp panel with VOICE selector" />
-        <img class="amps__face" src="assets/img/amp-plexi.webp" width="1920" height="930" alt="Portland amp panel with VOICE selector" loading="lazy" />
-        <img class="amps__face" src="assets/img/amp-heavy.webp" width="1920" height="930" alt="Katahdin amp panel with Katahdin Blue and Red voices" loading="lazy" />
+      <div class="amps__frame" id="ampFrame">
+        <!-- the faces live in their own wrapper so [data-tilt] rotates the whole
+             stack; it transforms firstElementChild, which used to be img[0] —
+             meaning tilt only ever moved Camden and died on the other two -->
+        <div class="amps__faces" data-tilt>
+          <div class="amps__facewrap">
+            <img class="amps__face is-active" src="assets/img/amp-head-camden.webp" width="1672" height="941"
+                 alt="Camden — a cream-and-gold amplifier head with a stained-glass front panel" />
+            <img class="amps__face" src="assets/img/amp-head-portland.webp" width="1672" height="941"
+                 alt="Portland — a marble amplifier head with a gold laurelled bust in relief" loading="lazy" />
+            <img class="amps__face" src="assets/img/amp-head-katahdin.webp" width="1672" height="941"
+                 alt="Katahdin — an amplifier head carved with baroque cherubs playing lutes" loading="lazy" />
+          </div>
+        </div>
       </div>
       <div class="amps__rail" aria-hidden="true"><span id="ampRail"></span></div>
       <p class="amps__railnote mono">ALL&nbsp;FULL-RIG&nbsp;A2&nbsp;CAPTURES&nbsp;·&nbsp;CAB&nbsp;BAKED&nbsp;IN</p>
