@@ -516,6 +516,17 @@ em{font-style:normal;color:var(--gold-hi)}
   .vu{display:none}
 }
 
+/* ════════ CAB ════════ */
+.cab{max-width:var(--maxw);margin:0 auto;
+  padding:clamp(3.5rem,8vw,6.5rem) var(--pad);text-align:center}
+.cab__copy{max-width:56ch;margin:0 auto}
+.cab__copy h2{margin-bottom:1rem}
+.cab__copy > p{color:var(--muted);font-size:1.06rem}
+.cab__media{position:relative;max-width:720px;margin:2.2rem auto 0;border-radius:14px;overflow:hidden;
+  border:1px solid var(--line);
+  box-shadow:0 40px 90px -42px rgba(0,0,0,.9),0 0 66px -30px rgba(150,165,185,.16)}
+.cab__media img{width:100%;display:block}
+
 /* ════════ ENGINE ════════ */
 .engine{position:relative;border-block:1px solid var(--line);background:var(--ink-2);
   padding:clamp(5.5rem,11vw,9rem) 0 clamp(5rem,10vw,8rem);overflow:clip}
