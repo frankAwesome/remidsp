@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Only pages that are live and indexable. Doppel/Quell/Contour/TruthMeter are
-     noindex until they ship; adding them here would ask Google to index pages
-     that tell it not to. -->
+<!-- Only pages that are live and indexable. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://remidsp.com/</loc>
