@@ -192,7 +192,7 @@ em{font-style:normal;color:var(--gold-hi)}
 .hero__inner{position:relative;z-index:2;max-width:640px}
 .hero__eyebrow{font-family:var(--font-display);font-weight:600;letter-spacing:.5em;font-size:.76rem;
   color:var(--gold);text-transform:uppercase;margin-bottom:1.6rem}
-/* sized so the longest line ("EARLY ACCESS.") holds one line in the copy column */
+/* sized so the longest line ("MADE TO PLAY.") holds one line in the copy column */
 .hero__title{text-transform:uppercase;font-size:clamp(3rem,7vw,6.4rem);letter-spacing:-.022em;
   line-height:.84;margin-bottom:1.7rem}
 .hero__title .line{display:block;overflow:hidden;padding-block:.03em}
