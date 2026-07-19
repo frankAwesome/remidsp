@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>404 — REMI DSP</title>
+<!-- GitHub Pages serves this with a real 404 status, so it will never be
+     indexed; the meta is belt-and-braces. Self-contained on purpose: a page
+     whose job is "something is missing" must not depend on anything else. -->
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#050506" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="icon" type="image/png" href="/assets/img/icon-256.png" />
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; place-items: center;
+    background: #050506; color: #f4f5f7;
+    font-family: "Helvetica Neue", -apple-system, system-ui, sans-serif;
+    text-align: center;
+  }
+  .code {
+    font-size: clamp(64px, 16vw, 160px); font-weight: 700;
+    letter-spacing: 0.06em; line-height: 1;
+    color: #16161b;
+    -webkit-text-stroke: 1px #3a3a42;
+  }
+  .note { margin: 18px 0 30px; color: #8f939c; font-size: 15px; letter-spacing: 0.04em; }
+  a.home {
+    display: inline-block; padding: 12px 26px;
+    border: 1px solid #27272d; border-radius: 8px;
+    color: #f4f5f7; text-decoration: none; font-size: 14px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    background: linear-gradient(#141419, #08080b);
+  }
+  a.home:hover { border-color: #8f939c; }
+</style>
+</head>
+<body>
+<main>
+  <div class="code">404</div>
+  <p class="note">This page isn&rsquo;t in the rack.</p>
+  <a class="home" href="/">Back to REMI&nbsp;DSP</a>
+</main>
+</body>
+</html>
