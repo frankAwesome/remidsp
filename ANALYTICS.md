@@ -3,9 +3,11 @@
 Three Firestore collections — `pageviews`, `downloads`, `clicks` — written
 straight from the browser. Cookieless and IP-free by design.
 
-**Nothing is recorded until you do the two console steps below.** Firestore is
-not yet enabled on the project, so every write currently fails (silently, by
-design — a metric must never break the page).
+**Status (2026-07-19): LIVE.** The database exists (created 2026-07-17,
+`nam5` US multi-region — permanent), the key-pinned rules and indexes are
+deployed, and an end-to-end browser write on remidsp.com was verified. Steps
+1–2 below are done and kept only as the record of how; step 3 (App Check) is
+the one worthwhile thing still open.
 
 ---
 
@@ -13,9 +15,8 @@ design — a metric must never break the page).
 
 ### 1. Enable Firestore  ← required, nothing works without it
 
-<https://console.firebase.google.com/project/remidsp-98208/firestore> → **Create
-database** → **Production mode** (rules below replace the default) → pick a
-region near your users and *note it down*: **the region is permanent.**
+Done — `(default)` database, `nam5`. (The console created it on the free
+Spark tier; note the *API* route needs billing enabled, so use the console.)
 
 ### 2. Publish the rules  ← required, the default rules block every write
 
@@ -37,7 +38,7 @@ writes against your quota. The rules cap shape and size, which stops casual
 abuse but not a determined script.
 
 1. Get a **reCAPTCHA v3** site key: <https://www.google.com/recaptcha/admin/create>
-   (type: reCAPTCHA v3, domain: `frankawesome.github.io`)
+   (type: reCAPTCHA v3, domain: `remidsp.com`)
 2. Firebase console → **App Check** → register the web app with that key
 3. Put the key in `js/analytics.js`:
    ```js

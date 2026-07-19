@@ -4,8 +4,13 @@ rules_version = '2';
 //
 // The browser writes these collections unauthenticated, so the rules are the
 // only thing standing between a public endpoint and someone scripting your
-// bill upward. Posture: create-only, never readable, shape-validated, size-
-// capped. Reading or correcting events is console / Admin SDK work.
+// bill upward. Posture: create-only, never readable, KEY-PINNED (every field
+// the client can send is enumerated; anything else is rejected), size-capped.
+// Reading or correcting events is console / Admin SDK work.
+//
+// These rules mirror js/analytics.js envelope() EXACTLY. If you add a field
+// there, add it here in the same commit or the write silently fails — send()
+// swallows errors by design (a metric must never break the page).
 //
 // Pair with App Check *enforced* (Firestore → Settings) once a reCAPTCHA key
 // is set in js/analytics.js — validation alone cannot stop a determined
@@ -14,22 +19,76 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // string of at most n, or null — nearly every envelope value is this shape
+    function sOrNull(v, n) {
+      return v == null || (v is string && v.size() <= n);
+    }
+    function numOrNull(v) {
+      return v == null || v is number;
+    }
+
+    function pageOk(p) {
+      return p is map
+        && p.keys().hasOnly(['path', 'title', 'referrer', 'host'])
+        && sOrNull(p.get('path', null), 300)
+        && sOrNull(p.get('title', null), 200)
+        && sOrNull(p.get('referrer', null), 300)
+        && sOrNull(p.get('host', null), 120);
+    }
+
+    function utmOk(u) {
+      return u is map
+        && u.keys().hasOnly(['source', 'medium', 'campaign', 'term', 'content'])
+        && sOrNull(u.get('source', null), 120)
+        && sOrNull(u.get('medium', null), 120)
+        && sOrNull(u.get('campaign', null), 120)
+        && sOrNull(u.get('term', null), 120)
+        && sOrNull(u.get('content', null), 120);
+    }
+
+    function deviceOk(d) {
+      return d is map
+        && d.keys().hasOnly(['ua', 'lang', 'platform', 'mobile', 'tz',
+                             'screenW', 'screenH', 'dpr', 'viewW', 'viewH'])
+        && sOrNull(d.get('ua', null), 400)
+        && sOrNull(d.get('lang', null), 20)
+        && sOrNull(d.get('platform', null), 60)
+        && d.get('mobile', false) is bool
+        && sOrNull(d.get('tz', null), 60)
+        && numOrNull(d.get('screenW', null)) && numOrNull(d.get('screenH', null))
+        && numOrNull(d.get('dpr', null))
+        && numOrNull(d.get('viewW', null)) && numOrNull(d.get('viewH', null));
+    }
+
+    // Structural guarantee, not a convention: no IP may ever be written. The
+    // key pin makes an 'ip' field impossible; if someone later "just adds"
+    // one, the write fails instead of quietly turning this into personal
+    // data that needs a consent banner.
+    function geoOk(g) {
+      return g is map
+        && g.keys().hasOnly(['country', 'countryName', 'region', 'city', 'tz'])
+        && sOrNull(g.get('country', null), 8)
+        && sOrNull(g.get('countryName', null), 80)
+        && sOrNull(g.get('region', null), 120)
+        && sOrNull(g.get('city', null), 120)
+        && sOrNull(g.get('tz', null), 60);
+    }
+
     function envelopeOk() {
       let d = request.resource.data;
       return d.schema is int && d.schema > 0 && d.schema <= 10
         // serverTimestamp() only — a client cannot backdate or forge an event
         && d.ts == request.time
+        && sOrNull(d.get('clientTs', null), 40)
         && d.session is string && d.session.size() <= 64
-        && (d.product == null || (d.product is string && d.product.size() <= 40))
-        && d.page is map && d.page.size() <= 8
-        && d.device is map && d.device.size() <= 16
-        && d.geo is map && d.geo.size() <= 8
-        && d.utm is map && d.utm.size() <= 8
-        // Structural guarantee, not a convention: no IP may ever be written.
-        // If someone later "just adds" one, the write fails instead of quietly
-        // turning this into personal data that needs a consent banner.
-        && !('ip' in d.geo) && !('ip' in d)
-        && d.size() <= 24;
+        && sOrNull(d.get('product', null), 40)
+        && pageOk(d.page) && utmOk(d.utm) && deviceOk(d.device) && geoOk(d.geo);
+    }
+
+    // Shared envelope keys every event carries.
+    function envelopeKeys() {
+      return ['schema', 'ts', 'clientTs', 'session', 'product',
+              'page', 'utm', 'device', 'geo'];
     }
 
     function createOnly() {
@@ -37,19 +96,37 @@ service cloud.firestore {
     }
 
     match /pageviews/{id} {
-      allow create: if createOnly();
+      allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['loadMs', 'entry']))
+        && numOrNull(request.resource.data.get('loadMs', null))
+        && request.resource.data.get('entry', false) is bool;
       allow read, update, delete: if false;
     }
 
     match /downloads/{id} {
       allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['asset', 'os', 'url', 'label',
+                                    'placement', 'channel']))
         && request.resource.data.asset is string
-        && request.resource.data.asset.size() <= 120;
+        && request.resource.data.asset.size() <= 120
+        && request.resource.data.os in ['macos', 'windows', 'linux', 'unknown']
+        && sOrNull(request.resource.data.get('url', null), 400)
+        && sOrNull(request.resource.data.get('label', null), 120)
+        && sOrNull(request.resource.data.get('placement', null), 40)
+        && request.resource.data.channel in ['github-releases', 'direct'];
       allow read, update, delete: if false;
     }
 
     match /clicks/{id} {
-      allow create: if createOnly();
+      allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['label', 'href', 'placement', 'kind']))
+        && sOrNull(request.resource.data.get('label', null), 120)
+        && sOrNull(request.resource.data.get('href', null), 400)
+        && sOrNull(request.resource.data.get('placement', null), 40)
+        && request.resource.data.kind in ['outbound', 'anchor', 'internal'];
       allow read, update, delete: if false;
     }
 
