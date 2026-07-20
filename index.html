@@ -4,10 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Maine, the all-in-one guitar rig</title>
-<meta name="description" content="REMI DSP — Maine, the all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself and a studio strip that finishes the job. No account required." />
+<meta name="description" content="Maine — REMI DSP's all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Level-matched by construction. VST3, AU & standalone on macOS. No account required." />
 <!-- Canonical earns its keep here: this page is reachable as remidsp.com/,
-     remidsp.com/index.html, and (via GitHub's redirect) the old project URL.
-     Without it those are duplicate content splitting one page's ranking. -->
+     remidsp.com/index.html, the retired /guitar.html (which now redirects
+     here), and (via GitHub's redirect) the old project URL. Without it those
+     are duplicate content splitting one page's ranking. -->
 <link rel="canonical" href="https://remidsp.com/" />
 <meta property="og:site_name" content="REMI DSP" />
 <meta property="og:locale" content="en_US" />
@@ -31,7 +32,7 @@
 <link rel="icon" type="image/png" href="assets/img/icon-256.png" />
 <link rel="apple-touch-icon" href="assets/img/icon-256.png" />
 <link rel="preload" href="assets/fonts/OswaldBold.ttf" as="font" type="font/ttf" crossorigin />
-<link rel="preload" href="assets/fonts/Yellowtail.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="assets/fonts/SpaceGroteskMedium.ttf" as="font" type="font/ttf" crossorigin />
 <link rel="preload" href="assets/fonts/Dseg7.ttf" as="font" type="font/ttf" crossorigin />
 <link rel="preload" href="assets/img/amp-head-camden.webp" as="image" type="image/webp" fetchpriority="high" />
 <link rel="stylesheet" href="css/style.css" />
@@ -65,19 +66,29 @@
       "applicationCategory": "MultimediaApplication",
       "applicationSubCategory": "Audio plugin",
       "operatingSystem": "macOS 11+",
-      "url": "https://remidsp.com/guitar.html",
+      "url": "https://remidsp.com/",
       "image": "https://remidsp.com/assets/img/og-card-maine.jpg",
-      "description": "An all-in-one guitar rig: three amplifiers captured from real, mic'd-up rigs, a reorderable pedalboard and a studio strip. VST3, Audio Unit and standalone.",
-      "publisher": { "@id": "https://remidsp.com/#org" },
-      "softwareVersion": "0.3.0"
+      "description": "An all-in-one guitar rig: three amplifiers captured from real, mic'd-up rigs, a pedalboard that reorders itself and a studio strip that finishes the job. Level-matched by construction.",
+      "softwareVersion": "0.3.0",
+      "featureList": [
+        "Three amplifiers, nine voices, captured from real, mic'd-up rigs",
+        "Ten-slot reorderable pedalboard",
+        "Console EQ and FET compressor studio strip",
+        "Strobe tuner accurate to a hundredth of a cent",
+        "Runs at 44.1–96 kHz"
+      ],
+      "publisher": { "@id": "https://remidsp.com/#org" }
     }
   ]
 }
 </script>
 </head>
-<body>
+<!-- One product, one page: data-product on <body> tags every event fired
+     anywhere on it as Maine's. A second plugin = its own page (or section)
+     with its own data-product; the analytics code does not change. -->
+<body data-product="maine">
 
-<!-- ░░ static backdrop ░░ -->
+<!-- ░░ static backdrop (painted once — zero per-frame cost) ░░ -->
 <div class="bg" aria-hidden="true"><div class="bg__grain"></div></div>
 
 <!-- ░░ fixed HUD chrome ░░ -->
@@ -86,20 +97,24 @@
   <div class="hud__corner hud__corner--tr"></div>
   <div class="hud__corner hud__corner--bl"></div>
   <div class="hud__corner hud__corner--br"></div>
-  <div class="hud__item hud__item--bl">REMI&nbsp;DSP&nbsp;·&nbsp;PRO&nbsp;AUDIO&nbsp;PLUGINS</div>
+  <div class="hud__item hud__item--bl">REMI&nbsp;DSP&nbsp;·&nbsp;MAINE&nbsp;·&nbsp;GUITAR&nbsp;RIG</div>
   <div class="hud__item hud__item--br"><span class="led" id="hudPct">000</span><span class="hud__pctsign">%</span></div>
 </div>
 <div class="scrollbar" aria-hidden="true"><span id="scrollFill"></span></div>
 
-<!-- ░░ custom cursor ░░ -->
-<div class="cursor" aria-hidden="true"><div class="cursor__dot"></div><div class="cursor__ring"></div></div>
-
 <!-- ░░ nav ░░ -->
 <header class="nav" id="nav">
-  <a href="index.html" class="logo" aria-label="REMI DSP — home">
+  <a href="#home" class="logo" aria-label="REMI DSP — home">
     <img class="logo__img" src="assets/img/logo-mark.png" width="42" height="34" alt="" />
     <span class="logo__word">REMI DSP</span>
   </a>
+  <nav class="nav__links" aria-label="Primary">
+    <a href="#amps" data-scramble>Amps</a>
+    <a href="#board" data-scramble>Pedalboard</a>
+    <a href="#studio" data-scramble>Studio</a>
+    <a href="#specs" data-scramble>Specs</a>
+  </nav>
+  <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download</span></a>
 </header>
 
 <main>
@@ -109,14 +124,29 @@
      amp's identity (glow, tab, voice chips, page wash) is driven off one
      --amp-glow custom property set by js/main.js. -->
 <section class="hero rig" id="home">
+  <canvas class="hero__strings" id="strings" aria-hidden="true"></canvas>
   <div class="rig__glow" aria-hidden="true"></div>
 
   <div class="hero__inner rig__copy">
     <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;MAINE&nbsp;·&nbsp;ALL-IN-ONE&nbsp;GUITAR&nbsp;RIG</p>
     <h1 class="hero__title" data-reveal-lines>
       <span class="line"><span data-reveal-line style="--d:.05s">Three amps.</span></span>
-      <span class="line"><span data-reveal-line style="--d:.16s">One window.</span></span>
+      <span class="line"><span data-reveal-line class="hero__free" style="--d:.14s">One window.</span></span>
     </h1>
+    <p class="hero__lede" data-reveal style="--d:.32s">
+      Three amplifiers captured from the real things. A pedalboard that reorders
+      itself. A studio strip that finishes the job. All of it
+      <strong>level-matched&nbsp;by&nbsp;construction</strong>, so your level never
+      jumps when you change amps.
+    </p>
+    <div class="hero__cta" data-reveal style="--d:.42s">
+      <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
+        <svg viewBox="0 0 24 24" class="btn__os" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg>
+        <span>Download for macOS</span>
+      </a>
+      <span class="hero__formats mono">VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;STANDALONE</span>
+    </div>
+    <p class="hero__note mono" data-reveal style="--d:.52s">NO ACCOUNT REQUIRED</p>
   </div>
 
   <div class="rig__stage" id="rig" data-card>
@@ -145,7 +175,7 @@
     </div>
   </div>
 
-  <a href="#plugin" class="hero__scrollcue" aria-label="Scroll down">
+  <a href="#capture" class="hero__scrollcue" aria-label="Scroll down">
     <span class="mono">SCROLL</span><i></i>
   </a>
 </section>
@@ -154,66 +184,358 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
     </div>
   </div>
 </section>
 
-<!-- ░░ SHOWCASE — one product, so show the product ░░ -->
-<!-- data-product scopes every event fired inside this section to Maine. The
-     home page's <body> stays untagged on purpose, so a home visit is a
-     site-wide pageview, not a Maine one. A second plugin = a second section
-     with its own data-product; the analytics code does not change. -->
-<section class="showcase" id="plugin" data-bg="#07080c" data-product="maine">
+<!-- ░░ STATEMENT — scroll-scrubbed fill ░░ -->
+<section class="statement" id="capture">
+  <h2 class="statement__big" id="fillText" aria-label="Not modeled. Captured.">
+    <span class="fill-line"><span class="fill-ghost">Not modeled.</span><span class="fill-ink" id="fillA">Not modeled.</span></span>
+    <span class="fill-line"><span class="fill-ghost fill-ghost--accent">Captured.</span><span class="fill-ink fill-ink--accent" id="fillB">Captured.</span></span>
+  </h2>
+  <p class="statement__sub" data-reveal>
+    Every sound in Maine is captured from a real, mic'd-up rig — the chime, the sag,
+    the way it stiffens under a hard pick and blooms when you back off. Not an
+    impression of an amplifier: a capture of <strong>that amplifier's own
+    behaviour</strong>, with the cab and the room it was recorded through.
+  </p>
+  <div class="statement__chips" data-reveal style="--d:.15s">
+    <span class="chip mono">CAPTURED FROM REAL RIGS</span>
+    <span class="chip mono">CAB BAKED IN</span>
+    <span class="chip mono">LEVEL-MATCHED BY CONSTRUCTION</span>
+  </div>
+</section>
+
+<!-- ░░ 01 · THE PLUGIN — one product, so show the product ░░ -->
+<section class="showcase" id="plugin" data-bg="#07080c">
+  <header class="shead" data-reveal>
+    <span class="shead__no led">01</span>
+    <p class="kicker">The Plugin</p>
+    <span class="shead__meta mono">MAINE&nbsp;v0.3.0&nbsp;·&nbsp;MACOS</span>
+  </header>
+
   <div class="showcase__head">
-    <p class="kicker" data-reveal>THE PLUGIN</p>
-    <h2 data-reveal style="--d:.06s">One window.<br>The whole rig.</h2>
-    <p data-reveal style="--d:.12s">
+    <h2 data-reveal>One window.<br>The whole rig.</h2>
+    <p data-reveal style="--d:.08s">
       Amp, pedalboard, studio strip and tuner — in one plugin, in any order you like.
       No account, no iLok, no per-amp upsell.
     </p>
   </div>
 
-  <div class="showcase__frame" data-reveal data-tilt>
-    <picture>
-      <source srcset="assets/img/amp-hero.webp" type="image/webp">
-      <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
-           alt="The Maine plugin window — the Camden amplifier head with its voice selector, the effects chain along the top and the capture readout below" />
-    </picture>
-    <span class="showcase__glare" aria-hidden="true"></span>
+  <div class="showcase__stage" data-reveal>
+    <div class="showcase__frame" data-tilt>
+      <picture>
+        <source srcset="assets/img/amp-hero.webp" type="image/webp">
+        <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
+             alt="The Maine plugin window — the Camden amplifier head with its voice selector, the effects chain along the top and the capture readout below" />
+      </picture>
+      <span class="showcase__glare" aria-hidden="true"></span>
+    </div>
+    <span class="bk bk--tl" aria-hidden="true"></span>
+    <span class="bk bk--tr" aria-hidden="true"></span>
+    <span class="bk bk--bl" aria-hidden="true"></span>
+    <span class="bk bk--br" aria-hidden="true"></span>
   </div>
   <p class="showcase__caption mono">MAINE&nbsp;v0.3.0&nbsp;—&nbsp;CAPTURE&nbsp;ENGINE&nbsp;·&nbsp;<span class="led">44.1–96</span>&nbsp;kHz</p>
+</section>
 
-  <div class="showcase__grid">
-    <article class="scell" data-reveal data-card>
-      <span class="scell__no led">01</span>
-      <h3>Three amps, nine voices</h3>
-      <p>Camden, Portland and Katahdin — each captured from a real, mic'd-up rig, cab baked in.</p>
+<!-- ░░ 02 · THE AMPLIFIERS — the whole lineup, side by side ░░
+     Deliberately NOT a switcher. The hero already does one-at-a-time; this
+     section's whole job is the opposite — every head and all nine voices on
+     screen together, so the "9 voices" claim is shown rather than asserted.
+     Hover solos a column (siblings dim); nothing is ever hidden behind a tab. -->
+<section class="lineup" id="amps" data-bg="#07080b">
+  <header class="shead" data-reveal>
+    <span class="shead__no led">02</span>
+    <p class="kicker">The Amplifiers</p>
+    <span class="shead__meta mono">CAPTURED&nbsp;FULL-RIG&nbsp;·&nbsp;CAB&nbsp;BAKED&nbsp;IN</span>
+  </header>
+
+  <div class="lineup__intro">
+    <h2 data-reveal>All three.<br>All at once.</h2>
+    <p data-reveal style="--d:.08s">
+      Nine voices across three heads, every one captured from a real, mic'd-up rig —
+      and <strong>level-matched to each other</strong>, so changing amps is a tone
+      change, never a volume jump.
+    </p>
+  </div>
+
+  <div class="lineup__row">
+    <article class="ampcol" style="--glow:#8fd8cf" data-reveal data-card>
+      <div class="ampcol__stage"><div class="ampcol__shot" data-tilt>
+        <img src="assets/img/amp-head-camden.webp" width="1672" height="941" loading="lazy"
+             alt="Camden — a cream-and-gold amplifier head with a stained-glass front panel" />
+      </div></div>
+      <div class="ampcol__meta">
+        <span class="ampcol__no led">01</span>
+        <h3>Camden</h3>
+        <p class="ampcol__tag mono">BRITISH CHIME</p>
+        <p class="ampcol__copy">The chime that built the British Invasion — and the
+           delay-soaked stadiums after it. One chimey British combo, pushed three ways.</p>
+        <ul class="ampcol__voices">
+          <li><span class="mono">01</span>Clean</li>
+          <li><span class="mono">02</span>Driven</li>
+          <li><span class="mono">03</span>Max</li>
+        </ul>
+      </div>
     </article>
-    <article class="scell" data-reveal style="--d:.06s" data-card>
-      <span class="scell__no led">02</span>
-      <h3>A board that reorders</h3>
-      <p>Ten slots, any order. Drag a block, rewire the rig — gate, comp, drive, delay, reverb and more.</p>
+
+    <article class="ampcol" style="--glow:#e8c877;--d:.08s" data-reveal data-card>
+      <div class="ampcol__stage"><div class="ampcol__shot" data-tilt>
+        <img src="assets/img/amp-head-portland.webp" width="1672" height="941" loading="lazy"
+             alt="Portland — a black tolex amplifier head with a gold control plate and brass corners" />
+      </div></div>
+      <div class="ampcol__meta">
+        <span class="ampcol__no led">02</span>
+        <h3>Portland</h3>
+        <p class="ampcol__tag mono">BRITISH CRUNCH</p>
+        <p class="ampcol__copy">Four voices in one head, from '60s jangle to hot-rodded
+           lead. Turn the voice, swap the stack underneath it.</p>
+        <ul class="ampcol__voices">
+          <li><span class="mono">01</span>Bloom</li>
+          <li><span class="mono">02</span>Chime</li>
+          <li><span class="mono">03</span>Thick</li>
+          <li><span class="mono">04</span>Lead</li>
+        </ul>
+      </div>
     </article>
-    <article class="scell" data-reveal style="--d:.12s" data-card>
-      <span class="scell__no led">03</span>
-      <h3>A studio strip on the end</h3>
-      <p>A console EQ into a FET compressor, so your tone lands finished instead of raw.</p>
-    </article>
-    <article class="scell" data-reveal style="--d:.18s" data-card>
-      <span class="scell__no led">04</span>
-      <h3>Level-matched by construction</h3>
-      <p>Switching amps never jumps your level. The captures are built that way.</p>
+
+    <article class="ampcol" style="--glow:#e0a878;--d:.16s" data-reveal data-card>
+      <div class="ampcol__stage"><div class="ampcol__shot" data-tilt>
+        <img src="assets/img/amp-head-katahdin.webp" width="1672" height="941" loading="lazy"
+             alt="Katahdin — an amplifier head carved with baroque cherubs playing lutes" />
+      </div></div>
+      <div class="ampcol__meta">
+        <span class="ampcol__no led">03</span>
+        <h3>Katahdin</h3>
+        <p class="ampcol__tag mono">MODERN HIGH-GAIN</p>
+        <p class="ampcol__copy">Two modern high-gain voices behind one perforated grille.
+           Tight lows, endless sustain — palm mutes that land like a dropped anvil.</p>
+        <ul class="ampcol__voices">
+          <li><span class="mono">01</span>Blue</li>
+          <li><span class="mono">02</span>Red</li>
+        </ul>
+      </div>
     </article>
   </div>
 
-  <!-- downloading lives on the Maine page; the home page only sends you there -->
-  <div class="showcase__cta" data-reveal>
-    <a class="btn btn--amber btn--lg" href="guitar.html" data-magnetic><span>Explore Maine</span></a>
-    <span class="mono">MACOS&nbsp;·&nbsp;VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;STANDALONE</span>
+  <p class="lineup__tally mono" data-reveal>
+    <span class="led">3</span>&nbsp;HEADS&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">9</span>&nbsp;VOICES&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">11</span>&nbsp;CAPTURES&nbsp;&nbsp;·&nbsp;&nbsp;ONE&nbsp;LEVEL
+  </p>
+</section>
+
+<!-- ░░ 03 · THE PEDALBOARD — horizontal rail ░░ -->
+<section class="board" id="board">
+  <div class="board__head">
+    <header class="shead" data-reveal>
+      <span class="shead__no led">03</span>
+      <p class="kicker">The Pedalboard</p>
+      <span class="shead__meta mono">10&nbsp;SLOTS&nbsp;·&nbsp;ANY&nbsp;ORDER</span>
+    </header>
+    <h2 data-reveal style="--d:.06s">A board that reorders itself.</h2>
+    <p class="board__sub" data-reveal style="--d:.12s">Ten slots, any order — drag a block, rewire the rig. Every pedal hand-drawn, photoreal, built from scratch.</p>
+  </div>
+  <div class="board__pin" id="boardPin">
+    <div class="board__viewport">
+      <div class="board__track" id="boardTrack">
+        <article class="pcard" style="--tint:#d2a43a" data-card>
+          <div class="pcard__img"><img src="assets/img/pedal.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Drive pedal — Victory! gold enclosure" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">01</span>
+            <h3>Drive</h3>
+            <p class="pcard__tag mono">DUAL CAPTURE</p>
+            <p>Two capture slots — a transparent overdrive and a mid-hump boost out of the box. Drop your own capture profiles straight in.</p>
+          </div>
+        </article>
+        <article class="pcard" style="--tint:#c9682c" data-card>
+          <div class="pcard__img"><img src="assets/img/chorus.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Chorus pedal — burnt-orange enclosure with WWII aviation artwork" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">02</span>
+            <h3>Chorus</h3>
+            <p class="pcard__tag mono">BBD ANALOG · MONO-SAFE STEREO</p>
+            <p>One chorus, modelled deep — a triangle LFO swings the bucket-brigade clock rather than the delay time, so the sweep leans the way real analog does, with companding and a touch of drift riding along. Mono-safe, stereo-wide, thick as paint.</p>
+          </div>
+        </article>
+        <article class="pcard" style="--tint:#3fa8a8" data-card>
+          <div class="pcard__img"><img src="assets/img/delay.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Delay — tape-warm echo with astronaut artwork" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">03</span>
+            <h3>Delay</h3>
+            <p class="pcard__tag mono">TAPE-WARM ECHO · A/B ENGINES</p>
+            <p>Dual engines in series or parallel, tempo-synced, with a GRIT knob that drives the repeats into beautiful decay — plus wet-only HP/LP to EQ the echoes, and a live tempo lamp whose two LEDs pulse out each engine's echo pattern.</p>
+          </div>
+        </article>
+        <article class="pcard" style="--tint:#5b8fd4" data-card>
+          <div class="pcard__img"><img src="assets/img/reverb.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Reverb — astronaut on the moon artwork" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">04</span>
+            <h3>Reverb</h3>
+            <p class="pcard__tag mono">ONE LUSH SPACE · 3-D</p>
+            <p>Early reflections into a 16-line modulated hall — three-dimensional, enveloping tails, a shimmer that actually blooms, opt-in ducking, and wet-only HP/LP to shape the tail.</p>
+          </div>
+        </article>
+        <article class="pcard" style="--tint:#a8402e" data-card>
+          <div class="pcard__img"><img src="assets/img/sauce.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Sauce — spectral finalizer with a live before/after analyser" /></div>
+          <div class="pcard__meta">
+            <span class="pcard__no led">05</span>
+            <h3>Sauce</h3>
+            <p class="pcard__tag mono">SPECTRAL FINALIZER</p>
+            <p>Tone shaping on steroids, with a live before/after spectrum analyser: a synthesized sub-harmonic for real low-end weight, a threshold-tracked high-end de-esser, transient PUNCH and a dynamic 3&nbsp;kHz de-harsh — watch every push and cut in real time.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+    <div class="board__progress" aria-hidden="true">
+      <span class="board__count led" id="boardCount">01</span>
+      <div class="board__bar"><span id="boardFill"></span></div>
+      <span class="board__count led">05</span>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ 04 · THE STUDIO STRIP ░░ -->
+<section class="studio" id="studio" data-bg="#060a10">
+  <div class="studio__media" data-reveal-wipe>
+    <img src="assets/img/studio.webp" width="1920" height="1208" loading="lazy"
+         alt="REMI DSP studio strip — REMI 4000 channel EQ and 2026 FET compressor" />
+  </div>
+  <div class="studio__copy">
+    <header class="shead" data-reveal>
+      <span class="shead__no led">04</span>
+      <p class="kicker">The Studio Strip</p>
+    </header>
+    <h2 data-reveal style="--d:.06s">Mix-ready, the moment you plug in.</h2>
+    <p data-reveal style="--d:.12s">
+      Your tone lands finished, not raw: a <strong>REMI&nbsp;4000</strong> console EQ —
+      E-series curves, 18&nbsp;dB/oct filter — into a <strong>2026&nbsp;FET</strong>
+      compressor with a live VU needle. The end of the chain, the start of a record.
+    </p>
+    <div class="studio__chips" data-reveal style="--d:.2s">
+      <span class="chip mono">4-BAND PARAMETRIC</span><span class="chip mono">18 dB/OCT HPF</span>
+      <span class="chip mono">4:1 — 20:1</span><span class="chip mono">PARALLEL MIX</span>
+    </div>
+    <div class="vu" data-reveal style="--d:.28s" aria-hidden="true">
+      <svg viewBox="0 0 200 110">
+        <path class="vu__arc" d="M25 95 A 85 85 0 0 1 175 95" />
+        <g class="vu__ticks" id="vuTicks"></g>
+        <line class="vu__needle" id="vuNeedle" x1="100" y1="98" x2="100" y2="26" />
+        <circle class="vu__pin" cx="100" cy="98" r="5" />
+      </svg>
+      <p class="mono vu__label">VU — SCROLL VELOCITY</p>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ 05 · THE CAB ░░ -->
+<section class="cab" id="cab">
+  <div class="cab__copy">
+    <header class="shead" data-reveal>
+      <span class="shead__no led">05</span>
+      <p class="kicker">The Cab</p>
+      <span class="shead__meta mono">IR&nbsp;LOADER</span>
+    </header>
+    <h2 data-reveal style="--d:.06s">Bring your own cabinet.</h2>
+    <p data-reveal style="--d:.12s">
+      A straight impulse-response loader — drop in <strong>any IR</strong> and set the
+      level. Nothing baked on top, nothing coloured in the way: your cab, exactly as
+      captured.
+    </p>
+  </div>
+  <div class="cab__media" data-reveal-wipe>
+    <img src="assets/img/cab.webp" width="1600" height="857" loading="lazy"
+         alt="REMI DSP cab — impulse-response loader with a blue-grey grille cabinet" />
+  </div>
+</section>
+
+<!-- ░░ 06 · SPECIFICATIONS ░░ -->
+<section class="specs" id="specs">
+  <header class="shead" data-reveal>
+    <span class="shead__no led">06</span>
+    <p class="kicker">Specifications</p>
+    <span class="shead__meta mono">44.1–96&nbsp;kHz&nbsp;·&nbsp;MACOS&nbsp;11+</span>
+  </header>
+
+  <div class="specs__stats" data-reveal>
+    <div class="stat"><span class="stat__num led" data-count="3">0</span><span class="stat__label">Amplifiers</span></div>
+    <div class="stat"><span class="stat__num led" data-count="9">0</span><span class="stat__label">Amp voices</span></div>
+    <div class="stat"><span class="stat__num led" data-count="11">0</span><span class="stat__label">Captures</span></div>
+    <div class="stat"><span class="stat__num led" data-count="21">0</span><span class="stat__label">Presets</span></div>
+  </div>
+
+  <div class="specs__grid">
+    <div class="feature" data-reveal><span class="feature__no mono">01</span><h3>Ten slots, any order</h3><p>Gate, comp, drive, amp, cab, sauce, studio, chorus, delay, reverb — drag any block anywhere in the chain.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><span class="feature__no mono">02</span><h3>A reverb with depth</h3><p>Early reflections into a 16-line modulated hall — three-dimensional, enveloping tails with a shimmer that actually blooms.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><span class="feature__no mono">03</span><h3>The "Sauce" finalizer</h3><p>Tone shaping on steroids on a live before/after analyser — a synthesized sub-harmonic, a threshold-tracked high-end de-esser, transient punch and a dynamic de-harsh.</p></div>
+    <div class="feature" data-reveal><span class="feature__no mono">04</span><h3>A tuner that locks</h3><p>Strobe-accurate to a hundredth of a cent, and it tracks a soft note through hiss — the modern low-volume lock.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><span class="feature__no mono">05</span><h3>Any sample rate</h3><p>44.1, 48, 88.2, 96&nbsp;kHz — the amp captures resample to their trained rate and every effect follows the host. No 48k lock-in.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><span class="feature__no mono">06</span><h3>A gate that hunts hum</h3><p>Phase-locked 50/60&nbsp;Hz harmonic tracking kills single-coil buzz without eating your tails.</p></div>
+    <div class="feature" data-reveal><span class="feature__no mono">07</span><h3>Presets are files</h3><p>Every preset is a JSON file. Drop one in a folder and it appears in the menu — the folder <em>is</em> the menu.</p></div>
+    <div class="feature" data-reveal style="--d:.06s"><span class="feature__no mono">08</span><h3>Auto cab sense</h3><p>Full-rig captures bypass the cab by themselves; amp-only captures pull the right IR.</p></div>
+    <div class="feature" data-reveal style="--d:.12s"><span class="feature__no mono">09</span><h3>Quality on a dial</h3><p>One knob trades detail against CPU — full fidelity in the studio, featherweight on stage.</p></div>
+  </div>
+</section>
+
+<!-- ░░ 07 · DOWNLOAD ░░ -->
+<section class="download" id="download">
+  <div class="download__ghost" aria-hidden="true">PLAY</div>
+  <header class="shead" data-reveal>
+    <span class="shead__no led">07</span>
+    <p class="kicker">Download</p>
+    <span class="shead__meta mono">FREE&nbsp;OF&nbsp;ACCOUNTS&nbsp;·&nbsp;FULL&nbsp;VERSION</span>
+  </header>
+  <div class="download__head" data-reveal>
+    <span class="badge mono">READY TO PLAY</span>
+    <h2>Grab your rig.</h2>
+    <p>Download, install, and plug in. No account required — the full version, every format.</p>
+  </div>
+
+  <!-- The closing shot: the plugin's own boot state — the Bloom Clean default
+       patch on the Portland head — rendered straight from the app, so it tracks
+       the shipping faceplate rather than a re-touched screenshot. -->
+  <div class="download__shot" data-reveal>
+    <div class="showcase__stage">
+      <div class="showcase__frame" data-tilt>
+        <picture>
+          <source srcset="assets/img/amp-window-portland.webp" type="image/webp">
+          <img src="assets/img/amp-window-portland.png" width="1920" height="1208" loading="lazy"
+               alt="The Maine plugin window on its Bloom Clean patch — the Portland head in black tolex and gold, the effects chain along the top and the portland_bloom capture loaded below" />
+        </picture>
+        <span class="showcase__glare" aria-hidden="true"></span>
+      </div>
+      <span class="bk bk--tl" aria-hidden="true"></span>
+      <span class="bk bk--tr" aria-hidden="true"></span>
+      <span class="bk bk--bl" aria-hidden="true"></span>
+      <span class="bk bk--br" aria-hidden="true"></span>
+    </div>
+    <p class="showcase__caption mono">PORTLAND&nbsp;·&nbsp;BLOOM&nbsp;—&nbsp;THE&nbsp;WHOLE&nbsp;RIG&nbsp;IN&nbsp;ONE&nbsp;WINDOW</p>
+  </div>
+
+  <div class="download__cards download__cards--pair">
+    <article class="dcard" data-reveal data-card>
+      <div class="dcard__os"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg></div>
+      <h3>macOS</h3>
+      <p class="dcard__req mono">MACOS 11+ · INTEL &amp; APPLE SILICON</p>
+      <a class="btn btn--amber dcard__btn" href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-magnetic><span>Download installer</span></a>
+      <p class="dcard__note">One installer · App <strong>+</strong> AU <strong>+</strong> VST3</p>
+    </article>
+
+    <article class="dcard dcard--box" data-reveal style="--d:.16s" data-card>
+      <div class="dcard__os dcard__os--plug"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2v6m6-6v6M7 8h10v4a5 5 0 0 1-5 5 5 5 0 0 1-5-5zm5 9v5"/></svg></div>
+      <h3>In the box</h3>
+      <p class="dcard__req mono">NO ACCOUNT · NO SIGN-UP</p>
+      <ul class="dcard__list">
+        <li>Standalone, VST3 &amp; Audio Unit</li>
+        <li>3 amps · 9 voices · 11 captures</li>
+        <li>Pedalboard, studio strip &amp; the Sauce finalizer</li>
+        <li>20 usable-tone presets · strobe tuner</li>
+        <li>Runs at 44.1–96&nbsp;kHz</li>
+      </ul>
+    </article>
   </div>
 </section>
 
@@ -226,17 +548,18 @@
       <img class="logo__img" src="assets/img/logo-mark.png" width="70" height="56" alt="" />
       <span class="logo__word">REMI DSP</span>
     </span>
-    <p class="footer__tag">Professional audio plugins.</p>
+    <p class="footer__tag">Maine — the all-in-one guitar rig.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Maine</h4><a href="guitar.html">Overview</a><a href="guitar.html#amps">Amps</a><a href="guitar.html#board">Pedalboard</a><a href="guitar.html#studio">Studio strip</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-product="maine" data-placement="footer">Maine (macOS)</a></div>
-    <div><h4>Formats</h4><a href="guitar.html#download">macOS</a><a href="guitar.html#download">VST3 &amp; AU</a><a href="guitar.html#download">Standalone</a></div>
+    <div><h4>Maine</h4><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a><a href="#specs">Specs</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a></div>
+    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">VST3 &amp; AU</a><a href="#download">Standalone</a></div>
   </div>
   <p class="footer__legal">
     © <span id="year">2026</span> REMI DSP. Built for players and producers.<br>
     <span class="footer__fine">REMI DSP is an independent audio studio.</span>
   </p>
+  <div class="footer__ghost" aria-hidden="true">REMI&nbsp;DSP</div>
 </footer>
 
 <script src="js/main.js"></script>

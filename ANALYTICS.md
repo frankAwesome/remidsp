@@ -99,8 +99,11 @@ counted, with the OS inferred. Link the installer and it counts.
 Link-level `data-product` beats page-level. `data-placement="footer"` overrides
 the inferred placement; `data-label` overrides the link text.
 
-The home page's `<body>` is deliberately **untagged** so a home visit is a
-site-wide pageview, not a Maine one.
+The site is a single page and Maine is its only product, so its `<body>` is
+tagged `data-product="maine"` — every pageview is a Maine pageview. (Pageviews
+from before the 2026-07 single-page merge carry `product: null` from the old
+untagged home page; treat null + "maine" as one series across that boundary.)
+A second plugin gets its own page or section with its own `data-product`.
 
 ---
 

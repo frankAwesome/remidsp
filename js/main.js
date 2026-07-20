@@ -142,13 +142,6 @@
   const heroStage = $(".hero__stage");
   const fillA     = $("#fillA"), fillB = $("#fillB");
   const stmt      = $(".statement");
-  const ampsSec   = $(".amps");
-  const ampFaces  = $$(".amps__face");
-  const ampPanels = $$(".amps__panel");
-  const ampTabs   = $$("#ampTabs button");
-  const ampIndex  = $("#ampIndex");
-  const ampRail   = $("#ampRail");
-  const ampFrame  = $("#ampFrame");
   const boardPin  = $("#boardPin");
   const boardTrack= $("#boardTrack");
   const boardFill = $("#boardFill");
@@ -160,14 +153,14 @@
   const marqTracks= $$(".marquee__track");
 
   // Camden / Portland / Katahdin — keyed to each head's own colour: Camden's
-  // cool seafoam, Portland's gold-on-black, Katahdin's warm carving. Shared by
-  // the home rig hero and the Maine amps section, which show the same three amps.
+  // cool seafoam, Portland's gold-on-black, Katahdin's warm carving. The hero
+  // reel washes the page with whichever head is live.
   const AMP_BGS   = ["#05090b", "#0b0906", "#0b0705"];
-  const CARD_BGS  = ["#0d0a04", "#0e0704", "#04100f", "#060a12"]; // drive/chorus/delay/reverb
+  const CARD_BGS  = ["#0d0a04", "#0e0704", "#04100f", "#060a12", "#0e0605"]; // drive/chorus/delay/reverb/sauce
   const BASE_BG   = "#050506";
 
   const M = { vh: 0, docH: 1, hero: 0, stmtTop: 0, stmtH: 1,
-              ampsTop: 0, ampsTravel: 1, boardTop: 0, boardTravel: 1, boardDist: 0,
+              boardTop: 0, boardTravel: 1, boardDist: 0,
               ghostMid: 0, marqW: 1, ranges: [] };
 
   function measure() {
@@ -187,17 +180,15 @@
     M.docH   = document.documentElement.scrollHeight - M.vh;
     M.hero   = M.vh;
     if (stmt)    { M.stmtTop = top(stmt); M.stmtH = stmt.offsetHeight; }
-    if (ampsSec) { M.ampsTop = top(ampsSec); M.ampsTravel = ampsSec.offsetHeight - M.vh; }
     if (boardPin){ M.boardTop = top(boardPin); M.boardTravel = Math.max(1, boardPin.offsetHeight - M.vh); }
     if (ghost)   { const g = $(".download"); M.ghostMid = top(g) + g.offsetHeight / 2; }
     if (marqTracks[0]) M.marqW = marqTracks[0].scrollWidth;
-    // theme ranges: every [data-bg] section + amps + board
+    // theme ranges: every [data-bg] section + board + the hero reel
     M.ranges = [];
-    $$("[data-bg],.amps,.board,.rig").forEach(el => {
+    $$("[data-bg],.board,.rig").forEach(el => {
       M.ranges.push({ top: top(el), bot: top(el) + el.offsetHeight,
                       bg: el.dataset.bg || null,
-                      kind: el.classList.contains("amps") ? "amps"
-                          : el.classList.contains("board") ? "board"
+                      kind: el.classList.contains("board") ? "board"
                           : el.classList.contains("rig") ? "rig" : "flat" });
     });
     M.ranges.sort((a, b) => a.top - b.top);
@@ -210,31 +201,21 @@
      THE LOOP — one rAF for everything scroll/velocity-driven
      ──────────────────────────────────────────────────────────── */
   let lastY = scrollY, vel = 0, curBg = "", navStuck = null, lastPct = -1;
-  let ampStage = -1, lastBoardCount = "", marqX = 0, marqDir = -1;
+  let lastBoardCount = "", marqX = 0, marqDir = -1;
   let stringsOn = false;
 
   function setBg(bg) {
     if (bg && bg !== curBg) { document.body.style.backgroundColor = curBg = bg; }
   }
 
-  function themeAt(mid, ampP, boardP) {
+  function themeAt(mid, boardP) {
     for (const r of M.ranges) {
       if (mid < r.top || mid >= r.bot) continue;
-      if (r.kind === "amps")  return AMP_BGS[clamp(Math.floor(ampP * 3), 0, 2)];
       if (r.kind === "rig")   return AMP_BGS[clamp(rig.i, 0, 2)];   // page washes with the live head
-      if (r.kind === "board") return mqWide.matches ? CARD_BGS[clamp(Math.floor(boardP * 4), 0, 3)] : BASE_BG;
+      if (r.kind === "board") return mqWide.matches ? CARD_BGS[clamp(Math.floor(boardP * 5), 0, 4)] : BASE_BG;
       return r.bg;
     }
     return BASE_BG;
-  }
-
-  function setAmpStage(i) {
-    if (i === ampStage) return;
-    ampStage = i;
-    ampFaces.forEach((f, k) => f.classList.toggle("is-active", k === i));
-    ampPanels.forEach((p, k) => p.classList.toggle("is-active", k === i));
-    ampTabs.forEach((t, k) => { t.classList.toggle("is-active", k === i); t.setAttribute("aria-selected", k === i); });
-    if (ampIndex) ampIndex.textContent = pad(i + 1);
   }
 
   function frame(now) {
@@ -267,20 +248,6 @@
         const pA = clamp(p * 1.7, 0, 1), pB = clamp(p * 1.7 - 0.6, 0, 1);
         fillA.style.clipPath = `inset(0 ${((1 - pA) * 100).toFixed(2)}% 0 0)`;
         fillB.style.clipPath = `inset(0 ${((1 - pB) * 100).toFixed(2)}% 0 0)`;
-      }
-
-      /* amps channel switcher — live rect read (self-correcting vs layout shifts).
-         One getBoundingClientRect, read before any style write → no reflow thrash. */
-      let ampP = 0;
-      if (ampsSec && mqWide.matches) {
-        const r = ampsSec.getBoundingClientRect();
-        if (r.top < M.vh && r.bottom > 0) {              // section near/at view
-          ampP = clamp(-r.top / M.ampsTravel, 0, 1);
-          setAmpStage(clamp(Math.floor(ampP * 3), 0, 2));
-          if (ampRail)  ampRail.style.transform  = `scaleY(${ampP.toFixed(4)})`;
-          if (ampFrame) ampFrame.style.transform = `translate3d(0,${((0.5 - ampP) * 26).toFixed(1)}px,0)`;
-          if (ampIndex) ampIndex.style.transform = `translate3d(0,${(-50 + (0.5 - ampP) * 6).toFixed(1)}%,0) translateZ(0)`;
-        }
       }
 
       /* pedal rail — 1:1, live rect, with velocity skew */
@@ -316,12 +283,13 @@
         marqX = ((marqX % M.marqW) + M.marqW) % M.marqW;
         const tx = (-marqX).toFixed(1);
         marqTracks.forEach(t => t.style.transform = `translate3d(${tx}px,0,0)`);
+        // the band sits straight now — velocity only shears it, never tilts it
         if (marqBand) marqBand.style.transform =
-          `rotate(-1.6deg) scale(1.03) skewX(${clamp(vel * 0.05, -5, 5).toFixed(2)}deg)`;
+          `skewX(${clamp(vel * 0.05, -5, 5).toFixed(2)}deg)`;
       }
 
       /* theme morph */
-      setBg(themeAt(y + M.vh * 0.5, ampP, boardP));
+      setBg(themeAt(y + M.vh * 0.5, boardP));
 
       /* hero strings */
       if (stringsOn) strings.step(now);
@@ -329,16 +297,6 @@
 
     requestAnimationFrame(frame);
   }
-
-  /* ────────────────────────────────────────────────────────────
-     AMP TABS — click to jump (wide: scroll to stage; narrow: swap)
-     ──────────────────────────────────────────────────────────── */
-  ampTabs.forEach(btn => btn.addEventListener("click", () => {
-    const i = +btn.dataset.goto;
-    if (mqWide.matches && !reduce) {
-      scrollTo({ top: M.ampsTop + M.ampsTravel * (i / 3 + 1 / 6), behavior: "smooth" });
-    } else setAmpStage(i);
-  }));
 
   /* ────────────────────────────────────────────────────────────
      THE RIG — home hero amp cycler. One source of truth for the
@@ -415,23 +373,10 @@
   $$("[data-count]").forEach(el => statIO.observe(el));
 
   /* ────────────────────────────────────────────────────────────
-     POINTER KIT — cursor, magnetic, tilt, card spotlight
+     POINTER KIT — magnetic, tilt, card spotlight
+     (no custom cursor: the OS pointer stays native everywhere)
      ──────────────────────────────────────────────────────────── */
   if (finePtr && !reduce) {
-    document.body.classList.add("has-cursor");
-    const dot = $(".cursor__dot"), ring = $(".cursor__ring"), cursor = $(".cursor");
-    // Both follow directly in the pointer event (no rAF loop, no lerp). The ring's
-    // gentle "life" comes from a short CSS transform transition, and it no longer
-    // uses mix-blend-mode — that was repainting a blended region every move over
-    // the screenshots, which is what read as lag.
-    addEventListener("pointermove", e => {
-      const t = `translate(${e.clientX}px,${e.clientY}px) translate(-50%,-50%)`;
-      dot.style.transform = t; ring.style.transform = t;
-    }, { passive: true });
-    const HOT = "a,button,.pcard,.feature,.dcard";
-    document.addEventListener("pointerover", e => { if (e.target.closest(HOT)) cursor.classList.add("is-hot"); });
-    document.addEventListener("pointerout",  e => { if (e.target.closest(HOT)) cursor.classList.remove("is-hot"); });
-
     $$("[data-magnetic]").forEach(el => {
       el.addEventListener("pointermove", e => {
         const r = el.getBoundingClientRect();
@@ -508,7 +453,8 @@
       px = nx; py = ny; hadP = true;
     }, { passive: true });
 
-    const COLORS = ["rgba(240,237,230,.16)", "rgba(224,168,78,.42)", "rgba(240,237,230,.12)"];
+    // no amber anywhere — the plucked middle string glows ice like the plugin
+    const COLORS = ["rgba(240,237,230,.16)", "rgba(159,216,232,.4)", "rgba(240,237,230,.12)"];
     function step(t) {
       ctx.clearRect(0, 0, w, h);
       for (let s = 0; s < ROWS.length; s++) {
@@ -546,8 +492,8 @@
   // Display type (Oswald) reflows section heights when it swaps in, which
   // shifts every cached offset below the hero — re-measure once it lands.
   document.fonts?.ready.then(() => measure());
-  // Lazy amp/pedal images settle the sticky-section heights too.
-  $$(".amps__face,.pcard__img img").forEach(img => {
+  // Lazy lineup/pedal images settle the section heights too.
+  $$(".ampcol__shot img,.pcard__img img").forEach(img => {
     if (img.complete) return;
     img.addEventListener("load", () => measure(), { once: true });
   });

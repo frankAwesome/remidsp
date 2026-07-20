@@ -1,18 +1,21 @@
 /* ══════════════════════════════════════════════════════════════
-   REMI DSP — Over the Edge · single-page site
-   Fonts are the EXACT app fonts: Yellowtail + Oswald + DSEG7.
+   REMI DSP — Maine · single-page site
+   Type system: Oswald (poster caps) / Space Grotesk (UI + body,
+   the plugin's own face) / system mono (data) / DSEG7 (LED).
+   Look: sharp editorial — zero border-radius, hairline rules,
+   ruled grids. One accent only: the plugin's white light.
    Scroll philosophy: NATIVE scroll, 1:1 response, transform/opacity
    only. No smooth-scroll lib, no giant animated blurs, no per-frame
    layout reads. Decorative layers may trail; content never does.
    ══════════════════════════════════════════════════════════════ */
 
-@font-face{font-family:"Yellowtail";src:url("../assets/fonts/Yellowtail.ttf") format("truetype");font-display:swap}
 @font-face{font-family:"Oswald";src:url("../assets/fonts/OswaldBold.ttf") format("truetype");font-weight:700;font-display:swap}
 @font-face{font-family:"Oswald";src:url("../assets/fonts/OswaldSemi.ttf") format("truetype");font-weight:600;font-display:swap}
 @font-face{font-family:"Oswald";src:url("../assets/fonts/OswaldMedium.ttf") format("truetype");font-weight:500;font-display:swap}
 @font-face{font-family:"Dseg7";src:url("../assets/fonts/Dseg7.ttf") format("truetype");font-display:swap}
-/* Space Grotesk — the plugin's new display/UI face (black + white-light). */
-@font-face{font-family:"Space Grotesk";src:url("../assets/fonts/SpaceGroteskMedium.ttf") format("truetype");font-weight:500;font-display:swap}
+/* Space Grotesk — the plugin's display/UI face; here it carries body + UI.
+   500 is the base text weight, so `normal` maps to the Medium file. */
+@font-face{font-family:"Space Grotesk";src:url("../assets/fonts/SpaceGroteskMedium.ttf") format("truetype");font-weight:400 500;font-display:swap}
 @font-face{font-family:"Space Grotesk";src:url("../assets/fonts/SpaceGroteskSemi.ttf") format("truetype");font-weight:600;font-display:swap}
 @font-face{font-family:"Space Grotesk";src:url("../assets/fonts/SpaceGroteskBold.ttf") format("truetype");font-weight:700;font-display:swap}
 
@@ -22,13 +25,13 @@
   --panel:#101016;
   --panel-2:#16161d;
   --line:rgba(255,255,255,.09);
+  --line-2:rgba(255,255,255,.16);
 
-  /* Brand accent — white light, matching the plugin (no amber anywhere now).
-     Green is the interactive/active pop, mirroring the gear LEDs. */
+  /* Brand accent — white light, matching the plugin. No amber, no green:
+     every live/active state is a brightness of the same white-ice light. */
   --gold:#e9eef4;
   --gold-hi:#ffffff;
   --gold-deep:#8fb4c6;
-  --green:#5fe08a;
   --ice:#9fd8e8;
   --red:#ff4b3a;
 
@@ -36,7 +39,6 @@
   --muted:#9aa0ab;
   --muted-2:#63666f;
 
-  --font-script:"Space Grotesk","Yellowtail",cursive;
   /* Oswald leads the display stack: condensed, tall, built for uppercase at
      poster scale. It sets far more word per line than Space Grotesk, which is
      what lets the headline stay in a narrow column and leave the amp the room. */
@@ -44,7 +46,7 @@
   --font-ui:"Space Grotesk",system-ui,sans-serif;
   --font-led:"Dseg7",monospace;
   --font-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
-  --font-body:"Inter","Helvetica Neue",-apple-system,system-ui,sans-serif;
+  --font-body:"Space Grotesk","Helvetica Neue",-apple-system,system-ui,sans-serif;
 
   --maxw:1280px;
   --pad:clamp(1.2rem,5vw,3rem);
@@ -52,7 +54,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;overflow-x:clip}
+html{scroll-behavior:smooth;overflow-x:clip;scroll-padding-top:4.5rem}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
 body{
@@ -64,25 +66,35 @@ body{
   -webkit-font-smoothing:antialiased;
   transition:background-color .9s ease; /* Lando-style per-section page morph */
 }
-@media (hover:hover) and (pointer:fine){body.has-cursor{cursor:none}body.has-cursor a,body.has-cursor button{cursor:none}}
-
 img{display:block;max-width:100%;height:auto}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0}
 code{font-family:var(--font-mono);font-size:.92em;color:var(--gold-hi)}
 ::selection{background:var(--gold);color:#1a1206}
+:focus-visible{outline:1px solid var(--ice);outline-offset:3px}
 
 .mono{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.14em;color:var(--muted)}
 .led{font-family:var(--font-led)}
 
 /* Oswald is condensed with a tall x-height, so it wants noticeably more size and
-   noticeably less leading than the old face to sit right. */
-h1,h2,h3,.kicker{font-family:var(--font-display);font-weight:700;line-height:.9}
-h2{font-size:clamp(2.7rem,6.4vw,5.6rem);text-transform:uppercase;letter-spacing:-.02em;line-height:.86}
+   noticeably less leading than a regular grotesk to sit right. */
+h1,h2,h3{font-family:var(--font-display);font-weight:700;line-height:.9}
+h2{font-size:clamp(2.8rem,7vw,6rem);text-transform:uppercase;letter-spacing:-.02em;line-height:.86}
 h3{font-size:1.4rem;text-transform:uppercase;letter-spacing:.03em;line-height:1}
-.kicker{font-size:.8rem;font-weight:600;letter-spacing:.42em;text-transform:uppercase;color:var(--gold);margin-bottom:1.1rem}
+/* Kickers moved to the UI face — spaced grotesk caps read cleaner at small
+   sizes than condensed Oswald, and the contrast against the h2 is the point. */
+.kicker{font-family:var(--font-ui);font-size:.74rem;font-weight:600;letter-spacing:.42em;
+  text-transform:uppercase;color:var(--gold)}
 strong{color:#fff;font-weight:600}
 em{font-style:normal;color:var(--gold-hi)}
+
+/* ════════ section header — ruled, numbered, left-aligned ════════
+   The one repeating editorial device: hairline rule, LED index, kicker,
+   right-aligned data note. Every numbered section opens with it. */
+.shead{display:flex;align-items:baseline;gap:1.1rem;border-top:1px solid var(--line-2);
+  padding-top:1rem;margin-bottom:clamp(1.6rem,3.4vw,2.6rem)}
+.shead__no{font-size:.8rem;color:var(--gold);text-shadow:0 0 14px rgba(180,212,230,.5)}
+.shead__meta{margin-left:auto;font-size:.6rem;letter-spacing:.22em;color:var(--muted-2);text-align:right}
 
 /* ════════ static backdrop — painted once, composited, never repaints ════════
    NOTE: gradients are translucent so the body's morphing background-color
@@ -94,23 +106,6 @@ em{font-style:normal;color:var(--gold-hi)}
 .bg__grain{position:absolute;inset:0;opacity:.045;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
-/* ════════ boot / preloader ════════ */
-.boot{position:fixed;inset:0;z-index:1000;background:var(--ink);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:1.6rem;
-  transition:clip-path .7s cubic-bezier(.7,0,.2,1);clip-path:inset(0)}
-.boot.is-done{clip-path:inset(0 0 100% 0);pointer-events:none}
-.boot.is-gone{display:none}
-.boot__brand{position:absolute;top:1.4rem;left:1.6rem;font-family:var(--font-display);font-weight:600;
-  letter-spacing:.5em;font-size:.8rem;color:var(--muted)}
-.boot__center{display:flex;align-items:baseline;gap:.4rem}
-.boot__num{font-family:var(--font-led);font-size:clamp(4rem,16vw,9rem);color:var(--gold);
-  text-shadow:0 0 26px rgba(180,212,230,.55)}
-.boot__pct{font-family:var(--font-display);font-weight:600;font-size:1.4rem;color:var(--muted-2)}
-.boot__leds{display:flex;gap:5px}
-.boot__leds i{width:14px;height:5px;border-radius:1px;background:rgba(255,255,255,.08)}
-.boot__leds i.on{background:var(--gold);box-shadow:0 0 8px rgba(180,212,230,.8)}
-.boot__line{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.3em;color:var(--muted-2)}
-
 /* ════════ fixed HUD chrome ════════ */
 .hud{position:fixed;inset:0;z-index:90;pointer-events:none}
 .hud__corner{position:absolute;width:16px;height:16px;border:1px solid rgba(255,255,255,.22)}
@@ -121,7 +116,7 @@ em{font-style:normal;color:var(--gold-hi)}
 .hud__item{position:absolute;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.26em;color:var(--muted-2)}
 .hud__item--bl{left:2rem;bottom:1.05rem}
 .hud__item--br{right:2rem;bottom:1.05rem;color:var(--gold);display:flex;align-items:baseline;gap:.25rem}
-.hud__item--br .led{font-size:.78rem}
+.hud__item--br .led{font-size:.78rem;text-shadow:0 0 10px rgba(180,212,230,.55)}
 .hud__pctsign{font-family:var(--font-mono);color:var(--muted-2)}
 @media (max-width:880px){.hud__item{display:none}}
 
@@ -130,30 +125,19 @@ em{font-style:normal;color:var(--gold-hi)}
   background:linear-gradient(90deg,var(--gold-deep),var(--gold),var(--gold-hi));
   box-shadow:0 0 12px rgba(180,212,230,.7)}
 
-/* ════════ cursor ════════ */
-.cursor{display:none}
-@media (hover:hover) and (pointer:fine){
-  .cursor{display:block;position:fixed;top:0;left:0;z-index:400;pointer-events:none}
-  .cursor__dot{position:fixed;width:6px;height:6px;border-radius:50%;background:var(--gold);
-    transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(180,212,230,.9)}
-  .cursor__ring{position:fixed;width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);
-    transform:translate(-50%,-50%);
-    transition:width .3s var(--ease),height .3s var(--ease),border-color .3s,background .3s,transform .08s linear}
-  .cursor.is-hot .cursor__ring{width:54px;height:54px;border-color:var(--gold);background:rgba(180,212,230,.1)}
-}
-
-/* ════════ buttons ════════ */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:.55rem;font-family:var(--font-display);
-  font-weight:600;text-transform:uppercase;letter-spacing:.07em;font-size:.86rem;padding:.85rem 1.5rem;
-  border-radius:12px;position:relative;border:1px solid transparent;
-  transition:box-shadow .35s var(--ease),background .3s,color .3s,border-color .3s;will-change:transform}
+/* ════════ buttons — flat slabs of the brand's white light ════════
+   No gradient face, no gloss: a solid slab, dark type, hover warms it toward
+   ice with a soft light spill. The OS pointer stays native everywhere. */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.55rem;font-family:var(--font-ui);
+  font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:.8rem;padding:.9rem 1.5rem;
+  position:relative;border:1px solid transparent;
+  transition:background .25s,color .25s,border-color .25s,box-shadow .3s;will-change:transform}
 .btn__os{width:1.05em;height:1.05em;fill:currentColor;flex:0 0 auto}
-.btn--lg{padding:1.05rem 1.8rem;font-size:.95rem;border-radius:14px}
-.btn--amber{background:linear-gradient(180deg,var(--gold-hi),var(--gold) 45%,var(--gold-deep));color:#0a0d12;
-  box-shadow:0 8px 26px -8px rgba(180,212,230,.55),inset 0 1px 0 rgba(255,255,255,.5)}
-.btn--amber:hover{box-shadow:0 16px 44px -10px rgba(180,212,230,.85),inset 0 1px 0 rgba(255,255,255,.6)}
-.btn--ghost{background:rgba(255,255,255,.04);color:var(--text);border-color:var(--line)}
-.btn--ghost:hover{background:rgba(255,255,255,.09);border-color:rgba(180,212,230,.55)}
+.btn--lg{padding:1.05rem 1.9rem;font-size:.88rem}
+.btn--amber{background:var(--gold-hi);color:#0a0d12}
+.btn--amber:hover{background:var(--gold);box-shadow:0 12px 34px -14px rgba(159,216,232,.7)}
+.btn--ghost{background:rgba(255,255,255,.04);color:var(--text);border-color:var(--line-2)}
+.btn--ghost:hover{background:rgba(255,255,255,.09);border-color:rgba(159,216,232,.5)}
 .btn:active{transform:scale(.97)}
 
 /* ════════ logo lockup (exact app wordmark) ════════ */
@@ -172,29 +156,44 @@ em{font-style:normal;color:var(--gold-hi)}
   transition:padding .4s var(--ease),background .4s,border-color .4s}
 .nav.is-stuck{background:rgba(5,5,6,.78);backdrop-filter:blur(10px);border-color:var(--line);
   padding-top:.65rem;padding-bottom:.65rem}
-.nav__links{display:flex;gap:1.8rem;margin-left:auto;font-family:var(--font-display);font-weight:500;
-  text-transform:uppercase;letter-spacing:.14em;font-size:.8rem}
+.nav__links{display:flex;gap:1.8rem;margin-left:auto;font-family:var(--font-ui);font-weight:600;
+  text-transform:uppercase;letter-spacing:.16em;font-size:.72rem}
 .nav__links a{color:var(--muted);position:relative;padding:.2rem 0;transition:color .25s}
-.nav__links a::after{content:"";position:absolute;left:0;bottom:-2px;width:100%;height:2px;background:var(--gold);
+.nav__links a::after{content:"";position:absolute;left:0;bottom:-2px;width:100%;height:1px;background:var(--gold);
   transform:scaleX(0);transform-origin:0 50%;transition:transform .35s var(--ease)}
 .nav__links a:hover{color:#fff}
 .nav__links a:hover::after{transform:scaleX(1)}
 @media (max-width:960px){.nav__links{display:none}}
 
-/* ════════ HERO ════════ */
-.hero{position:relative;min-height:100svh;display:grid;grid-template-columns:1.02fr .98fr;align-items:center;
+/* ════════ HERO — the rig ════════
+   The heads carry real alpha (black was baked to transparent at build time), so
+   they sit on the page with no backdrop of their own to betray them — no card,
+   no halo, no seam, at any page colour, over any gradient. An earlier pass did
+   this with mix-blend-mode:screen instead; that fails here because body's
+   background propagates to the root canvas, and the canvas is not part of any
+   blendable backdrop, so the render's black stayed visible as a rectangle. */
+/* minmax(0,…): an `fr` track floors at min-content, so the stage's own width
+   would otherwise win and crush the copy column into a four-line wrap. */
+.hero{position:relative;
+  --amp-glow:#8fd8cf;--amp-glow-2:#4a8f96;
+  min-height:100svh;display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);
+  align-items:center;
   gap:clamp(1.5rem,3vw,3rem);max-width:calc(var(--maxw) + 8vw);margin:0 auto;
-  padding:7.5rem var(--pad) 4.5rem}
+  padding:7.5rem var(--pad) 4rem}
 .hero__strings{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.hero__glow{position:absolute;top:-8%;right:-6%;width:56vw;height:56vw;max-width:820px;max-height:820px;z-index:0;
-  background:radial-gradient(circle,rgba(180,212,230,.14) 0%,rgba(180,212,230,.05) 38%,transparent 66%);
-  pointer-events:none}
-.hero__inner{position:relative;z-index:2;max-width:640px}
-.hero__eyebrow{font-family:var(--font-display);font-weight:600;letter-spacing:.5em;font-size:.76rem;
+.rig__glow{position:absolute;z-index:0;top:50%;right:-4%;width:min(80vw,1000px);aspect-ratio:1;
+  transform:translateY(-50%);pointer-events:none;
+  background:radial-gradient(circle,color-mix(in oklab,var(--amp-glow) 22%,transparent) 0%,
+    color-mix(in oklab,var(--amp-glow-2) 10%,transparent) 40%,transparent 68%);
+  transition:background 1.1s var(--ease);filter:blur(6px)}
+
+.rig__copy{position:relative;z-index:3;max-width:640px}
+.hero__eyebrow{font-family:var(--font-ui);font-weight:600;letter-spacing:.44em;font-size:.68rem;
   color:var(--gold);text-transform:uppercase;margin-bottom:1.6rem}
-/* sized so the longest line ("MADE TO PLAY.") holds one line in the copy column */
-.hero__title{text-transform:uppercase;font-size:clamp(3rem,7vw,6.4rem);letter-spacing:-.022em;
-  line-height:.84;margin-bottom:1.7rem}
+/* Sized so "THREE AMPS." holds one line inside the narrow column — the whole
+   point of the condensed face is that the headline never steals the amp's room. */
+.hero__title{text-transform:uppercase;font-size:clamp(2.6rem,6vw,5.6rem);letter-spacing:-.022em;
+  line-height:.84;margin-bottom:1.6rem}
 .hero__title .line{display:block;overflow:hidden;padding-block:.03em}
 .hero__title .line > span{display:block}
 /* Contrast comes from the gradient fill, not a second typeface — a light,
@@ -204,73 +203,15 @@ em{font-style:normal;color:var(--gold-hi)}
   background:linear-gradient(180deg,var(--gold-hi),var(--gold) 50%,var(--gold-deep));
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 6px 26px rgba(180,212,230,.4))}
-.hero__lede{font-size:clamp(1.02rem,1.45vw,1.22rem);color:var(--muted);max-width:34em;margin-bottom:2.2rem}
+.hero__lede{font-size:clamp(1rem,1.35vw,1.14rem);color:var(--muted);max-width:32em;margin-bottom:2rem}
 .hero__lede strong{color:var(--text)}
-.hero__cta{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;margin-bottom:1.3rem}
+.hero__cta{display:flex;flex-wrap:wrap;align-items:center;gap:1.1rem;margin-bottom:1.2rem}
 .hero__formats{padding:.4rem 0}
 .hero__note{color:var(--muted-2)}
 
-.hero__stage{position:relative;z-index:1;justify-self:end;width:min(46vw,620px)}
-.hero__frame{position:relative}
-.hero__shot{position:relative;border-radius:12px;overflow:hidden;
-  transform:perspective(1500px) rotateY(-9deg) rotateX(3.5deg);
-  box-shadow:0 60px 130px -35px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.07),0 0 100px -30px rgba(180,212,230,.28);
-  will-change:transform}
-.hero__shot img{width:100%;height:auto}
-.hero__glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.16),transparent 38%);pointer-events:none}
-.hero__bracket{position:absolute;width:22px;height:22px;border:1.5px solid rgba(255,255,255,.4);pointer-events:none}
-.hero__bracket--tl{top:-14px;left:-14px;border-right:0;border-bottom:0}
-.hero__bracket--tr{top:-14px;right:-14px;border-left:0;border-bottom:0}
-.hero__bracket--bl{bottom:-14px;left:-14px;border-right:0;border-top:0}
-.hero__bracket--br{bottom:-14px;right:-14px;border-left:0;border-top:0}
-.hero__caption{margin-top:1.1rem;text-align:right;color:var(--muted-2)}
-.hero__caption .led{color:var(--gold);font-size:.8em}
-
-.hero__scrollcue{position:absolute;left:50%;bottom:1.6rem;transform:translateX(-50%);z-index:2;
-  display:flex;flex-direction:column;align-items:center;gap:.5rem}
-.hero__scrollcue .mono{font-size:.6rem;letter-spacing:.4em}
-.hero__scrollcue i{width:1px;height:44px;background:linear-gradient(180deg,var(--gold),transparent);
-  animation:cue 1.8s var(--ease) infinite;transform-origin:top}
-@keyframes cue{0%{transform:scaleY(0)}45%{transform:scaleY(1)}100%{transform:scaleY(0);transform-origin:bottom}}
-
-@media (max-width:1080px){
-  .hero{grid-template-columns:1fr;min-height:auto;padding-top:7.5rem}
-  .hero__stage{justify-self:center;width:100%;max-width:640px;margin-top:1.4rem}
-  .hero__shot{transform:perspective(1500px) rotateY(-4deg) rotateX(2deg)}
-  .hero__scrollcue{display:none}
-}
-
-/* ════════ THE RIG — home hero amp stage ════════
-   The heads carry real alpha (black was baked to transparent at build time), so
-   they sit on the page with no backdrop of their own to betray them — no card,
-   no halo, no seam, at any page colour, over any gradient. An earlier pass did
-   this with mix-blend-mode:screen instead; that fails here because body's
-   background propagates to the root canvas, and the canvas is not part of any
-   blendable backdrop, so the render's black stayed visible as a rectangle. */
-/* minmax(0,…): an `fr` track floors at min-content, so the stage's own width
-   would otherwise win and crush the copy column into a four-line wrap. */
-.rig{position:relative;
-  --amp-glow:#8fd8cf;--amp-glow-2:#4a8f96;
-  min-height:100svh;display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
-  align-items:center;
-  gap:clamp(1.5rem,3vw,3rem);max-width:calc(var(--maxw) + 8vw);margin:0 auto;
-  padding:8rem var(--pad) 4rem}
-.rig__glow{position:absolute;z-index:0;top:50%;right:-4%;width:min(80vw,1000px);aspect-ratio:1;
-  transform:translateY(-50%);pointer-events:none;
-  background:radial-gradient(circle,color-mix(in oklab,var(--amp-glow) 22%,transparent) 0%,
-    color-mix(in oklab,var(--amp-glow-2) 10%,transparent) 40%,transparent 68%);
-  transition:background 1.1s var(--ease);filter:blur(6px)}
-
-.rig__copy{position:relative;z-index:3;max-width:640px}
-/* Sized so "THREE AMPS." holds one line inside the narrow column — the whole
-   point of the condensed face is that the headline never steals the amp's room. */
-.rig .hero__title{font-size:clamp(2.6rem,6.6vw,6rem);margin-bottom:0}
-.rig__lede{font-size:clamp(1.02rem,1.4vw,1.18rem);color:var(--muted);max-width:32em;margin-bottom:2rem}
-.rig__lede strong{color:var(--text)}
-
 /* Let the head run to the viewport edge — the render's own falloff ends it, so
    there is nothing to "cut off". */
-.rig__stage{position:relative;z-index:1;justify-self:end;width:100%;max-width:900px;
+.rig__stage{position:relative;z-index:1;justify-self:end;width:100%;max-width:860px;
   margin-right:calc(-1 * var(--pad));
   display:flex;flex-direction:column;align-items:center}
 /* NOTE: nothing hard-edged may sit behind the head. Baking black to alpha leaves
@@ -294,76 +235,61 @@ em{font-style:normal;color:var(--gold-hi)}
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
 .rig__stage:hover .rig__sheen{opacity:1}
 
-.rig__sel{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:.9rem;
-  margin-top:1.4rem;width:100%}
-.rig__tabs{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem}
-.rig__tabs button{font-family:var(--font-display);font-weight:600;text-transform:uppercase;
-  letter-spacing:.14em;font-size:.86rem;padding:.6rem 1.3rem;border:1px solid var(--line);
-  border-radius:99px;color:var(--muted);transition:color .35s,border-color .35s,background .35s}
-.rig__tabs button:hover{color:#fff;border-color:rgba(255,255,255,.3)}
-.rig__tabs button.is-active{color:#0a0d12;border-color:transparent;
-  background:linear-gradient(180deg,#fff,var(--amp-glow));
-  box-shadow:0 8px 24px -8px color-mix(in oklab,var(--amp-glow) 70%,transparent)}
-/* Voice chips crossfade with the head; the row is reserved so nothing reflows. */
-.rig__voices{position:relative;height:1.9rem;width:100%}
-.rig__voiceset{position:absolute;inset:0;display:flex;justify-content:center;flex-wrap:wrap;gap:.4rem;
+.rig__sel{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:1rem;
+  margin-top:1.2rem;width:100%}
+/* Amp switcher — type only, no boxes. The names sit as poster caps; the live
+   head's own light draws a thin rule under the active one. */
+.rig__tabs{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;
+  gap:clamp(1.6rem,3.2vw,2.8rem)}
+.rig__tabs button{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;font-size:clamp(1.1rem,1.8vw,1.5rem);line-height:1;padding:.2rem 0;
+  position:relative;color:var(--muted-2);transition:color .35s}
+.rig__tabs button::after{content:"";position:absolute;left:0;right:0;bottom:-.4rem;height:2px;
+  background:var(--amp-glow);transform:scaleX(0);
+  box-shadow:0 0 12px color-mix(in oklab,var(--amp-glow) 60%,transparent);
+  transition:transform .45s var(--ease),background 1.1s var(--ease)}
+.rig__tabs button:hover{color:var(--text)}
+.rig__tabs button.is-active{color:#fff;
+  text-shadow:0 0 26px color-mix(in oklab,var(--amp-glow) 50%,transparent)}
+.rig__tabs button.is-active::after{transform:scaleX(1)}
+/* Voice readout crossfades with the head; the row is reserved so nothing
+   reflows. Plain mono text — the amp light only marks the separators. */
+.rig__voices{position:relative;height:1.4rem;width:100%}
+.rig__voiceset{position:absolute;inset:0;display:flex;justify-content:center;flex-wrap:wrap;
   opacity:0;transform:translateY(6px);pointer-events:none;
   transition:opacity .5s var(--ease),transform .5s var(--ease)}
 .rig__voiceset.is-active{opacity:1;transform:none}
-.rig__voiceset span{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.18em;
-  padding:.34rem .66rem;border-radius:5px;color:var(--amp-glow);
-  border:1px solid color-mix(in oklab,var(--amp-glow) 34%,transparent);
-  background:color-mix(in oklab,var(--amp-glow) 7%,transparent);
-  transition:color 1.1s var(--ease),border-color 1.1s var(--ease),background 1.1s var(--ease)}
-.rig__cap{margin-top:.2rem;font-size:.6rem;color:var(--muted-2);text-align:center}
+.rig__voiceset span{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.22em;
+  color:var(--gold);line-height:1.4rem}
+.rig__voiceset span + span::before{content:"·";margin:0 .8rem;
+  color:var(--amp-glow);transition:color 1.1s var(--ease)}
+.rig__cap{margin-top:.1rem;font-size:.6rem;color:var(--muted-2);text-align:center}
+
+.hero__scrollcue{position:absolute;left:50%;bottom:1.6rem;transform:translateX(-50%);z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.hero__scrollcue .mono{font-size:.6rem;letter-spacing:.4em}
+.hero__scrollcue i{width:1px;height:44px;background:linear-gradient(180deg,var(--gold),transparent);
+  animation:cue 1.8s var(--ease) infinite;transform-origin:top}
+@keyframes cue{0%{transform:scaleY(0)}45%{transform:scaleY(1)}100%{transform:scaleY(0);transform-origin:bottom}}
 
 @media (max-width:1080px){
-  .rig{grid-template-columns:minmax(0,1fr);min-height:auto;padding-top:7.5rem}
+  .hero{grid-template-columns:minmax(0,1fr);min-height:auto;padding-top:7.5rem}
   /* drop the right-edge bleed: stacked, it just shoves the head off centre */
   .rig__stage{justify-self:center;width:100%;max-width:640px;margin-top:1.6rem;margin-right:0}
   .rig__glow{top:62%;right:50%;transform:translate(50%,-50%);width:min(120vw,760px)}
+  .hero__scrollcue{display:none}
 }
 
-/* ════════ SHOWCASE — the single-product replacement for the card grid ════════ */
-.showcase{position:relative;max-width:calc(var(--maxw) + 4vw);margin:0 auto;
-  padding:clamp(4rem,9vw,7rem) var(--pad) clamp(3rem,6vw,4.5rem);overflow:clip}
-.showcase__head{max-width:44em;margin:0 auto clamp(2.2rem,4vw,3.2rem);text-align:center}
-.showcase__head h2{margin-bottom:1rem}
-.showcase__head p{color:var(--muted);font-size:clamp(1.02rem,1.5vw,1.18rem)}
-.showcase__frame{position:relative;border-radius:14px;overflow:hidden;
-  border:1px solid rgba(255,255,255,.08);
-  box-shadow:0 60px 130px -40px rgba(0,0,0,.95),0 0 110px -40px rgba(180,212,230,.24);
-  will-change:transform}
-.showcase__frame img{width:100%;display:block}
-.showcase__glare{position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(115deg,rgba(255,255,255,.11),transparent 42%)}
-.showcase__caption{margin-top:1rem;text-align:center;color:var(--muted-2);font-size:.62rem}
-.showcase__caption .led{color:var(--gold);font-size:.9em}
-.showcase__grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.1rem;
-  margin-top:clamp(2.4rem,5vw,3.6rem)}
-.scell{padding:1.5rem 1.4rem;border:1px solid var(--line);border-radius:16px;
-  background:rgba(255,255,255,.015);
-  transition:transform .45s var(--ease),border-color .45s,background .45s}
-.scell:hover{transform:translateY(-6px);border-color:rgba(180,212,230,.4);background:rgba(180,212,230,.045)}
-.scell__no{font-family:var(--font-led);font-size:.78rem;color:var(--gold);
-  text-shadow:0 0 16px rgba(180,212,230,.5)}
-.scell h3{font-size:1.02rem;margin:.5rem 0 .45rem;color:#fff}
-.scell p{color:var(--muted);font-size:.92rem}
-.showcase__cta{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:1rem;
-  margin-top:clamp(2.4rem,5vw,3.4rem)}
-@media (max-width:1080px){.showcase__grid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:560px){.showcase__grid{grid-template-columns:1fr}}
-
-/* ════════ MARQUEE ════════ */
-.marquee{padding:3.2rem 0 2.6rem;overflow:clip}
-.marquee__band{display:flex;white-space:nowrap;transform:rotate(-1.6deg) scale(1.03);
+/* ════════ MARQUEE — straight, ruled, velocity-reactive ════════ */
+.marquee{padding:3rem 0 2.4rem;overflow:clip}
+.marquee__band{display:flex;white-space:nowrap;
   border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-  background:linear-gradient(180deg,rgba(255,255,255,.025),transparent);padding:1.3rem 0;will-change:transform}
+  background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);padding:1.2rem 0;will-change:transform}
 .marquee__track{display:flex;align-items:center;flex:0 0 auto;animation:marq 36s linear infinite}
 .marquee__track span{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
-  font-size:clamp(1.5rem,3.6vw,2.8rem);letter-spacing:.02em;padding:0 1.6rem;
+  font-size:clamp(1.6rem,3.8vw,3rem);letter-spacing:.02em;padding:0 1.6rem;
   color:transparent;-webkit-text-stroke:1px rgba(240,237,230,.5)}
-.marquee__track i{color:var(--gold);font-style:normal;font-size:1.1rem;opacity:.85}
+.marquee__track i{color:var(--gold);font-style:normal;font-size:1.05rem;opacity:.85}
 .marquee:hover .marquee__track{animation-play-state:paused}
 @keyframes marq{to{transform:translateX(-100%)}}
 
@@ -378,79 +304,102 @@ em{font-style:normal;color:var(--gold-hi)}
 .fill-ink{position:absolute;inset:0;color:var(--text);clip-path:inset(0 100% 0 0);will-change:clip-path}
 .fill-ink--accent{background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep));
   -webkit-background-clip:text;background-clip:text;color:transparent}
-.statement__sub{max-width:44em;margin:0 auto 1.8rem;font-size:clamp(1.02rem,1.5vw,1.25rem);color:var(--muted)}
-.statement__chips{display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem}
-.chip{display:inline-block;padding:.5rem .95rem;border:1px solid var(--line);border-radius:99px;
+.statement__sub{max-width:44em;margin:0 auto 1.8rem;font-size:clamp(1rem,1.45vw,1.2rem);color:var(--muted)}
+.statement__chips{display:flex;flex-wrap:wrap;justify-content:center;gap:.55rem}
+.chip{display:inline-block;padding:.5rem .95rem;border:1px solid var(--line-2);
   background:rgba(255,255,255,.02);color:var(--muted)}
 
-/* ════════ AMPS — channel switcher ════════ */
-.amps{position:relative;height:300vh}
-.amps__sticky{position:sticky;top:0;height:100svh;overflow:clip;display:grid;
-  grid-template-columns:.92fr 1.08fr;align-items:center;gap:clamp(2rem,4vw,4.5rem);
-  max-width:calc(var(--maxw) + 6vw);margin:0 auto;padding:5.5rem var(--pad) 4rem}
-.amps__index{position:absolute;right:-.06em;top:50%;transform:translateY(-50%);z-index:0;
-  font-size:clamp(12rem,30vw,26rem);color:rgba(240,237,230,.05);pointer-events:none;user-select:none;
-  transition:color .4s}
-.amps__copy{position:relative;z-index:2}
-.amps__copy h2{margin-bottom:1.6rem}
-.amps__panels{position:relative;min-height:11.5em;margin-bottom:1.6rem}
-.amps__panel{position:absolute;inset:0;opacity:0;transform:translateY(18px);
-  transition:opacity .45s var(--ease),transform .45s var(--ease);pointer-events:none}
-.amps__panel.is-active{opacity:1;transform:none;pointer-events:auto}
-.amps__panel h3{font-size:clamp(1.5rem,2.4vw,2rem);margin-bottom:.7rem;color:#fff}
-.amps__panel p{color:var(--muted);font-size:1.06rem;max-width:30em;margin-bottom:1.1rem}
-.amps__voices{display:flex;flex-wrap:wrap;gap:.5rem}
-.amps__voices span{padding:.42rem .8rem;border:1px solid rgba(180,212,230,.35);border-radius:6px;
-  color:var(--gold);background:rgba(180,212,230,.06);font-size:.68rem}
-.amps__tabs{list-style:none;display:flex;gap:.6rem}
-.amps__tabs button{font-family:var(--font-display);font-weight:600;text-transform:uppercase;
-  letter-spacing:.12em;font-size:.78rem;padding:.55rem 1.1rem;border:1px solid var(--line);border-radius:99px;
-  color:var(--muted);transition:all .35s var(--ease)}
-.amps__tabs button:hover{color:#fff;border-color:rgba(255,255,255,.3)}
-.amps__tabs button.is-active{background:linear-gradient(180deg,var(--gold),var(--gold-deep));color:#0a0d12;
-  border-color:transparent;box-shadow:0 8px 24px -8px rgba(180,212,230,.7)}
-/* The heads carry real alpha, so they float free — no frame, no border, no card.
-   The glow behind is the only thing holding them. */
-.amps__visual{position:relative;z-index:1;display:flex;gap:1rem;align-items:center}
-.amps__frame{position:relative;flex:1;will-change:transform}
-.amps__frame::before{content:"";position:absolute;z-index:0;inset:-18% -12%;pointer-events:none;
-  background:radial-gradient(circle,rgba(180,212,230,.15) 0%,rgba(180,212,230,.05) 42%,transparent 68%)}
-.amps__faces{position:relative;z-index:1}
-.amps__facewrap{position:relative;aspect-ratio:1672/941}
-.amps__face{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;
-  transform:scale(1.04);transition:opacity .5s var(--ease),transform .8s var(--ease)}
-.amps__face.is-active{opacity:1;transform:none}
-.amps__rail{width:3px;height:min(46vh,340px);border-radius:2px;background:rgba(255,255,255,.08);
-  position:relative;overflow:hidden;flex:0 0 auto}
-.amps__rail span{position:absolute;inset:0;background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep));
-  transform:scaleY(0);transform-origin:0 0;will-change:transform}
-.amps__railnote{position:absolute;bottom:-2.2rem;right:0;font-size:.62rem}
+/* ════════ 01 · SHOWCASE — the product, full width ════════ */
+.showcase{position:relative;max-width:calc(var(--maxw) + 4vw);margin:0 auto;
+  padding:clamp(4rem,9vw,7rem) var(--pad) clamp(3rem,6vw,4.5rem);overflow:clip}
+/* editorial split: headline left, argument right, baseline-aligned */
+.showcase__head{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3rem);
+  align-items:end;margin-bottom:clamp(2.2rem,4vw,3.2rem)}
+.showcase__head p{color:var(--muted);font-size:clamp(1rem,1.4vw,1.14rem);max-width:34em;
+  padding-bottom:.35rem}
+.showcase__stage{position:relative}
+.showcase__frame{position:relative;overflow:hidden;
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 60px 130px -40px rgba(0,0,0,.95);
+  will-change:transform}
+.showcase__frame img{width:100%;display:block}
+.showcase__glare{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,255,255,.09),transparent 42%)}
+/* HUD brackets around the shot — same language as the fixed page corners */
+.bk{position:absolute;width:22px;height:22px;border:1.5px solid rgba(255,255,255,.4);z-index:2;pointer-events:none}
+.bk--tl{top:-11px;left:-11px;border-right:0;border-bottom:0}
+.bk--tr{top:-11px;right:-11px;border-left:0;border-bottom:0}
+.bk--bl{bottom:-11px;left:-11px;border-right:0;border-top:0}
+.bk--br{bottom:-11px;right:-11px;border-left:0;border-top:0}
+.showcase__caption{margin-top:1.1rem;text-align:right;color:var(--muted-2);font-size:.62rem}
+.showcase__caption .led{color:var(--gold);font-size:.9em}
+@media (max-width:880px){.showcase__head{grid-template-columns:1fr;align-items:start}}
 
-@media (max-width:880px){
-  .amps{height:auto}
-  .amps__sticky{position:static;height:auto;grid-template-columns:1fr;padding:4.5rem var(--pad);overflow:visible}
-  .amps__index{display:none}
-  .amps__panels{min-height:0}
-  .amps__panel{position:static;display:none}
-  .amps__panel.is-active{display:block}
-  .amps__tabs{margin-bottom:1.8rem}
-  .amps__visual{display:block}
-  .amps__frame{width:100%}
-  .amps__rail{display:none}
-  .amps__railnote{position:static;margin-top:.8rem;text-align:left}
+/* ════════ 02 · THE LINEUP — all three heads, side by side ════════
+   The counterpart to the hero reel: nothing switches, nothing hides. Three
+   ruled columns (same hairline-grid language as the specs table), each lit by
+   its own head's colour via --glow. Hovering one column solos it. */
+.lineup{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
+  padding:clamp(4.5rem,9vw,7rem) var(--pad)}
+.lineup__intro{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.5rem,4vw,3rem);
+  align-items:end;margin-bottom:clamp(2.4rem,5vw,3.4rem)}
+.lineup__intro p{color:var(--muted);font-size:clamp(1rem,1.4vw,1.14rem);max-width:36em;
+  padding-bottom:.35rem}
+.lineup__row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--line);border:1px solid var(--line)}
+.ampcol{position:relative;background:var(--ink);padding:1.8rem 1.5rem 1.6rem;
+  display:flex;flex-direction:column;
+  transition:opacity .45s var(--ease),background .45s var(--ease)}
+/* each head's own light, blooming from behind the render */
+.ampcol::before{content:"";position:absolute;z-index:0;left:50%;top:0;
+  width:130%;aspect-ratio:1;transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(circle,color-mix(in oklab,var(--glow) 20%,transparent) 0%,
+    color-mix(in oklab,var(--glow) 7%,transparent) 38%,transparent 66%);
+  opacity:.5;transition:opacity .5s var(--ease)}
+.ampcol:hover::before{opacity:1}
+/* solo-on-hover: the row dims every column except the one under the pointer */
+@media (hover:hover) and (pointer:fine){
+  .lineup__row:hover .ampcol:not(:hover){opacity:.38}
+}
+.ampcol__stage{position:relative;z-index:1;margin-bottom:1.3rem}
+.ampcol__shot{position:relative;aspect-ratio:1672/941;will-change:transform}
+.ampcol__shot img{width:100%;height:100%;object-fit:contain}
+.ampcol__meta{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;
+  border-top:1px solid var(--line-2);padding-top:1.1rem}
+.ampcol__no{font-size:.78rem;color:var(--glow);margin-bottom:.5rem;
+  text-shadow:0 0 14px color-mix(in oklab,var(--glow) 55%,transparent)}
+.ampcol__meta h3{font-size:1.75rem;color:#fff;margin-bottom:.35rem}
+.ampcol__tag{color:var(--glow);font-size:.6rem;margin-bottom:.8rem;
+  filter:brightness(1.15)}
+.ampcol__copy{color:var(--muted);font-size:.94rem;margin-bottom:1.3rem}
+/* the voice list is the point of the section: ruled rows, one per voice, so
+   3 + 4 + 2 = 9 is legible at a glance instead of buried behind tabs */
+.ampcol__voices{list-style:none;margin-top:auto;display:flex;flex-direction:column}
+.ampcol__voices li{display:flex;align-items:baseline;gap:.85rem;
+  padding:.6rem 0;border-top:1px solid var(--line);
+  font-family:var(--font-display);font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;font-size:1rem;color:var(--text)}
+.ampcol__voices li span{font-size:.58rem;letter-spacing:.16em;color:var(--muted-2)}
+.lineup__tally{margin-top:1.6rem;text-align:right;font-size:.64rem;color:var(--muted-2)}
+.lineup__tally .led{color:var(--gold);font-size:1.15em}
+@media (max-width:980px){
+  .lineup__intro{grid-template-columns:1fr;align-items:start}
+  .lineup__row{grid-template-columns:1fr}
+  .ampcol__voices{margin-top:1rem}
+  .lineup__tally{text-align:left}
 }
 
-/* ════════ PEDALBOARD — horizontal rail ════════ */
+/* ════════ 03 · PEDALBOARD — horizontal rail ════════ */
 .board{position:relative}
 .board__head{max-width:var(--maxw);margin:0 auto;padding:clamp(4rem,8vw,6.5rem) var(--pad) 1.6rem}
 .board__head h2{margin-bottom:1rem}
-.board__sub{color:var(--muted);font-size:1.08rem;max-width:36em}
+.board__sub{color:var(--muted);font-size:1.04rem;max-width:36em}
 .board__pin{position:relative}
 .board__viewport{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:clip}
 .board__track{display:flex;gap:clamp(1.4rem,3vw,2.8rem);padding-left:max(var(--pad),calc((100vw - var(--maxw))/2));
   padding-right:8vw;will-change:transform}
-.pcard{flex:0 0 min(74vw,440px);position:relative;border-radius:18px;overflow:hidden;
-  background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);
+.pcard{flex:0 0 min(74vw,440px);position:relative;overflow:hidden;
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-2);
   box-shadow:0 40px 90px -40px rgba(0,0,0,.9);will-change:transform;
   --mx:50%;--my:30%}
 .pcard::before{content:"";position:absolute;inset:0;z-index:0;opacity:.16;
@@ -470,11 +419,11 @@ em{font-style:normal;color:var(--gold-hi)}
 .pcard__no{font-size:.85rem;color:var(--tint);filter:brightness(1.5)}
 .pcard__meta h3{margin:.35rem 0 .2rem;font-size:1.5rem}
 .pcard__tag{margin-bottom:.55rem;color:var(--tint);filter:brightness(1.45);font-size:.64rem}
-.pcard__meta > p:last-child{color:var(--muted);font-size:.98rem}
+.pcard__meta > p:last-child{color:var(--muted);font-size:.95rem}
 .board__progress{position:absolute;left:50%;bottom:5vh;transform:translateX(-50%);z-index:5;
   display:flex;align-items:center;gap:1rem;pointer-events:none}
-.board__count{font-size:.8rem;color:var(--gold)}
-.board__bar{width:min(30vw,260px);height:2px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}
+.board__count{font-size:.8rem;color:var(--gold);text-shadow:0 0 10px rgba(180,212,230,.5)}
+.board__bar{width:min(30vw,260px);height:2px;background:rgba(255,255,255,.12);overflow:hidden}
 .board__bar span{display:block;height:100%;width:100%;background:var(--gold);transform:scaleX(0);
   transform-origin:0 50%;will-change:transform}
 
@@ -486,20 +435,21 @@ em{font-style:normal;color:var(--gold-hi)}
   .board__progress{display:none}
 }
 
-/* ════════ STUDIO ════════ */
+/* ════════ 04 · STUDIO ════════ */
 .studio{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
   padding:clamp(5.5rem,11vw,9.5rem) var(--pad);
   display:grid;grid-template-columns:1.12fr .88fr;gap:clamp(2.2rem,5vw,5rem);align-items:center}
-.studio__media{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);
-  box-shadow:0 50px 110px -40px rgba(0,0,0,.9),0 0 80px -30px rgba(91,143,212,.22)}
+.studio__media{position:relative;overflow:hidden;border:1px solid var(--line-2);
+  box-shadow:0 50px 110px -40px rgba(0,0,0,.9)}
 .studio__media img{width:100%}
 /* Observe the un-clipped container; wipe the inner image. A clip-path on the
    observed element itself suppresses the IntersectionObserver's enter callback
    in Chromium, so the reveal never fired. */
 [data-reveal-wipe] img{clip-path:inset(0 100% 0 0);transition:clip-path 1s cubic-bezier(.7,0,.2,1)}
 [data-reveal-wipe].in img{clip-path:inset(0 0 0 0)}
+.studio__copy .shead{margin-bottom:1.2rem}
 .studio__copy h2{margin-bottom:1.2rem}
-.studio__copy > p{color:var(--muted);font-size:1.08rem;margin-bottom:1.6rem}
+.studio__copy > p{color:var(--muted);font-size:1.04rem;margin-bottom:1.6rem}
 .studio__chips{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:2rem}
 .vu{width:190px}
 .vu svg{width:100%;display:block}
@@ -516,12 +466,12 @@ em{font-style:normal;color:var(--gold-hi)}
   .vu{display:none}
 }
 
-/* ════════ CAB ════════ */
+/* ════════ 05 · CAB ════════ */
 .cab{max-width:var(--maxw);margin:0 auto;
-  padding:clamp(3.5rem,8vw,6.5rem) var(--pad);text-align:center}
-.cab__copy{max-width:56ch;margin:0 auto}
+  padding:clamp(3.5rem,8vw,6.5rem) var(--pad)}
+.cab__copy{max-width:56ch}
 .cab__copy h2{margin-bottom:1rem}
-.cab__copy > p{color:var(--muted);font-size:1.06rem}
+.cab__copy > p{color:var(--muted);font-size:1.02rem}
 /* The cab art is a transparent PNG/WebP cut-out, so it must sit straight on the
    page — no frame, no panel background. A box border or a rounded container
    would show as a hard edge against the near-black page; the drop-shadow filter
@@ -530,76 +480,63 @@ em{font-style:normal;color:var(--gold-hi)}
 .cab__media img{width:100%;display:block;
   filter:drop-shadow(0 26px 46px rgba(0,0,0,.75))}
 
-/* ════════ ENGINE ════════ */
-.engine{position:relative;border-block:1px solid var(--line);background:var(--ink-2);
-  padding:clamp(5.5rem,11vw,9rem) 0 clamp(5rem,10vw,8rem);overflow:clip}
-.engine__ticker{position:absolute;top:1.1rem;left:0;right:0;overflow:hidden;opacity:.5;
-  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
-.engine__tickertrack{display:flex;gap:2.6rem;width:max-content;white-space:nowrap;
-  animation:marq 50s linear infinite;font-size:.66rem;color:var(--muted-2);letter-spacing:.2em}
-.engine__tickertrack span::before{content:"▸ ";color:var(--gold-deep)}
-.engine__inner{max-width:var(--maxw);margin:0 auto;padding:0 var(--pad);text-align:center}
-.engine__big{margin-bottom:2.6rem;font-size:clamp(2.4rem,6.4vw,5.4rem)}
-.engine__word{background:linear-gradient(180deg,#fff,#9aa2b0);-webkit-background-clip:text;background-clip:text;color:transparent}
-.engine__word--t3k{background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep));
-  -webkit-background-clip:text;background-clip:text;color:transparent}
-.engine__cols{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1.4rem,3vw,2.8rem);text-align:left}
-.engine__cols--one{grid-template-columns:min(680px,100%);justify-content:center}
-.engine__col{padding:1.9rem 1.9rem 1.7rem;border:1px solid var(--line);border-radius:18px;
-  background:linear-gradient(180deg,rgba(255,255,255,.025),transparent)}
-.engine__col h3{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.3em;color:var(--gold);margin-bottom:1rem}
-.engine__col p{color:var(--muted);font-size:1.02rem;margin-bottom:1.4rem}
-.engine__link{display:inline-block;color:var(--text);font-size:.78rem;padding:.65rem 1.15rem;
-  border:1px solid rgba(180,212,230,.4);border-radius:9px;transition:background .3s,color .3s,border-color .3s;will-change:transform}
-.engine__link:hover{background:var(--gold);border-color:var(--gold);color:#0a0d12}
-@media (max-width:880px){.engine__cols{grid-template-columns:1fr}}
-
-/* ════════ SPECS ════════ */
+/* ════════ 06 · SPECS — LED stats + ruled feature grid ════════
+   The 1px-gap-over-line-colour trick draws the grid as a single ruled table —
+   cells paint --ink on top, which matches the page (specs sits on BASE_BG). */
 .specs{max-width:var(--maxw);margin:0 auto;padding:clamp(4.5rem,9vw,7rem) var(--pad)}
-.specs__stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1.2rem;padding:2.3rem 1.6rem;
-  border:1px solid var(--line);border-radius:20px;margin-bottom:3.2rem;
-  background:linear-gradient(180deg,rgba(255,255,255,.03),transparent)}
-.stat{text-align:center}
+.specs__stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border-block:1px solid var(--line-2);margin-bottom:clamp(2.6rem,5vw,3.6rem)}
+.stat{text-align:center;background:var(--ink);padding:2.2rem 1rem 2rem}
 .stat__num{display:block;font-size:clamp(2rem,4.6vw,3.4rem);line-height:1.15;color:var(--gold);
   text-shadow:0 0 22px rgba(180,212,230,.4)}
-.stat__label{font-family:var(--font-display);font-weight:500;text-transform:uppercase;letter-spacing:.14em;
-  font-size:.72rem;color:var(--muted);margin-top:.55rem;display:block}
-.specs__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}
-.feature{padding:1.7rem;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.015);
-  transition:transform .45s var(--ease),border-color .45s,background .45s}
-.feature:hover{transform:translateY(-6px);border-color:rgba(180,212,230,.4);background:rgba(180,212,230,.045)}
-.feature h3{font-size:1.06rem;margin-bottom:.55rem;color:#fff}
-.feature p{color:var(--muted);font-size:.96rem}
-@media (max-width:960px){.specs__stats{grid-template-columns:repeat(3,1fr);row-gap:1.8rem}}
+.stat__label{font-family:var(--font-ui);font-weight:600;text-transform:uppercase;letter-spacing:.18em;
+  font-size:.66rem;color:var(--muted);margin-top:.6rem;display:block}
+.specs__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line)}
+.feature{background:var(--ink);padding:1.6rem 1.5rem 1.5rem;transition:background .35s}
+.feature:hover{background:#090b0e}
+.feature__no{display:block;font-size:.6rem;letter-spacing:.2em;color:var(--muted-2);
+  margin-bottom:.9rem;transition:color .35s}
+.feature:hover .feature__no{color:var(--gold)}
+.feature h3{font-family:var(--font-ui);text-transform:none;letter-spacing:0;
+  font-size:1.02rem;line-height:1.25;margin-bottom:.5rem;color:#fff}
+.feature p{color:var(--muted);font-size:.92rem}
 @media (max-width:880px){.specs__grid{grid-template-columns:1fr}}
 @media (max-width:560px){.specs__stats{grid-template-columns:repeat(2,1fr)}}
 
-/* ════════ DOWNLOAD ════════ */
-.download{position:relative;max-width:var(--maxw);margin:0 auto;text-align:center;overflow:clip;
+/* ════════ 07 · DOWNLOAD ════════ */
+.download{position:relative;max-width:var(--maxw);margin:0 auto;overflow:clip;
   padding:clamp(4.5rem,9vw,7rem) var(--pad) clamp(6rem,12vw,10rem)}
-.download__ghost{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:0;
+.download__ghost{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);z-index:0;
   font-family:var(--font-display);font-weight:700;font-size:clamp(12rem,34vw,30rem);line-height:1;
   color:transparent;-webkit-text-stroke:1px rgba(180,212,230,.13);pointer-events:none;user-select:none;
   will-change:transform}
-.download__head{position:relative;z-index:1;margin-bottom:3rem}
-.badge{display:inline-block;font-family:var(--font-display);font-weight:600;letter-spacing:.22em;font-size:.72rem;
-  padding:.42rem 1rem;border-radius:99px;background:linear-gradient(180deg,var(--gold),var(--gold-deep));
-  color:#0a0d12;margin-bottom:1.4rem;box-shadow:0 8px 22px -8px rgba(180,212,230,.7)}
+.download__head{position:relative;z-index:1;margin-bottom:3rem;text-align:center}
+/* live lamp badge — a blinking point of the brand's white light */
+.badge{display:inline-flex;align-items:center;gap:.6rem;font-size:.66rem;letter-spacing:.28em;
+  padding:.5rem 1rem;border:1px solid rgba(180,212,230,.4);color:var(--gold);
+  background:rgba(180,212,230,.06);margin-bottom:1.4rem}
+.badge::before{content:"";width:7px;height:7px;flex:0 0 auto;background:var(--gold-hi);
+  box-shadow:0 0 10px rgba(180,212,230,.9);animation:lamp 2.2s ease-in-out infinite}
+@keyframes lamp{50%{opacity:.35}}
 .download__head h2{margin-bottom:1rem}
-.download__head p{color:var(--muted);font-size:1.12rem;max-width:34em;margin:0 auto}
+.download__head p{color:var(--muted);font-size:1.08rem;max-width:34em;margin:0 auto}
+/* the closing beauty shot — the plugin window, Portland loaded */
+.download__shot{position:relative;z-index:1;max-width:1000px;
+  margin:0 auto clamp(2.6rem,5vw,3.6rem)}
 .download__cards{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;text-align:left}
 /* Two-card layout (e.g. macOS + In the box while Windows is on hold): centre the
    pair instead of leaving an empty third column. */
 .download__cards--pair{grid-template-columns:repeat(2,1fr);max-width:720px;margin-inline:auto}
-.dcard{position:relative;padding:2rem 1.8rem;border:1px solid var(--line);border-radius:20px;overflow:hidden;
+.dcard{position:relative;padding:2rem 1.8rem;border:1px solid var(--line-2);overflow:hidden;
   background:linear-gradient(180deg,var(--panel-2),var(--panel));display:flex;flex-direction:column;gap:.55rem;
   box-shadow:0 30px 70px -40px rgba(0,0,0,.9);--mx:50%;--my:20%}
 .dcard::after{content:"";position:absolute;inset:0;opacity:0;pointer-events:none;
   background:radial-gradient(300px circle at var(--mx) var(--my),rgba(255,255,255,.07),transparent 60%);
   transition:opacity .35s}
 .dcard:hover::after{opacity:1}
-.dcard__os{width:48px;height:48px;display:grid;place-items:center;border-radius:12px;
-  background:rgba(255,255,255,.05);border:1px solid var(--line);margin-bottom:.4rem}
+.dcard__os{width:48px;height:48px;display:grid;place-items:center;
+  background:rgba(255,255,255,.05);border:1px solid var(--line-2);margin-bottom:.4rem}
 .dcard__os svg{width:26px;height:26px;fill:var(--text)}
 .dcard__os--plug svg{fill:none;stroke:var(--text);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .dcard h3{font-size:1.4rem;color:#fff}
@@ -607,28 +544,34 @@ em{font-style:normal;color:var(--gold-hi)}
 .dcard__btn{justify-content:center;width:100%}
 .dcard__note{font-size:.86rem;color:var(--muted);text-align:center;margin-top:.2rem}
 .dcard__note strong{color:var(--gold)}
-.dcard--box{border-color:rgba(180,212,230,.32);background:linear-gradient(180deg,#191507,var(--panel))}
+.dcard--box{border-color:rgba(159,216,232,.3);background:linear-gradient(180deg,#0b1013,var(--panel))}
 .dcard__list{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-top:.2rem}
-.dcard__list li{position:relative;padding-left:1.7rem;color:var(--text);font-size:.96rem}
-.dcard__list li::before{content:"";position:absolute;left:0;top:.18em;width:1.05rem;height:1.05rem;border-radius:50%;
+.dcard__list li{position:relative;padding-left:1.7rem;color:var(--text);font-size:.94rem}
+.dcard__list li::before{content:"";position:absolute;left:0;top:.18em;width:1.05rem;height:1.05rem;
   background:linear-gradient(180deg,var(--gold),var(--gold-deep));
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' d='M5 12l4 4 10-10'/%3E%3C/svg%3E") center/72% no-repeat;
           mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round' d='M5 12l4 4 10-10'/%3E%3C/svg%3E") center/72% no-repeat}
 @media (max-width:880px){.download__cards{grid-template-columns:1fr}}
 
 /* ════════ FOOTER ════════ */
-.footer{border-top:1px solid var(--line);background:var(--ink-2);
-  padding:clamp(3rem,6vw,4.5rem) var(--pad) 3rem}
+.footer{position:relative;border-top:1px solid var(--line);background:var(--ink-2);overflow:clip;
+  padding:clamp(3rem,6vw,4.5rem) var(--pad) 0}
 .footer__brand{max-width:var(--maxw);margin:0 auto 2.5rem}
 .footer__tag{color:var(--muted);margin-top:1.2rem;font-size:1rem}
 .footer__cols{max-width:var(--maxw);margin:0 auto;display:grid;grid-template-columns:repeat(3,auto);gap:3rem;
   justify-content:start;padding-bottom:2.4rem;border-bottom:1px solid var(--line)}
-.footer__cols h4{font-family:var(--font-display);font-weight:600;text-transform:uppercase;letter-spacing:.16em;
-  font-size:.72rem;color:var(--gold);margin-bottom:1rem}
-.footer__cols a{display:block;color:var(--muted);font-size:.94rem;padding:.24rem 0;transition:color .25s}
+.footer__cols h4{font-family:var(--font-ui);font-weight:600;text-transform:uppercase;letter-spacing:.18em;
+  font-size:.68rem;color:var(--gold);margin-bottom:1rem}
+.footer__cols a{display:block;color:var(--muted);font-size:.92rem;padding:.24rem 0;transition:color .25s}
 .footer__cols a:hover{color:#fff}
 .footer__legal{max-width:var(--maxw);margin:2rem auto 0;color:var(--muted-2);font-size:.85rem;line-height:1.8}
 .footer__fine{font-size:.78rem}
+/* the sign-off: a giant outline wordmark half-sunk below the page edge */
+.footer__ghost{max-width:var(--maxw);margin:1.5rem auto -.28em;
+  font-family:var(--font-display);font-weight:700;text-transform:uppercase;line-height:.8;
+  font-size:clamp(4.4rem,15.5vw,14.5rem);letter-spacing:.02em;white-space:nowrap;
+  color:transparent;-webkit-text-stroke:1px rgba(233,238,244,.1);
+  user-select:none;pointer-events:none}
 @media (max-width:620px){.footer__cols{grid-template-columns:repeat(2,auto);gap:2rem}}
 
 /* ════════ reveal system ════════ */
@@ -636,7 +579,7 @@ em{font-style:normal;color:var(--gold-hi)}
   transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:var(--d,0s)}
 [data-reveal].in{opacity:1;transform:none}
 
-/* gold highlight sweep on keywords once their block reveals */
+/* highlight sweep on keywords once their block reveals */
 [data-reveal] strong{
   background:linear-gradient(rgba(180,212,230,.26),rgba(180,212,230,.26)) no-repeat 0 74%/0% 36%;
   transition:background-size .9s var(--ease) .35s}
@@ -647,14 +590,17 @@ em{font-style:normal;color:var(--gold-hi)}
 /* ════════ small screens ════════ */
 @media (max-width:600px){
   .hero{padding-top:6.8rem}
-  .hero__eyebrow{letter-spacing:.28em;font-size:.62rem;margin-bottom:1.1rem}
+  .hero__eyebrow{letter-spacing:.28em;font-size:.6rem;margin-bottom:1.1rem}
   .hero__cta .btn{flex:1 1 44%}
   .nav{gap:.8rem}
   /* Keep the header on one clean line: tighter wordmark + compact CTA. */
   .logo__word{letter-spacing:.2em;font-size:.8rem}
-  .nav__cta{white-space:nowrap;font-size:.74rem;padding:.66rem 1rem;letter-spacing:.05em}
+  .nav__cta{white-space:nowrap;font-size:.7rem;padding:.66rem 1rem;letter-spacing:.08em}
   .marquee__track span{font-size:1.6rem;padding:0 1rem}
-  .statement__sub,.amps__panel p,.board__sub,.studio__copy > p{font-size:1rem}
+  .statement__sub,.lineup__intro p,.board__sub,.studio__copy > p{font-size:1rem}
+  .shead{gap:.8rem}
+  .shead__meta{display:none}
+  .kicker{letter-spacing:.3em}
 }
 /* Smallest phones: in the nav, the R-monogram alone carries the brand so the
    header never wraps (the footer wordmark keeps its room). */
@@ -662,31 +608,21 @@ em{font-style:normal;color:var(--gold-hi)}
 
 /* ════════ reduced motion — kill motion, collapse scroll pins ════════ */
 @media (prefers-reduced-motion:reduce){
-  .boot{display:none}
   [data-reveal],[data-reveal-line]{opacity:1!important;transform:none!important;transition:none!important}
   [data-reveal-wipe] img{clip-path:none!important;transition:none!important}
   .fill-ink{clip-path:none!important}
   .fill-ghost{visibility:hidden}
-  .marquee__track,.engine__tickertrack,.hero__scrollcue i{animation:none!important}
+  .marquee__track,.hero__scrollcue i,.badge::before{animation:none!important}
   .hero__strings{display:none}
-  .cursor{display:none}
   /* the rig hero stops auto-cycling in JS; keep the tabs usable but instant */
   .rig__amp{transition:none!important;transform:none!important}
   .rig__glow,.rig__voiceset span{transition:none!important}
   .rig__sheen{display:none}
-  /* the pinned amp + pedal scenes are scroll-driven; with the scroll loop off,
-     collapse them to the same static tab/swipe views the mobile layout uses. */
-  .amps{height:auto}
-  .amps__sticky{position:static;height:auto;overflow:visible}
-  .amps__index{display:none}
-  .amps__panels{position:static;min-height:0}
-  .amps__panel{position:static;display:none;opacity:1;transform:none}
-  .amps__panel.is-active{display:block}
-  .amps__visual{display:block}
-  .amps__frame{width:100%}
-  .amps__face{transition:none}
-  .amps__rail{display:none}
-  .amps__railnote{position:static;margin-top:.8rem}
+  /* the lineup is static by construction — only its hover-solo needs muting */
+  .lineup__row:hover .ampcol:not(:hover){opacity:1}
+  .ampcol,.ampcol::before{transition:none}
+  /* the pinned pedal scene is scroll-driven; with the scroll loop off, collapse
+     it to the same swipe view the mobile layout uses. */
   .board__viewport{position:static;height:auto;overflow-x:auto}
   .board__track{transform:none!important}
   .board__progress{display:none}
