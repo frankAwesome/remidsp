@@ -317,7 +317,10 @@ em{font-style:normal;color:var(--gold-hi)}
   align-items:end;margin-bottom:clamp(2.2rem,4vw,3.2rem)}
 .showcase__head p{color:var(--muted);font-size:clamp(1rem,1.4vw,1.14rem);max-width:34em;
   padding-bottom:.35rem}
-.showcase__stage{position:relative}
+/* Both plugin-window shots sit at one width. Left to fill the content column
+   this frame ran ~1240px against the closing shot's 1000px, which read as a
+   bigger class of image rather than the same window twice. */
+.showcase__stage{position:relative;max-width:1000px;margin-inline:auto}
 .showcase__frame{position:relative;overflow:hidden;
   border:1px solid rgba(255,255,255,.1);
   box-shadow:0 60px 130px -40px rgba(0,0,0,.95);
@@ -331,7 +334,10 @@ em{font-style:normal;color:var(--gold-hi)}
 .bk--tr{top:-11px;right:-11px;border-left:0;border-bottom:0}
 .bk--bl{bottom:-11px;left:-11px;border-right:0;border-top:0}
 .bk--br{bottom:-11px;right:-11px;border-left:0;border-top:0}
-.showcase__caption{margin-top:1.1rem;text-align:right;color:var(--muted-2);font-size:.62rem}
+/* tracks the frame above it, so the right-aligned readout stays flush with the
+   image edge instead of the full content column */
+.showcase__caption{margin:1.1rem auto 0;max-width:1000px;text-align:right;
+  color:var(--muted-2);font-size:.62rem}
 .showcase__caption .led{color:var(--gold);font-size:.9em}
 @media (max-width:880px){.showcase__head{grid-template-columns:1fr;align-items:start}}
 
