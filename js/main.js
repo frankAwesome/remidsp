@@ -160,7 +160,7 @@
   const marqTracks= $$(".marquee__track");
 
   // Camden / Portland / Katahdin — keyed to each head's own colour: Camden's
-  // cool seafoam, Portland's gold-on-marble, Katahdin's warm carving. Shared by
+  // cool seafoam, Portland's gold-on-black, Katahdin's warm carving. Shared by
   // the home rig hero and the Maine amps section, which show the same three amps.
   const AMP_BGS   = ["#05090b", "#0b0906", "#0b0705"];
   const CARD_BGS  = ["#0d0a04", "#0e0704", "#04100f", "#060a12"]; // drive/chorus/delay/reverb
@@ -353,7 +353,7 @@
     const tabs  = $$("#rigTabs button");
     const vsets = $$(".rig__voiceset");
     // [halo, falloff] — pulled off each head: Camden's seafoam panel, Portland's
-    // gold-on-marble, Katahdin's warm cherub carving.
+    // gold-on-black, Katahdin's warm cherub carving.
     const GLOW  = [["#8fd8cf", "#4a8f96"], ["#e8c877", "#8f6f2e"], ["#e0a878", "#96552e"]];
     const PERIOD = 5200;
 
