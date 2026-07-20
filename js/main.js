@@ -163,7 +163,7 @@
   // cool seafoam, Portland's gold-on-marble, Katahdin's warm carving. Shared by
   // the home rig hero and the Maine amps section, which show the same three amps.
   const AMP_BGS   = ["#05090b", "#0b0906", "#0b0705"];
-  const CARD_BGS  = ["#0d0a04", "#0a0712", "#04100f", "#060a12"]; // drive/chorus/delay/reverb
+  const CARD_BGS  = ["#0d0a04", "#0e0704", "#04100f", "#060a12"]; // drive/chorus/delay/reverb
   const BASE_BG   = "#050506";
 
   const M = { vh: 0, docH: 1, hero: 0, stmtTop: 0, stmtH: 1,
