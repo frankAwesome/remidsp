@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Maine, the all-in-one guitar rig</title>
-<meta name="description" content="Maine — REMI DSP's all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Level-matched by construction. VST3, AU & standalone on macOS. No account required." />
+<meta name="description" content="Maine — REMI DSP's all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Level-matched by construction. Standalone, VST3 & AU on macOS; standalone & VST3 on Windows. No account required." />
 <!-- Canonical earns its keep here: this page is reachable as remidsp.com/,
      remidsp.com/index.html, the retired /guitar.html (which now redirects
      here), and (via GitHub's redirect) the old project URL. Without it those
@@ -38,7 +38,7 @@
 <link rel="stylesheet" href="css/style.css" />
 <!-- Structured data. Claims here must match what the page actually says and what
      you actually ship — Google cross-checks, and an offer that contradicts the
-     page is worse than no markup at all. macOS only, deliberately. -->
+     page is worse than no markup at all. macOS and Windows. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -65,7 +65,7 @@
       "name": "Maine",
       "applicationCategory": "MultimediaApplication",
       "applicationSubCategory": "Audio plugin",
-      "operatingSystem": "macOS 11+",
+      "operatingSystem": "macOS 11+, Windows 10/11",
       "url": "https://remidsp.com/",
       "image": "https://remidsp.com/assets/img/og-card-maine.jpg",
       "description": "An all-in-one guitar rig: three amplifiers captured from real, mic'd-up rigs, a pedalboard that reorders itself and a studio strip that finishes the job. Level-matched by construction.",
@@ -134,8 +134,7 @@
     </h1>
     <div class="hero__cta" data-reveal style="--d:.3s">
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
-        <svg viewBox="0 0 24 24" class="btn__os" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg>
-        <span>Download for macOS</span>
+        <span>Download</span>
       </a>
       <span class="hero__formats mono">VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;STANDALONE</span>
     </div>
@@ -177,10 +176,10 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
   </div>
 </section>
@@ -190,7 +189,7 @@
   <header class="shead" data-reveal>
     <span class="shead__no led">01</span>
     <p class="kicker">The Plugin</p>
-    <span class="shead__meta mono">MAINE&nbsp;v0.3.0&nbsp;·&nbsp;MACOS</span>
+    <span class="shead__meta mono">MAINE&nbsp;v0.6.0&nbsp;·&nbsp;MACOS&nbsp;&amp;&nbsp;WINDOWS</span>
   </header>
 
   <div class="showcase__head">
@@ -206,9 +205,9 @@
   <div class="showcase__stage" data-reveal>
     <div class="showcase__frame" data-tilt>
       <picture>
-        <source srcset="assets/img/amp-hero.webp" type="image/webp">
-        <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
-             alt="The Maine plugin window — the Camden amplifier head with its voice selector, the effects chain along the top and the capture readout below" />
+        <source srcset="assets/img/amp-window-portland.webp" type="image/webp">
+        <img src="assets/img/amp-window-portland.png" width="1920" height="1208" loading="lazy"
+             alt="The Maine plugin window on its Bloom Clean patch — the Portland head in black tolex and gold, the effects chain along the top and the portland_bloom capture loaded below" />
       </picture>
       <span class="showcase__glare" aria-hidden="true"></span>
     </div>
@@ -217,7 +216,7 @@
     <span class="bk bk--bl" aria-hidden="true"></span>
     <span class="bk bk--br" aria-hidden="true"></span>
   </div>
-  <p class="showcase__caption mono">MAINE&nbsp;v0.3.0&nbsp;—&nbsp;CAPTURE&nbsp;ENGINE&nbsp;·&nbsp;<span class="led">44.1–96</span>&nbsp;kHz</p>
+  <p class="showcase__caption mono">MAINE&nbsp;v0.6.0&nbsp;—&nbsp;CAPTURE&nbsp;ENGINE&nbsp;·&nbsp;<span class="led">44.1–96</span>&nbsp;kHz</p>
 </section>
 
 <!-- ░░ 02 · THE AMPLIFIERS — the whole lineup, side by side ░░
@@ -433,10 +432,10 @@
   <header class="shead" data-reveal>
     <span class="shead__no led">06</span>
     <p class="kicker">Specs</p>
-    <span class="shead__meta mono">MACOS&nbsp;11+&nbsp;·&nbsp;INTEL&nbsp;&amp;&nbsp;APPLE&nbsp;SILICON</span>
+    <span class="shead__meta mono">MACOS&nbsp;11+&nbsp;·&nbsp;WINDOWS&nbsp;10/11&nbsp;·&nbsp;64-BIT</span>
   </header>
   <dl class="spectable" data-reveal style="--d:.06s">
-    <div class="specrow"><dt>Formats</dt><dd>VST3, Audio Unit and standalone — one installer, all three.</dd></div>
+    <div class="specrow"><dt>Formats</dt><dd>macOS: standalone, VST3 and Audio Unit. Windows: standalone and VST3. One installer per platform.</dd></div>
     <div class="specrow"><dt>Sample rates</dt><dd>44.1, 48, 88.2 and 96&nbsp;kHz. Captures resample to their trained rate; every effect follows the host. No 48k lock-in.</dd></div>
   </dl>
 </section>
@@ -455,16 +454,15 @@
     <p>Download, install, and plug in. No account required — the full version, every format.</p>
   </div>
 
-  <!-- The closing shot: the plugin's own boot state — the Bloom Clean default
-       patch on the Portland head — rendered straight from the app, so it tracks
-       the shipping faceplate rather than a re-touched screenshot. -->
+  <!-- The closing shot: the Camden head rendered straight from the app, so it
+       tracks the shipping faceplate rather than a re-touched screenshot. -->
   <div class="download__shot" data-reveal>
     <div class="showcase__stage">
       <div class="showcase__frame" data-tilt>
         <picture>
-          <source srcset="assets/img/amp-window-portland.webp" type="image/webp">
-          <img src="assets/img/amp-window-portland.png" width="1920" height="1208" loading="lazy"
-               alt="The Maine plugin window on its Bloom Clean patch — the Portland head in black tolex and gold, the effects chain along the top and the portland_bloom capture loaded below" />
+          <source srcset="assets/img/amp-hero.webp" type="image/webp">
+          <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
+               alt="The Maine plugin window — the Camden amplifier head with its voice selector, the effects chain along the top and the capture readout below" />
         </picture>
         <span class="showcase__glare" aria-hidden="true"></span>
       </div>
@@ -473,16 +471,25 @@
       <span class="bk bk--bl" aria-hidden="true"></span>
       <span class="bk bk--br" aria-hidden="true"></span>
     </div>
-    <p class="showcase__caption mono">PORTLAND&nbsp;·&nbsp;BLOOM&nbsp;—&nbsp;THE&nbsp;WHOLE&nbsp;RIG&nbsp;IN&nbsp;ONE&nbsp;WINDOW</p>
+    <p class="showcase__caption mono">CAMDEN&nbsp;—&nbsp;THE&nbsp;WHOLE&nbsp;RIG&nbsp;IN&nbsp;ONE&nbsp;WINDOW</p>
   </div>
 
-  <div class="download__cards download__cards--pair">
+  <div class="download__cards">
     <article class="dcard" data-reveal data-card>
       <div class="dcard__os"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg></div>
       <h3>macOS</h3>
       <p class="dcard__req mono">MACOS 11+ · INTEL &amp; APPLE SILICON</p>
       <a class="btn btn--amber dcard__btn" href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-magnetic><span>Download installer</span></a>
       <p class="dcard__note">One installer · App <strong>+</strong> AU <strong>+</strong> VST3</p>
+    </article>
+
+    <article class="dcard" data-reveal style="--d:.08s" data-card>
+      <div class="dcard__os"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.3 10.25 4.28V11.4H3V5.3zM10.25 12.6V19.72L3 18.7V12.6H10.25zM11.4 4.1 21 2.75V11.4H11.4V4.1zM21 12.6V21.25L11.4 19.9V12.6H21z"/></svg></div>
+      <h3>Windows</h3>
+      <p class="dcard__req mono">WINDOWS 10 / 11 · 64-BIT</p>
+      <a class="btn btn--amber dcard__btn" href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-magnetic><span>Download installer</span></a>
+      <p class="dcard__note">One installer · Standalone <strong>+</strong> VST3</p>
+      <p class="dcard__warn">Heads up — this installer isn't code-signed yet, so <strong>Windows SmartScreen</strong> may pop up when you run it. Click <strong>More info &rarr; Run anyway</strong> to install.</p>
     </article>
 
     <article class="dcard dcard--box" data-reveal style="--d:.16s" data-card>
@@ -513,8 +520,8 @@
   </div>
   <div class="footer__cols">
     <div><h4>Maine</h4><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a></div>
-    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">VST3 &amp; AU</a><a href="#download">Standalone</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a></div>
+    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3 &amp; AU</a><a href="#download">Standalone</a></div>
   </div>
   <p class="footer__legal">
     © <span id="year">2026</span> REMI DSP. Built for players and producers.<br>

@@ -539,6 +539,10 @@ em{font-style:normal;color:var(--gold-hi)}
 .dcard__btn{justify-content:center;width:100%}
 .dcard__note{font-size:.86rem;color:var(--muted);text-align:center;margin-top:.2rem}
 .dcard__note strong{color:var(--gold)}
+/* Windows build is not code-signed yet — flag SmartScreen right at the download. */
+.dcard__warn{margin-top:.35rem;padding:.62rem .72rem;font-size:.76rem;line-height:1.5;text-align:left;
+  color:var(--muted);background:rgba(224,168,78,.07);border:1px solid rgba(224,168,78,.30)}
+.dcard__warn strong{color:var(--gold);font-weight:600}
 .dcard--box{border-color:rgba(159,216,232,.3);background:linear-gradient(180deg,#0b1013,var(--panel))}
 .dcard__list{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-top:.2rem}
 .dcard__list li{position:relative;padding-left:1.7rem;color:var(--text);font-size:.94rem}
