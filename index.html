@@ -133,20 +133,14 @@
       <span class="line"><span data-reveal-line style="--d:.05s">Three amps.</span></span>
       <span class="line"><span data-reveal-line class="hero__free" style="--d:.14s">One window.</span></span>
     </h1>
-    <p class="hero__lede" data-reveal style="--d:.32s">
-      Three amplifiers captured from the real things. A pedalboard that reorders
-      itself. A studio strip that finishes the job. All of it
-      <strong>level-matched&nbsp;by&nbsp;construction</strong>, so your level never
-      jumps when you change amps.
-    </p>
-    <div class="hero__cta" data-reveal style="--d:.42s">
+    <div class="hero__cta" data-reveal style="--d:.3s">
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
         <svg viewBox="0 0 24 24" class="btn__os" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.2 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.3c.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.5-3.7zM14.3 5.2c.7-.8 1.1-2 1-3.2-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.1-.6 2.8-1.3z"/></svg>
         <span>Download for macOS</span>
       </a>
       <span class="hero__formats mono">VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;STANDALONE</span>
     </div>
-    <p class="hero__note mono" data-reveal style="--d:.52s">NO ACCOUNT REQUIRED</p>
+    <p class="hero__note mono" data-reveal style="--d:.4s">NO ACCOUNT REQUIRED</p>
   </div>
 
   <div class="rig__stage" id="rig" data-card>
@@ -221,10 +215,12 @@
 
   <div class="showcase__head">
     <h2 data-reveal>One window.<br>The whole rig.</h2>
-    <p data-reveal style="--d:.08s">
-      Amp, pedalboard, studio strip and tuner — in one plugin, in any order you like.
-      No account, no iLok, no per-amp upsell.
-    </p>
+    <div class="showcase__lede" data-reveal style="--d:.08s">
+      <p>Three amplifiers captured from the real things. A pedalboard that reorders
+         itself. A studio strip that finishes the job — and a tuner that locks.</p>
+      <p>All of it in one plugin, in any order you like. No account, no iLok, no
+         per-amp upsell.</p>
+    </div>
   </div>
 
   <div class="showcase__stage" data-reveal>
@@ -460,24 +456,20 @@
     <span class="shead__meta mono">44.1–96&nbsp;kHz&nbsp;·&nbsp;MACOS&nbsp;11+</span>
   </header>
 
-  <div class="specs__stats" data-reveal>
-    <div class="stat"><span class="stat__num led" data-count="3">0</span><span class="stat__label">Amplifiers</span></div>
-    <div class="stat"><span class="stat__num led" data-count="9">0</span><span class="stat__label">Amp voices</span></div>
-    <div class="stat"><span class="stat__num led" data-count="11">0</span><span class="stat__label">Captures</span></div>
-    <div class="stat"><span class="stat__num led" data-count="21">0</span><span class="stat__label">Presets</span></div>
-  </div>
-
-  <div class="specs__grid">
-    <div class="feature" data-reveal><span class="feature__no mono">01</span><h3>Ten slots, any order</h3><p>Gate, comp, drive, amp, cab, sauce, studio, chorus, delay, reverb — drag any block anywhere in the chain.</p></div>
-    <div class="feature" data-reveal style="--d:.06s"><span class="feature__no mono">02</span><h3>A reverb with depth</h3><p>Early reflections into a 16-line modulated hall — three-dimensional, enveloping tails with a shimmer that actually blooms.</p></div>
-    <div class="feature" data-reveal style="--d:.12s"><span class="feature__no mono">03</span><h3>The "Sauce" finalizer</h3><p>Tone shaping on steroids on a live before/after analyser — a synthesized sub-harmonic, a threshold-tracked high-end de-esser, transient punch and a dynamic de-harsh.</p></div>
-    <div class="feature" data-reveal><span class="feature__no mono">04</span><h3>A tuner that locks</h3><p>Strobe-accurate to a hundredth of a cent, and it tracks a soft note through hiss — the modern low-volume lock.</p></div>
-    <div class="feature" data-reveal style="--d:.06s"><span class="feature__no mono">05</span><h3>Any sample rate</h3><p>44.1, 48, 88.2, 96&nbsp;kHz — the amp captures resample to their trained rate and every effect follows the host. No 48k lock-in.</p></div>
-    <div class="feature" data-reveal style="--d:.12s"><span class="feature__no mono">06</span><h3>A gate that hunts hum</h3><p>Phase-locked 50/60&nbsp;Hz harmonic tracking kills single-coil buzz without eating your tails.</p></div>
-    <div class="feature" data-reveal><span class="feature__no mono">07</span><h3>Presets are files</h3><p>Every preset is a JSON file. Drop one in a folder and it appears in the menu — the folder <em>is</em> the menu.</p></div>
-    <div class="feature" data-reveal style="--d:.06s"><span class="feature__no mono">08</span><h3>Auto cab sense</h3><p>Full-rig captures bypass the cab by themselves; amp-only captures pull the right IR.</p></div>
-    <div class="feature" data-reveal style="--d:.12s"><span class="feature__no mono">09</span><h3>Quality on a dial</h3><p>One knob trades detail against CPU — full fidelity in the studio, featherweight on stage.</p></div>
-  </div>
+  <!-- A spec sheet, not a feature grid: one ruled row per fact, scannable in a
+       glance. The LED stat tiles that used to sit above this said 3 amps /
+       9 voices / 11 captures — which the lineup section now shows outright. -->
+  <dl class="spectable" data-reveal>
+    <div class="specrow"><dt>Formats</dt><dd>VST3, Audio Unit and standalone. macOS&nbsp;11+, Intel and Apple&nbsp;Silicon.</dd></div>
+    <div class="specrow"><dt>Chain</dt><dd>Ten slots, any order — gate, comp, drive, amp, cab, sauce, studio, chorus, delay, reverb.</dd></div>
+    <div class="specrow"><dt>Amps</dt><dd>Three heads, nine voices, eleven captures — <strong>level-matched by construction</strong>, so switching never jumps your level.</dd></div>
+    <div class="specrow"><dt>Sample rates</dt><dd>44.1, 48, 88.2 and 96&nbsp;kHz. Captures resample to their trained rate; every effect follows the host. No 48k lock-in.</dd></div>
+    <div class="specrow"><dt>Cab</dt><dd>Auto-sense — full-rig captures bypass it, amp-only captures pull the right IR. Or drop in any IR of your own.</dd></div>
+    <div class="specrow"><dt>Gate</dt><dd>Phase-locked 50/60&nbsp;Hz harmonic tracking kills single-coil buzz without eating your tails.</dd></div>
+    <div class="specrow"><dt>Tuner</dt><dd>Strobe-accurate to a hundredth of a cent, and it tracks a soft note through hiss.</dd></div>
+    <div class="specrow"><dt>Presets</dt><dd>Twenty in the box, and every preset is a JSON file — the folder <em>is</em> the menu.</dd></div>
+    <div class="specrow"><dt>CPU</dt><dd>One QUALITY knob trades detail against CPU — full fidelity in the studio, featherweight on stage.</dd></div>
+  </dl>
 </section>
 
 <!-- ░░ 07 · DOWNLOAD ░░ -->

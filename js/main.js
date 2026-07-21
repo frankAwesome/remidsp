@@ -353,26 +353,6 @@
   })();
 
   /* ────────────────────────────────────────────────────────────
-     STATS — LED odometer count-up
-     ──────────────────────────────────────────────────────────── */
-  const statIO = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (!e.isIntersecting) return;
-      statIO.unobserve(e.target);
-      const el = e.target, target = +el.dataset.count, prefix = el.dataset.prefix || "";
-      const render = v => { el.innerHTML = (prefix ? `<span class="stat__pre">${prefix}</span>` : "") + v; };
-      if (reduce || target === 0) { render(target); return; }
-      const t0 = performance.now(), dur = 1300;
-      (function tick(t) {
-        const p = clamp((t - t0) / dur, 0, 1);
-        render(Math.round(target * (1 - Math.pow(1 - p, 3))));
-        if (p < 1) requestAnimationFrame(tick);
-      })(t0);
-    });
-  }, { threshold: 0.6 });
-  $$("[data-count]").forEach(el => statIO.observe(el));
-
-  /* ────────────────────────────────────────────────────────────
      POINTER KIT — magnetic, tilt, card spotlight
      (no custom cursor: the OS pointer stays native everywhere)
      ──────────────────────────────────────────────────────────── */

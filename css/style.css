@@ -203,9 +203,9 @@ em{font-style:normal;color:var(--gold-hi)}
   background:linear-gradient(180deg,var(--gold-hi),var(--gold) 50%,var(--gold-deep));
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 6px 26px rgba(180,212,230,.4))}
-.hero__lede{font-size:clamp(1rem,1.35vw,1.14rem);color:var(--muted);max-width:32em;margin-bottom:2rem}
-.hero__lede strong{color:var(--text)}
-.hero__cta{display:flex;flex-wrap:wrap;align-items:center;gap:1.1rem;margin-bottom:1.2rem}
+/* no lede here: the hero is headline → button. The argument lives in section 01,
+   set small beside "One window. The whole rig." */
+.hero__cta{display:flex;flex-wrap:wrap;align-items:center;gap:1.1rem;margin-bottom:1.2rem;margin-top:2.2rem}
 .hero__formats{padding:.4rem 0}
 .hero__note{color:var(--muted-2)}
 
@@ -312,11 +312,15 @@ em{font-style:normal;color:var(--gold-hi)}
 /* ════════ 01 · SHOWCASE — the product, full width ════════ */
 .showcase{position:relative;max-width:calc(var(--maxw) + 4vw);margin:0 auto;
   padding:clamp(4rem,9vw,7rem) var(--pad) clamp(3rem,6vw,4.5rem);overflow:clip}
-/* editorial split: headline left, argument right, baseline-aligned */
+/* editorial split: headline left, argument right, baseline-aligned. The prose
+   sits deliberately small against the poster caps — it is a caption to the
+   headline, not a second voice competing with it. */
 .showcase__head{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3rem);
   align-items:end;margin-bottom:clamp(2.2rem,4vw,3.2rem)}
-.showcase__head p{color:var(--muted);font-size:clamp(1rem,1.4vw,1.14rem);max-width:34em;
-  padding-bottom:.35rem}
+.showcase__lede{max-width:34em;padding-bottom:.4rem;
+  display:flex;flex-direction:column;gap:.7rem}
+.showcase__lede p{color:var(--muted);font-size:.92rem;line-height:1.65}
+.showcase__lede p:first-child{color:var(--text)}
 /* Both plugin-window shots sit at one width. Left to fill the content column
    this frame ran ~1240px against the closing shot's 1000px, which read as a
    bigger class of image rather than the same window twice. */
@@ -486,29 +490,23 @@ em{font-style:normal;color:var(--gold-hi)}
 .cab__media img{width:100%;display:block;
   filter:drop-shadow(0 26px 46px rgba(0,0,0,.75))}
 
-/* ════════ 06 · SPECS — LED stats + ruled feature grid ════════
-   The 1px-gap-over-line-colour trick draws the grid as a single ruled table —
-   cells paint --ink on top, which matches the page (specs sits on BASE_BG). */
-.specs{max-width:var(--maxw);margin:0 auto;padding:clamp(4.5rem,9vw,7rem) var(--pad)}
-.specs__stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
-  border-block:1px solid var(--line-2);margin-bottom:clamp(2.6rem,5vw,3.6rem)}
-.stat{text-align:center;background:var(--ink);padding:2.2rem 1rem 2rem}
-.stat__num{display:block;font-size:clamp(2rem,4.6vw,3.4rem);line-height:1.15;color:var(--gold);
-  text-shadow:0 0 22px rgba(180,212,230,.4)}
-.stat__label{font-family:var(--font-ui);font-weight:600;text-transform:uppercase;letter-spacing:.18em;
-  font-size:.66rem;color:var(--muted);margin-top:.6rem;display:block}
-.specs__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
-  border:1px solid var(--line)}
-.feature{background:var(--ink);padding:1.6rem 1.5rem 1.5rem;transition:background .35s}
-.feature:hover{background:#090b0e}
-.feature__no{display:block;font-size:.6rem;letter-spacing:.2em;color:var(--muted-2);
-  margin-bottom:.9rem;transition:color .35s}
-.feature:hover .feature__no{color:var(--gold)}
-.feature h3{font-family:var(--font-ui);text-transform:none;letter-spacing:0;
-  font-size:1.02rem;line-height:1.25;margin-bottom:.5rem;color:#fff}
-.feature p{color:var(--muted);font-size:.92rem}
-@media (max-width:880px){.specs__grid{grid-template-columns:1fr}}
-@media (max-width:560px){.specs__stats{grid-template-columns:repeat(2,1fr)}}
+/* ════════ 06 · SPECS — a spec sheet, not a feature grid ════════
+   Nine padded cards plus four LED stat tiles took most of a screen to say what
+   this table says in a glance. One hairline row per fact; the term column is
+   fixed so every value starts on the same axis and the eye can run down it. */
+.specs{max-width:var(--maxw);margin:0 auto;padding:clamp(3rem,5.5vw,4.5rem) var(--pad)}
+.spectable{border-top:1px solid var(--line-2)}
+.specrow{display:grid;grid-template-columns:minmax(7.5rem,12%) 1fr;gap:clamp(1rem,3vw,2.5rem);
+  align-items:baseline;padding:.62rem .25rem;border-bottom:1px solid var(--line);
+  transition:background .3s}
+.specrow:hover{background:rgba(255,255,255,.022)}
+.specrow dt{font-family:var(--font-ui);font-weight:600;text-transform:uppercase;
+  letter-spacing:.16em;font-size:.66rem;color:var(--gold);transition:color .3s}
+.specrow dd{color:var(--muted);font-size:.94rem;line-height:1.55}
+.specrow dd strong{color:var(--text)}
+@media (max-width:720px){
+  .specrow{grid-template-columns:1fr;gap:.35rem;padding:.9rem .25rem}
+}
 
 /* ════════ 07 · DOWNLOAD ════════ */
 .download{position:relative;max-width:var(--maxw);margin:0 auto;overflow:clip;
