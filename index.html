@@ -427,13 +427,96 @@
   </div>
 </section>
 
-<!-- ░░ 06 · SPECS — two facts, two rows ░░ -->
+<!-- ░░ 06 · SPECS — the ten modules, then formats + rates ░░ -->
 <section class="specs" id="specs">
   <header class="shead" data-reveal>
     <span class="shead__no led">06</span>
     <p class="kicker">Specs</p>
     <span class="shead__meta mono">MACOS&nbsp;11+&nbsp;·&nbsp;WINDOWS&nbsp;10/11&nbsp;·&nbsp;64-BIT</span>
   </header>
+
+  <!-- The full signal chain, in slot order. Ten modules, each reorderable in the
+       plugin; the wire "flows" and a pulse travels the chain in that same order. -->
+  <div class="chain" data-reveal style="--d:.04s">
+    <div class="chain__head">
+      <span class="chain__label mono">Signal chain</span>
+      <span class="chain__wire" aria-hidden="true"></span>
+      <span class="chain__meta mono">10&nbsp;MODULES&nbsp;·&nbsp;ANY&nbsp;ORDER</span>
+    </div>
+    <ol class="chain__grid">
+      <li class="chain__node" style="--c:#8f9aa8;--i:0" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">01</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/></svg></span>
+        <h4>Gate</h4>
+        <span class="chain__tag mono">NOISE GATE</span>
+      </li>
+      <li class="chain__node" style="--c:#6f9bd1;--i:1" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">02</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 19h16M5 8l4 4-4 4M19 8l-4 4 4 4"/></svg></span>
+        <h4>Comp</h4>
+        <span class="chain__tag mono">COMPRESSOR</span>
+      </li>
+      <li class="chain__node" style="--c:#d2a43a;--i:2" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">03</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 5 13h5l-2 9 9-12h-5l2-8z"/></svg></span>
+        <h4>Drive</h4>
+        <span class="chain__tag mono">DUAL NAM CAPTURE</span>
+      </li>
+      <li class="chain__node" style="--c:#e9eef4;--i:3" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">04</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3z"/><path d="M7 12h.01M12 12h.01M17 12h.01"/></svg></span>
+        <h4>Amp</h4>
+        <span class="chain__tag mono">3 CAPTURED HEADS</span>
+      </li>
+      <li class="chain__node" style="--c:#a9814f;--i:4" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">05</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v18H4z"/><path d="M12 9a4 4 0 1 0 .01 0M12 13h.01"/></svg></span>
+        <h4>Cab</h4>
+        <span class="chain__tag mono">CAB / IR LOADER</span>
+      </li>
+      <li class="chain__node" style="--c:#c24638;--i:5" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">06</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19v-6M8 19v-11M12 19V4M16 19v-9M20 19v-12"/></svg></span>
+        <h4>Sauce</h4>
+        <span class="chain__tag mono">SPECTRAL FINALIZER</span>
+      </li>
+      <li class="chain__node" style="--c:#57b083;--i:6" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">07</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v16M12 4v16M18 4v16M4 9h4M10 14h4M16 7h4"/></svg></span>
+        <h4>Studio</h4>
+        <span class="chain__tag mono">SSL EQ + 1176</span>
+      </li>
+      <li class="chain__node" style="--c:#c9682c;--i:7" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">08</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9c2.5-4 5.5-4 8 0s5.5 4 8 0M2 15c2.5-4 5.5-4 8 0s5.5 4 8 0"/></svg></span>
+        <h4>Chorus</h4>
+        <span class="chain__tag mono">BBD ANALOG</span>
+      </li>
+      <li class="chain__node" style="--c:#3fa8a8;--i:8" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">09</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6v12M9 8v8M14 10v4M19 11.5v1"/></svg></span>
+        <h4>Delay</h4>
+        <span class="chain__tag mono">TAPE ECHO · A/B</span>
+      </li>
+      <li class="chain__node" style="--c:#5b8fd4;--i:9" data-card>
+        <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
+        <span class="chain__no led">10</span>
+        <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15a8 8 0 0 1 16 0M7 15a5 5 0 0 1 10 0M10 15a2 2 0 0 1 4 0"/></svg></span>
+        <h4>Reverb</h4>
+        <span class="chain__tag mono">ONE LUSH SPACE</span>
+      </li>
+    </ol>
+  </div>
+
   <dl class="spectable" data-reveal style="--d:.06s">
     <div class="specrow"><dt>Formats</dt><dd>macOS: standalone, VST3 and Audio Unit. Windows: standalone and VST3. One installer per platform.</dd></div>
     <div class="specrow"><dt>Sample rates</dt><dd>44.1, 48, 88.2 and 96&nbsp;kHz. Captures resample to their trained rate; every effect follows the host. No 48k lock-in.</dd></div>
