@@ -112,7 +112,6 @@
     <a href="#amps" data-scramble>Amps</a>
     <a href="#board" data-scramble>Pedalboard</a>
     <a href="#studio" data-scramble>Studio</a>
-    <a href="#specs" data-scramble>Specs</a>
   </nav>
   <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download</span></a>
 </header>
@@ -169,7 +168,7 @@
     </div>
   </div>
 
-  <a href="#capture" class="hero__scrollcue" aria-label="Scroll down">
+  <a href="#plugin" class="hero__scrollcue" aria-label="Scroll down">
     <span class="mono">SCROLL</span><i></i>
   </a>
 </section>
@@ -183,25 +182,6 @@
     <div class="marquee__track" aria-hidden="true">
       <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Level-Matched</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS · VST3 &amp; AU</span><i>✦</i>
     </div>
-  </div>
-</section>
-
-<!-- ░░ STATEMENT — scroll-scrubbed fill ░░ -->
-<section class="statement" id="capture">
-  <h2 class="statement__big" id="fillText" aria-label="Not modeled. Captured.">
-    <span class="fill-line"><span class="fill-ghost">Not modeled.</span><span class="fill-ink" id="fillA">Not modeled.</span></span>
-    <span class="fill-line"><span class="fill-ghost fill-ghost--accent">Captured.</span><span class="fill-ink fill-ink--accent" id="fillB">Captured.</span></span>
-  </h2>
-  <p class="statement__sub" data-reveal>
-    Every sound in Maine is captured from a real, mic'd-up rig — the chime, the sag,
-    the way it stiffens under a hard pick and blooms when you back off. Not an
-    impression of an amplifier: a capture of <strong>that amplifier's own
-    behaviour</strong>, with the cab and the room it was recorded through.
-  </p>
-  <div class="statement__chips" data-reveal style="--d:.15s">
-    <span class="chip mono">CAPTURED FROM REAL RIGS</span>
-    <span class="chip mono">CAB BAKED IN</span>
-    <span class="chip mono">LEVEL-MATCHED BY CONSTRUCTION</span>
   </div>
 </section>
 
@@ -448,27 +428,16 @@
   </div>
 </section>
 
-<!-- ░░ 06 · SPECIFICATIONS ░░ -->
+<!-- ░░ 06 · SPECS — two facts, two rows ░░ -->
 <section class="specs" id="specs">
   <header class="shead" data-reveal>
     <span class="shead__no led">06</span>
-    <p class="kicker">Specifications</p>
-    <span class="shead__meta mono">44.1–96&nbsp;kHz&nbsp;·&nbsp;MACOS&nbsp;11+</span>
+    <p class="kicker">Specs</p>
+    <span class="shead__meta mono">MACOS&nbsp;11+&nbsp;·&nbsp;INTEL&nbsp;&amp;&nbsp;APPLE&nbsp;SILICON</span>
   </header>
-
-  <!-- A spec sheet, not a feature grid: one ruled row per fact, scannable in a
-       glance. The LED stat tiles that used to sit above this said 3 amps /
-       9 voices / 11 captures — which the lineup section now shows outright. -->
-  <dl class="spectable" data-reveal>
-    <div class="specrow"><dt>Formats</dt><dd>VST3, Audio Unit and standalone. macOS&nbsp;11+, Intel and Apple&nbsp;Silicon.</dd></div>
-    <div class="specrow"><dt>Chain</dt><dd>Ten slots, any order — gate, comp, drive, amp, cab, sauce, studio, chorus, delay, reverb.</dd></div>
-    <div class="specrow"><dt>Amps</dt><dd>Three heads, nine voices, eleven captures — <strong>level-matched by construction</strong>, so switching never jumps your level.</dd></div>
+  <dl class="spectable" data-reveal style="--d:.06s">
+    <div class="specrow"><dt>Formats</dt><dd>VST3, Audio Unit and standalone — one installer, all three.</dd></div>
     <div class="specrow"><dt>Sample rates</dt><dd>44.1, 48, 88.2 and 96&nbsp;kHz. Captures resample to their trained rate; every effect follows the host. No 48k lock-in.</dd></div>
-    <div class="specrow"><dt>Cab</dt><dd>Auto-sense — full-rig captures bypass it, amp-only captures pull the right IR. Or drop in any IR of your own.</dd></div>
-    <div class="specrow"><dt>Gate</dt><dd>Phase-locked 50/60&nbsp;Hz harmonic tracking kills single-coil buzz without eating your tails.</dd></div>
-    <div class="specrow"><dt>Tuner</dt><dd>Strobe-accurate to a hundredth of a cent, and it tracks a soft note through hiss.</dd></div>
-    <div class="specrow"><dt>Presets</dt><dd>Twenty in the box, and every preset is a JSON file — the folder <em>is</em> the menu.</dd></div>
-    <div class="specrow"><dt>CPU</dt><dd>One QUALITY knob trades detail against CPU — full fidelity in the studio, featherweight on stage.</dd></div>
   </dl>
 </section>
 
@@ -543,7 +512,7 @@
     <p class="footer__tag">Maine — the all-in-one guitar rig.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Maine</h4><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a><a href="#specs">Specs</a></div>
+    <div><h4>Maine</h4><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
     <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a></div>
     <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">VST3 &amp; AU</a><a href="#download">Standalone</a></div>
   </div>

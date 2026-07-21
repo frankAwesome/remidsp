@@ -140,8 +140,6 @@
   const hudPct    = $("#hudPct");
   const heroInner = $(".hero__inner");
   const heroStage = $(".hero__stage");
-  const fillA     = $("#fillA"), fillB = $("#fillB");
-  const stmt      = $(".statement");
   const boardPin  = $("#boardPin");
   const boardTrack= $("#boardTrack");
   const boardFill = $("#boardFill");
@@ -159,7 +157,7 @@
   const CARD_BGS  = ["#0d0a04", "#0e0704", "#04100f", "#060a12", "#0e0605"]; // drive/chorus/delay/reverb/sauce
   const BASE_BG   = "#050506";
 
-  const M = { vh: 0, docH: 1, hero: 0, stmtTop: 0, stmtH: 1,
+  const M = { vh: 0, docH: 1, hero: 0,
               boardTop: 0, boardTravel: 1, boardDist: 0,
               ghostMid: 0, marqW: 1, ranges: [] };
 
@@ -179,7 +177,6 @@
     const top = el => el.getBoundingClientRect().top + scrollY;
     M.docH   = document.documentElement.scrollHeight - M.vh;
     M.hero   = M.vh;
-    if (stmt)    { M.stmtTop = top(stmt); M.stmtH = stmt.offsetHeight; }
     if (boardPin){ M.boardTop = top(boardPin); M.boardTravel = Math.max(1, boardPin.offsetHeight - M.vh); }
     if (ghost)   { const g = $(".download"); M.ghostMid = top(g) + g.offsetHeight / 2; }
     if (marqTracks[0]) M.marqW = marqTracks[0].scrollWidth;
@@ -240,14 +237,6 @@
       if (y < M.hero && heroInner) {
         heroInner.style.transform = `translate3d(0,${(y * 0.16).toFixed(1)}px,0)`;
         if (heroStage) heroStage.style.transform = `translate3d(0,${(y * 0.08).toFixed(1)}px,0)`;
-      }
-
-      /* statement fill — 1:1 with scroll */
-      if (fillA) {
-        const p = clamp((y + M.vh * 0.78 - M.stmtTop) / (M.stmtH * 0.85), 0, 1);
-        const pA = clamp(p * 1.7, 0, 1), pB = clamp(p * 1.7 - 0.6, 0, 1);
-        fillA.style.clipPath = `inset(0 ${((1 - pA) * 100).toFixed(2)}% 0 0)`;
-        fillB.style.clipPath = `inset(0 ${((1 - pB) * 100).toFixed(2)}% 0 0)`;
       }
 
       /* pedal rail — 1:1, live rect, with velocity skew */

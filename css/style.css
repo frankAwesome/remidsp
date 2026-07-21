@@ -293,19 +293,7 @@ em{font-style:normal;color:var(--gold-hi)}
 .marquee:hover .marquee__track{animation-play-state:paused}
 @keyframes marq{to{transform:translateX(-100%)}}
 
-/* ════════ STATEMENT — scroll-scrubbed fill ════════ */
-.statement{max-width:var(--maxw);margin:0 auto;text-align:center;
-  padding:clamp(6rem,13vw,11rem) var(--pad) clamp(5rem,10vw,8rem)}
-.statement__big{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
-  font-size:clamp(2.8rem,8.6vw,7.2rem);line-height:1;letter-spacing:-.02em;margin-bottom:2rem}
-.fill-line{position:relative;display:block;width:fit-content;margin:0 auto}
-.fill-ghost{color:transparent;-webkit-text-stroke:1px rgba(240,237,230,.22)}
-.fill-ghost--accent{-webkit-text-stroke:1px rgba(180,212,230,.3)}
-.fill-ink{position:absolute;inset:0;color:var(--text);clip-path:inset(0 100% 0 0);will-change:clip-path}
-.fill-ink--accent{background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep));
-  -webkit-background-clip:text;background-clip:text;color:transparent}
-.statement__sub{max-width:44em;margin:0 auto 1.8rem;font-size:clamp(1rem,1.45vw,1.2rem);color:var(--muted)}
-.statement__chips{display:flex;flex-wrap:wrap;justify-content:center;gap:.55rem}
+/* ════════ chips — mono data tags (studio strip readouts) ════════ */
 .chip{display:inline-block;padding:.5rem .95rem;border:1px solid var(--line-2);
   background:rgba(255,255,255,.02);color:var(--muted)}
 
@@ -313,13 +301,18 @@ em{font-style:normal;color:var(--gold-hi)}
 .showcase{position:relative;max-width:calc(var(--maxw) + 4vw);margin:0 auto;
   padding:clamp(4rem,9vw,7rem) var(--pad) clamp(3rem,6vw,4.5rem);overflow:clip}
 /* editorial split: headline left, argument right, baseline-aligned. The prose
-   sits deliberately small against the poster caps — it is a caption to the
-   headline, not a second voice competing with it. */
+   sits deliberately small against the poster caps — a ruled sidenote in the
+   page's hairline language, not a second voice competing with the headline.
+   The left rule opens with a short white-light tick, the same accent grammar
+   as the scroll cue and the amps rail. */
 .showcase__head{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3rem);
   align-items:end;margin-bottom:clamp(2.2rem,4vw,3.2rem)}
-.showcase__lede{max-width:34em;padding-bottom:.4rem;
-  display:flex;flex-direction:column;gap:.7rem}
-.showcase__lede p{color:var(--muted);font-size:.92rem;line-height:1.65}
+.showcase__lede{position:relative;max-width:32em;padding:.2rem 0 .45rem 1.5rem;
+  border-left:1px solid var(--line-2);
+  display:flex;flex-direction:column;gap:.75rem}
+.showcase__lede::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:2.4rem;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep),transparent)}
+.showcase__lede p{color:var(--muted);font-size:.94rem;line-height:1.7}
 .showcase__lede p:first-child{color:var(--text)}
 /* Both plugin-window shots sit at one width. Left to fill the content column
    this frame ran ~1240px against the closing shot's 1000px, which read as a
@@ -490,22 +483,20 @@ em{font-style:normal;color:var(--gold-hi)}
 .cab__media img{width:100%;display:block;
   filter:drop-shadow(0 26px 46px rgba(0,0,0,.75))}
 
-/* ════════ 06 · SPECS — a spec sheet, not a feature grid ════════
-   Nine padded cards plus four LED stat tiles took most of a screen to say what
-   this table says in a glance. One hairline row per fact; the term column is
-   fixed so every value starts on the same axis and the eye can run down it. */
-.specs{max-width:var(--maxw);margin:0 auto;padding:clamp(3rem,5.5vw,4.5rem) var(--pad)}
+/* ════════ 06 · SPECS — two facts, two ruled rows ════════
+   The one hard data the download cards don't already carry: what it ships as
+   and what rates it runs at. Same hairline-row grammar as everything else. */
+.specs{max-width:var(--maxw);margin:0 auto;padding:clamp(2.5rem,5vw,4rem) var(--pad)}
 .spectable{border-top:1px solid var(--line-2)}
 .specrow{display:grid;grid-template-columns:minmax(7.5rem,12%) 1fr;gap:clamp(1rem,3vw,2.5rem);
-  align-items:baseline;padding:.62rem .25rem;border-bottom:1px solid var(--line);
+  align-items:baseline;padding:.7rem .25rem;border-bottom:1px solid var(--line);
   transition:background .3s}
 .specrow:hover{background:rgba(255,255,255,.022)}
 .specrow dt{font-family:var(--font-ui);font-weight:600;text-transform:uppercase;
-  letter-spacing:.16em;font-size:.66rem;color:var(--gold);transition:color .3s}
+  letter-spacing:.16em;font-size:.66rem;color:var(--gold)}
 .specrow dd{color:var(--muted);font-size:.94rem;line-height:1.55}
-.specrow dd strong{color:var(--text)}
 @media (max-width:720px){
-  .specrow{grid-template-columns:1fr;gap:.35rem;padding:.9rem .25rem}
+  .specrow{grid-template-columns:1fr;gap:.3rem;padding:.85rem .25rem}
 }
 
 /* ════════ 07 · DOWNLOAD ════════ */
@@ -601,7 +592,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .logo__word{letter-spacing:.2em;font-size:.8rem}
   .nav__cta{white-space:nowrap;font-size:.7rem;padding:.66rem 1rem;letter-spacing:.08em}
   .marquee__track span{font-size:1.6rem;padding:0 1rem}
-  .statement__sub,.lineup__intro p,.board__sub,.studio__copy > p{font-size:1rem}
+  .lineup__intro p,.board__sub,.studio__copy > p{font-size:1rem}
   .shead{gap:.8rem}
   .shead__meta{display:none}
   .kicker{letter-spacing:.3em}
@@ -614,8 +605,6 @@ em{font-style:normal;color:var(--gold-hi)}
 @media (prefers-reduced-motion:reduce){
   [data-reveal],[data-reveal-line]{opacity:1!important;transform:none!important;transition:none!important}
   [data-reveal-wipe] img{clip-path:none!important;transition:none!important}
-  .fill-ink{clip-path:none!important}
-  .fill-ghost{visibility:hidden}
   .marquee__track,.hero__scrollcue i,.badge::before{animation:none!important}
   .hero__strings{display:none}
   /* the rig hero stops auto-cycling in JS; keep the tabs usable but instant */
