@@ -284,6 +284,11 @@
       if (stringsOn) strings.step(now);
     }
 
+    /* the deck — outside the motion guard on purpose: a playhead that stops
+       tracking the audio isn't "reduced motion", it's a broken transport. It
+       no-ops unless a clip is actually playing. */
+    player.step();
+
     requestAnimationFrame(frame);
   }
 
@@ -339,6 +344,427 @@
     }), { threshold: 0.15 }).observe(sec);
 
     return api;
+  })();
+
+  /* ────────────────────────────────────────────────────────────
+     THE DECK — audio samples, one voice in the room
+
+     Exclusivity is structural, not policed: there is exactly ONE <audio>
+     element for the whole section, and starting a clip re-points it. Two
+     clips overlapping is not a bug that can happen here — there is no second
+     thing to make a sound. (Three <audio> tags plus "pause the others"
+     bookkeeping is the usual shape, and it leaks the moment a new entry point
+     — a deep link, a keyboard seek, an auto-advance — forgets to call it.)
+
+     Waveforms are measured peaks baked into #clipPeaks, so nothing is fetched
+     or decoded until a visitor actually presses play; `preload="none"` keeps
+     the 2.6 MB of MP3 off the critical path entirely.
+     ──────────────────────────────────────────────────────────── */
+  const player = (() => {
+    const deck = $(".deck"), list = $("#clips");
+    const noop = { step() {} };
+    if (!deck || !list) return noop;
+
+    let PEAKS = {};
+    try { PEAKS = JSON.parse($("#clipPeaks")?.textContent || "{}"); } catch { PEAKS = {}; }
+
+    const stateEl = $("#deckState"), nowEl = $("#deckNow"), liveEl = $("#deckLive");
+    const timeEl  = $("#deckTime"),  durEl = $("#deckDur"), spec = $("#deckSpectrum");
+
+    const audio = new Audio();
+    audio.preload = "none";
+
+    const fmt = s => (!isFinite(s) || s <= 0) ? "0:00"
+                   : Math.floor(s / 60) + ":" + pad(Math.floor(s % 60));
+
+    const clips = $$(".clip", list).map(el => ({
+      el,
+      key:    el.dataset.key,
+      src:    el.dataset.src,
+      name:   $("h3", el)?.textContent.trim() || el.dataset.key,
+      peaks:  PEAKS[el.dataset.key]?.peaks || [],
+      fallbackDur: PEAKS[el.dataset.key]?.dur || 0,
+      toggle: $(".clip__toggle", el),
+      wave:   $(".clip__wave", el),
+      cv:     $("canvas", el),
+      head:   $(".clip__head", el),
+      ghost:  $(".clip__ghost", el),
+      scrub:  $(".clip__scrub", el),
+      dur:    $(".clip__time", el),
+      ctx:    null, w: 0, h: 0, dpr: 0, drawnP: -1, grad: null, scrubW: 0,
+    }));
+    if (!clips.length) return noop;
+
+    let cur = null;          // the clip the single <audio> is currently pointing at
+    let pendingSeek = null;  // a seek asked for before metadata landed
+    let finished = false;    // this clip ran to its end (see the ended handler)
+    let lastSec = -1, lastState = "";
+
+    /* ── the length we trust: the file's own once it has told us, the baked
+       placeholder until then (so the rows read 0:23 rather than 0:00 on load) */
+    const durOf = c =>
+      (c === cur && isFinite(audio.duration) && audio.duration > 0) ? audio.duration
+                                                                    : c.fallbackDur;
+
+    /* ── waveform ──────────────────────────────────────────────
+       Two passes over the same bars: everything in the idle grey, then the
+       played span again in the brand light under a clip rect. That gives a
+       pixel-exact progress edge without a second DOM layer, and the whole
+       redraw is ~160 fillRects — cheap enough to run on the shared rAF. */
+    const IDLE = "rgba(233,238,244,.20)";
+
+    function sizeWave(c) {
+      const r = c.wave.getBoundingClientRect();
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      if (!r.width || !r.height) return false;
+      if (Math.abs(r.width - c.w) < .5 && Math.abs(r.height - c.h) < .5 && dpr === c.dpr) return false;
+      c.w = r.width; c.h = r.height; c.dpr = dpr;
+      c.cv.width  = Math.round(r.width  * dpr);
+      c.cv.height = Math.round(r.height * dpr);
+      c.ctx = c.cv.getContext("2d");
+      c.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // white light at the centre line, falling off toward the peaks — the same
+      // gradient the hero headline is filled with
+      c.grad = c.ctx.createLinearGradient(0, 0, 0, c.h);
+      c.grad.addColorStop(0,   "#8fb4c6");
+      c.grad.addColorStop(.5,  "#ffffff");
+      c.grad.addColorStop(1,   "#8fb4c6");
+      c.drawnP = -1;
+      return true;
+    }
+
+    function bars(c, ctx, fill, n, mid, cw) {
+      ctx.fillStyle = fill;
+      const src = c.peaks, len = src.length;
+      const barW = Math.max(1, cw - 1);
+      for (let i = 0; i < n; i++) {
+        const a = Math.floor(i * len / n);
+        const b = Math.max(a + 1, Math.floor((i + 1) * len / n));
+        let v = 0;
+        for (let k = a; k < b; k++) if (src[k] > v) v = src[k];
+        const bh = Math.max(1.5, (v / 100) * (c.h - 8));
+        ctx.fillRect(i * cw, mid - bh / 2, barW, bh);
+      }
+    }
+
+    function drawWave(c, p) {
+      const ctx = c.ctx;
+      if (!ctx || !c.peaks.length) return;
+      ctx.clearRect(0, 0, c.w, c.h);
+      const n   = clamp(Math.round(c.w / 3), 24, c.peaks.length);
+      const cw  = c.w / n, mid = c.h / 2;
+      // centre rule — keeps the quiet passages from reading as a gap in the row
+      ctx.fillStyle = "rgba(255,255,255,.06)";
+      ctx.fillRect(0, mid - .5, c.w, 1);
+      bars(c, ctx, IDLE, n, mid, cw);
+      const played = p * c.w;
+      if (played > 0) {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, 0, played, c.h); ctx.clip();
+        bars(c, ctx, c.grad, n, mid, cw);
+        ctx.restore();
+      }
+      c.drawnP = p;
+    }
+
+    function layout() {
+      for (const c of clips) if (sizeWave(c)) drawWave(c, c === cur ? progress() : 0);
+      sizeSpec();
+    }
+
+    /* ── progress + readouts ─────────────────────────────────── */
+    const progress = () => {
+      const d = cur ? durOf(cur) : 0;
+      return d > 0 ? clamp(audio.currentTime / d, 0, 1) : 0;
+    };
+
+    function render() {
+      if (!cur) return;
+      const d = durOf(cur), t = clamp(audio.currentTime, 0, d || 0), p = d > 0 ? t / d : 0;
+
+      cur.head.style.transform = `translate3d(${(p * cur.w).toFixed(1)}px,0,0)`;
+      // repaint only once the played edge has actually moved a whole pixel
+      if (Math.abs(p - cur.drawnP) * cur.w >= 1) drawWave(cur, p);
+
+      const sec = Math.floor(t);
+      if (sec !== lastSec) {
+        lastSec = sec;
+        if (timeEl) timeEl.textContent = fmt(t);
+        if (durEl)  durEl.textContent  = fmt(d);
+        cur.wave.setAttribute("aria-valuenow", Math.round(p * 100));
+        cur.wave.setAttribute("aria-valuetext", `${fmt(t)} of ${fmt(d)}`);
+      }
+    }
+
+    /* Repainting is split from the state word on purpose, for two reasons.
+       Switching straight from one playing clip to another goes PLAYING →
+       PLAYING, so an early return on "same state" would leave the NEW row
+       without .is-playing and the old label in place. And it reads `paused` off
+       the element rather than the state word, because the word lags by an event
+       loop turn — long enough to paint one frame with no row lit at all. */
+    function paint() {
+      const on = !!cur && !audio.paused;
+      deck.classList.toggle("is-live", on);
+      clips.forEach(c => {
+        const live = on && c === cur;
+        c.el.classList.toggle("is-playing", live);
+        // the glyph flips to a pause bar, so the name for it has to flip too —
+        // a button labelled "Play Clean" that stops Clean is worse than no label
+        c.toggle.setAttribute("aria-label", (live ? "Pause " : "Play ") + c.name);
+      });
+    }
+
+    function setState(s) {
+      if (s !== lastState) {
+        lastState = s;
+        if (stateEl) stateEl.textContent = s;
+      }
+      paint();
+    }
+
+    const say = msg => { if (liveEl) liveEl.textContent = msg; };
+
+    /* ── the single element, re-pointed ──────────────────────── */
+    function select(c) {
+      if (cur === c) return;
+      if (cur) {
+        audio.pause();
+        cur.el.classList.remove("is-active");
+        cur.head.style.transform = "translate3d(0,0,0)";
+        drawWave(cur, 0);
+        cur.wave.setAttribute("aria-valuenow", 0);
+        cur.wave.setAttribute("aria-valuetext", `0:00 of ${fmt(durOf(cur))}`);
+      }
+      cur = c;
+      pendingSeek = null; lastSec = -1; finished = false;
+      c.el.classList.add("is-active");
+      if (nowEl) nowEl.textContent = c.name;
+      if (durEl) durEl.textContent = fmt(c.fallbackDur);
+      if (timeEl) timeEl.textContent = "0:00";
+      audio.src = c.src;          // ← the whole exclusivity guarantee, one line
+      audio.load();
+      paint();
+    }
+
+    function start(c) {
+      select(c);
+      finished = false;
+      resumeCtx();
+      const go = audio.play();
+      // play() clears `paused` synchronously, so painting here — in the same
+      // task select() darkened the old row in — hands the light straight over.
+      // Waiting for the play event instead costs one frame with nothing lit.
+      paint();
+      if (go?.catch) go.catch(() => {
+        // autoplay policy, a decode failure, or the visitor navigating away
+        // mid-request: fall back to a state they can retry from.
+        if (!audio.paused) return;
+        setState("PAUSED");
+      });
+    }
+
+    function toggle(c) {
+      if (cur === c && !audio.paused) { audio.pause(); return; }
+      start(c);
+    }
+
+    function seek(c, t) {
+      if (cur !== c) select(c);
+      const d = durOf(c) || 0;
+      const to = clamp(t, 0, d ? d - .05 : 0);
+      if (audio.readyState >= 1) { try { audio.currentTime = to; } catch { /* not seekable yet */ } }
+      else pendingSeek = to;
+      finished = false;
+      lastSec = -1;
+      render();
+    }
+
+    /* ── spectrum ──────────────────────────────────────────────
+       Built on the first play gesture and never before: an AudioContext
+       created at load is born suspended under autoplay policy, and — because
+       createMediaElementSource re-routes the element through the graph —
+       a suspended context means silence, not just a dead visualiser. */
+    let actx = null, analyser = null, freq = null, srcNode = null;
+    let sctx = null, sw = 0, sh = 0, sdpr = 0, sgrad = null;
+
+    function sizeSpec() {
+      if (!spec) return;
+      const r = spec.getBoundingClientRect();
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      if (!r.width || !r.height) return;
+      if (Math.abs(r.width - sw) < .5 && Math.abs(r.height - sh) < .5 && dpr === sdpr) return;
+      sw = r.width; sh = r.height; sdpr = dpr;
+      spec.width = Math.round(sw * dpr); spec.height = Math.round(sh * dpr);
+      sctx = spec.getContext("2d");
+      sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      sgrad = sctx.createLinearGradient(0, sh, 0, 0);
+      sgrad.addColorStop(0, "rgba(143,180,198,.55)");
+      sgrad.addColorStop(1, "#ffffff");
+    }
+
+    let wired = false;
+
+    /* The one irreversible step: createMediaElementSource takes the element off
+       the native audio path for good and hands it to the graph. So it only runs
+       once the context is CONFIRMED running — an element wired into a suspended
+       context is a silent element, and no visualiser is worth that trade. If the
+       context never starts, the deck simply plays with no spectrum. */
+    function wire() {
+      if (wired || !actx || actx.state !== "running") return;
+      wired = true;
+      try {
+        srcNode  = actx.createMediaElementSource(audio);
+        analyser = actx.createAnalyser();
+        analyser.fftSize = 512;      // 256 bins ≈ 86 Hz each — enough resolution
+        analyser.smoothingTimeConstant = .78;   // to show a chord, not just a blob
+        srcNode.connect(analyser);
+        analyser.connect(actx.destination);
+        freq = new Uint8Array(analyser.frequencyBinCount);
+      } catch {
+        // If it threw after the source existed, the element is already re-routed
+        // — wire it to the speakers ourselves rather than leave it dangling.
+        analyser = null; freq = null;
+        try { srcNode?.connect(actx.destination); } catch { /* nothing left to try */ }
+      }
+      sizeSpec();
+    }
+
+    /* Called from the click handler, i.e. inside a user gesture — the only
+       moment an AudioContext is allowed to start. */
+    function resumeCtx() {
+      if (wired || reduce || !spec) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!actx) { try { actx = new AC(); } catch { return; } }
+      if (actx.state === "running") wire();
+      else actx.resume?.().then(wire).catch(() => { /* retry on the next play */ });
+    }
+
+    function drawSpec() {
+      if (!sctx) return;
+      sctx.clearRect(0, 0, sw, sh);
+      if (!analyser || audio.paused) return;
+      analyser.getByteFrequencyData(freq);
+      const N = clamp(Math.round(sw / 7), 24, 128);
+      const bw = sw / N;
+      sctx.fillStyle = sgrad;
+      // True log sweep across the band a guitar actually occupies (~85 Hz to
+      // ~11 kHz). A linear split spends three-quarters of the strip above 5 kHz
+      // where there is nothing to draw, which is what made this read as a rule
+      // with a few blocks stacked on the left.
+      const TOP = Math.max(4, Math.floor(freq.length * 0.5));
+      const bin = i => Math.min(TOP, Math.floor(Math.pow(TOP, i / N)));
+      for (let i = 0; i < N; i++) {
+        const lo = bin(i), hi = Math.max(lo + 1, bin(i + 1));
+        let v = 0;
+        for (let k = lo; k < hi; k++) if (freq[k] > v) v = freq[k];
+        if (v < 3) continue;                  // no 1px floor: silence draws nothing
+        const bh = (v / 255) * (sh - 2);
+        sctx.fillRect(i * bw, sh - bh, Math.max(1, bw - 1.5), bh);
+      }
+    }
+
+    /* ── wiring ───────────────────────────────────────────────── */
+    clips.forEach(c => {
+      c.toggle.addEventListener("click", () => toggle(c));
+
+      c.wave.addEventListener("pointerdown", e => {
+        if (e.button != null && e.button !== 0) return;
+        const r = c.wave.getBoundingClientRect();
+        seek(c, ((e.clientX - r.left) / r.width) * durOf(c));
+        if (cur === c && audio.paused) start(c);
+      });
+
+      if (finePtr) {
+        c.wave.addEventListener("pointermove", e => {
+          const r = c.wave.getBoundingClientRect();
+          const x = clamp(e.clientX - r.left, 0, r.width);
+          c.ghost.style.transform = `translate3d(${x.toFixed(1)}px,0,0)`;
+          c.scrub.textContent = fmt((x / r.width) * durOf(c));
+          if (!c.scrubW) c.scrubW = c.scrub.offsetWidth || 34;
+          c.scrub.style.transform =
+            `translate3d(${clamp(x - c.scrubW / 2, 0, Math.max(0, r.width - c.scrubW)).toFixed(1)}px,0,0)`;
+        });
+      }
+
+      c.wave.addEventListener("keydown", e => {
+        const d = durOf(c), t = cur === c ? audio.currentTime : 0;
+        let to = null;
+        if (e.key === "ArrowRight" || e.key === "ArrowUp")   to = t + 5;
+        else if (e.key === "ArrowLeft" || e.key === "ArrowDown") to = t - 5;
+        else if (e.key === "Home") to = 0;
+        else if (e.key === "End")  to = d;
+        else if (e.key === "Enter") { e.preventDefault(); toggle(c); return; }
+        if (to === null) return;
+        e.preventDefault();
+        seek(c, to);
+      });
+    });
+
+    audio.addEventListener("playing",     () => { setState("PLAYING"); say(`Playing ${cur?.name}`); });
+    audio.addEventListener("play",        () => { resumeCtx(); setState("PLAYING"); });
+    audio.addEventListener("waiting",     () => setState("LOADING"));
+    audio.addEventListener("pause",       () => {
+      // Two pauses are not the visitor's: the end-of-clip one (queued, and by
+      // the time it runs the rewind has already cleared `audio.ended` — hence
+      // the explicit flag), and the one select() fires while swapping clips.
+      // For the second, play() has already run synchronously, so the element is
+      // no longer paused: a pause event on an unpaused element is stale, and
+      // acting on it flickers the transport through PAUSED on every switch.
+      if (audio.ended || finished || !audio.paused) return;
+      setState("PAUSED"); say("Paused");
+    });
+    audio.addEventListener("loadedmetadata", () => {
+      if (durEl) durEl.textContent = fmt(audio.duration);
+      if (cur) cur.dur.textContent = fmt(audio.duration);
+      if (pendingSeek !== null) {
+        try { audio.currentTime = clamp(pendingSeek, 0, audio.duration - .05); } catch { /* ignore */ }
+        pendingSeek = null;
+      }
+      lastSec = -1; render();
+    });
+    audio.addEventListener("ended", () => {
+      // Deliberately no auto-advance: a visitor who played one clip and walked
+      // away should not get two more. Rewind in place so the row is armed again.
+      //
+      // pause() FIRST, and it is not ceremony: reaching the end does not set
+      // `paused`, so seeking back to 0 on a still-unpaused element restarts it —
+      // the clip loops forever instead of stopping. Caught by the deck's test
+      // run, which found the transport back at 0:02 and PLAYING after the end.
+      finished = true;
+      audio.pause();
+      if (cur) {
+        try { audio.currentTime = 0; } catch { /* nothing to rewind */ }
+        drawWave(cur, 0);
+        cur.head.style.transform = "translate3d(0,0,0)";
+      }
+      lastSec = -1;
+      setState("STANDBY");
+      say(`Finished ${cur?.name}`);
+      render();
+      drawSpec();
+    });
+    audio.addEventListener("error", () => {
+      setState("ERROR");
+      say(`${cur?.name} could not be loaded`);
+    });
+
+    /* ── canvases follow the layout ───────────────────────────── */
+    addEventListener("resize", layout);
+    document.fonts?.ready.then(layout);
+    // first paint can beat the grid's final column widths; one frame later the
+    // rows have their real size
+    requestAnimationFrame(layout);
+    new IntersectionObserver((es, io) => {
+      if (!es.some(e => e.isIntersecting)) return;
+      layout(); io.disconnect();
+    }, { threshold: 0 }).observe(deck);
+
+    /* One frame's worth of work, called from the page's single rAF loop. */
+    function step() {
+      if (cur && !audio.paused) { render(); drawSpec(); }
+    }
+    return { step };
   })();
 
   /* ────────────────────────────────────────────────────────────

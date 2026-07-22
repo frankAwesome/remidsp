@@ -75,6 +75,9 @@ code{font-family:var(--font-mono);font-size:.92em;color:var(--gold-hi)}
 
 .mono{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.14em;color:var(--muted)}
 .led{font-family:var(--font-led)}
+/* screen-reader-only: for live regions that narrate a control whose visible
+   readout is a DSEG7 counter (unusable read aloud, so it is aria-hidden) */
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 
 /* Oswald is condensed with a tall x-height, so it wants noticeably more size and
    noticeably less leading than a regular grotesk to sit right. */
@@ -313,13 +316,13 @@ em{font-style:normal;color:var(--gold-hi)}
    as the scroll cue and the amps rail. */
 .showcase__head{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3rem);
   align-items:end;margin-bottom:clamp(2.2rem,4vw,3.2rem)}
-.showcase__lede{position:relative;max-width:32em;padding:.2rem 0 .45rem 1.5rem;
+.showcase__lede,.sound__lede{position:relative;max-width:32em;padding:.2rem 0 .45rem 1.5rem;
   border-left:1px solid var(--line-2);
   display:flex;flex-direction:column;gap:.75rem}
-.showcase__lede::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:2.4rem;
+.showcase__lede::before,.sound__lede::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:2.4rem;
   background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep),transparent)}
-.showcase__lede p{color:var(--muted);font-size:.94rem;line-height:1.7}
-.showcase__lede p:first-child{color:var(--text)}
+.showcase__lede p,.sound__lede p{color:var(--muted);font-size:.94rem;line-height:1.7}
+.showcase__lede p:first-child,.sound__lede p:first-child{color:var(--text)}
 /* Both plugin-window shots sit at one width. Left to fill the content column
    this frame ran ~1240px against the closing shot's 1000px, which read as a
    bigger class of image rather than the same window twice. */
@@ -403,7 +406,181 @@ em{font-style:normal;color:var(--gold-hi)}
   .ampcol__voices li span{display:none}
 }
 
-/* ════════ 03 · PEDALBOARD — horizontal rail ════════ */
+/* ════════ 03 · THE SOUND — the listening deck ════════
+   A rack unit, drawn in the page's own hairline language: one ruled row per
+   clip, a transport strip across the top, and nothing rounded or glossy
+   anywhere. The only colour is the plugin's white light, and it is spent on
+   exactly one thing at a time — the clip that is playing. Everything else
+   (numbers, tags, unplayed waveform) sits back in muted grey, so "which one
+   is live" is answerable from across the room.
+
+   NOTE this is emphatically not a switcher: all three clips are on screen,
+   all three waveforms drawn, all three seekable. The hero reel is the page's
+   only one-at-a-time device. What the deck shares with it is the *rule* —
+   one voice in the room — not the interaction. */
+.sound{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
+  padding:clamp(4.5rem,9vw,7rem) var(--pad)}
+.sound__head{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3rem);
+  align-items:end;margin-bottom:clamp(2.2rem,4vw,3.2rem)}
+@media (max-width:880px){.sound__head{grid-template-columns:1fr;align-items:start}}
+
+.deck{position:relative;overflow:hidden;isolation:isolate;
+  border:1px solid var(--line-2);
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  box-shadow:0 40px 90px -45px rgba(0,0,0,.95);
+  --mx:50%;--my:0%}
+/* faceplate light — parked dim, blooms from the top edge once a clip is live.
+   Kept deliberately low: at .3 over the top half it washed the first clip row
+   and cost the panel its hairline crispness. It should read as a device warming
+   up, not as a gradient. */
+.deck::before{content:"";position:absolute;left:0;right:0;top:0;height:34%;z-index:0;
+  pointer-events:none;opacity:.08;
+  background:radial-gradient(130% 100% at 50% 0,var(--ice),transparent 74%);
+  transition:opacity .8s var(--ease)}
+.deck.is-live::before{opacity:.2}
+/* shared cursor spotlight — same [data-card] pointer handler as the chain tiles */
+.deck::after{content:"";position:absolute;inset:0;z-index:4;opacity:0;pointer-events:none;
+  background:radial-gradient(420px circle at var(--mx) var(--my),rgba(255,255,255,.055),transparent 62%);
+  transition:opacity .35s}
+.deck:hover::after{opacity:1}
+
+/* ── transport strip ── */
+.deck__bar{position:relative;z-index:2;display:flex;align-items:center;gap:1rem;
+  padding:.9rem clamp(1rem,2.4vw,1.6rem);border-bottom:1px solid var(--line-2);
+  /* fine hatch — reads as a device faceplate rather than a web panel */
+  background-image:repeating-linear-gradient(180deg,rgba(255,255,255,.022) 0 1px,transparent 1px 4px)}
+/* the power lamp: dark and still on standby, white light and breathing on play */
+.deck__lamp{width:8px;height:8px;flex:0 0 auto;background:var(--muted-2);
+  box-shadow:none;transition:background .3s,box-shadow .3s}
+.deck.is-live .deck__lamp{background:var(--gold-hi);
+  box-shadow:0 0 12px rgba(180,212,230,.95);animation:lamp 2.2s ease-in-out infinite}
+.deck__state{flex:0 0 auto;font-size:.6rem;letter-spacing:.26em;color:var(--muted-2)}
+.deck.is-live .deck__state{color:var(--gold)}
+/* the live clip's name, in the display face — the strip's one piece of type
+   with any weight to it */
+.deck__now{flex:0 0 auto;font-family:var(--font-display);font-weight:600;
+  text-transform:uppercase;letter-spacing:.12em;font-size:.92rem;line-height:1;
+  color:var(--muted-2);transition:color .3s}
+.deck.is-live .deck__now{color:#fff}
+/* live spectrum — the one genuinely animated element here, and it only runs
+   while audio is actually playing (see js/main.js: the analyser is built on the
+   first play gesture, never on load) */
+/* flex-basis 0 (not auto): the canvas has an intrinsic 520px from its width
+   attribute, which as a basis would shove the clock off the strip */
+.deck__spectrum{flex:1 1 0;min-width:0;max-width:100%;height:34px;display:block;opacity:.9}
+.deck__clock{flex:0 0 auto;display:flex;align-items:baseline;gap:.4rem;
+  font-size:.78rem;color:var(--gold);text-shadow:0 0 12px rgba(180,212,230,.45)}
+.deck__clock i{font-family:var(--font-mono);font-style:normal;font-size:.62rem;color:var(--muted-2)}
+.deck__clock .led:last-of-type{color:var(--muted-2);text-shadow:none}
+
+/* ── the clip rows ── */
+.deck__list{position:relative;z-index:2;list-style:none}
+/* solo-on-hover, same grammar as the amp lineup: the row under the pointer
+   keeps full contrast, its siblings step back */
+@media (hover:hover) and (pointer:fine){
+  .deck__list:hover .clip:not(:hover):not(.is-active){opacity:.5}
+}
+.clip{position:relative;display:grid;align-items:center;
+  grid-template-columns:auto auto minmax(8.5rem,13rem) minmax(0,1fr) auto;
+  grid-template-areas:"toggle no id wave time";
+  gap:clamp(.9rem,2vw,1.5rem);
+  padding:1.05rem clamp(1rem,2.4vw,1.6rem);
+  border-top:1px solid var(--line);
+  transition:opacity .35s var(--ease),background .45s var(--ease)}
+.clip:first-child{border-top:0}
+/* the live row: a 2px rule of the plugin's light down its leading edge */
+.clip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep));
+  transform:scaleY(0);transform-origin:50% 0;
+  transition:transform .5s var(--ease)}
+.clip.is-active{background:rgba(159,216,232,.035)}
+.clip.is-active::before{transform:scaleY(1)}
+
+/* play / pause — a flat square slab, the same grammar as .btn--amber:
+   hairline outline at rest, solid white light with dark glyph when it is the
+   control that will stop the sound */
+.clip__toggle{grid-area:toggle;width:44px;height:44px;flex:0 0 auto;
+  display:grid;place-items:center;cursor:pointer;
+  border:1px solid var(--line-2);color:var(--text);
+  background:rgba(255,255,255,.03);
+  transition:background .25s,border-color .25s,color .25s,box-shadow .3s}
+.clip__toggle:hover{background:rgba(255,255,255,.09);border-color:rgba(159,216,232,.55)}
+.clip.is-playing .clip__toggle{background:var(--gold-hi);border-color:var(--gold-hi);color:#0a0d12;
+  box-shadow:0 0 26px -6px rgba(159,216,232,.8)}
+.clip__ico{width:19px;height:19px;fill:currentColor;grid-area:1/1}
+.clip__ico--pause{display:none}
+.clip.is-playing .clip__ico--play{display:none}
+.clip.is-playing .clip__ico--pause{display:block}
+
+.clip__no{grid-area:no;font-size:.72rem;color:var(--muted-2);transition:color .3s}
+.clip.is-active .clip__no{color:var(--gold);text-shadow:0 0 14px rgba(180,212,230,.5)}
+.clip__id{grid-area:id;min-width:0}
+.clip__id h3{font-size:1.5rem;color:var(--text);transition:color .3s}
+.clip.is-active .clip__id h3{color:#fff}
+.clip__tag{margin-top:.28rem;font-size:.56rem;color:var(--muted-2);transition:color .3s}
+.clip.is-active .clip__tag{color:var(--gold)}
+
+/* ── waveform ──
+   The canvas paints measured peaks (mirrored around the centre line); the
+   played portion is repainted in the brand light by the same draw call, so
+   progress costs no DOM at all. The three spans on top are the only moving
+   parts: the playhead, the hover scrub line, and its time label. */
+.clip__wave{grid-area:wave;position:relative;height:58px;min-width:0;cursor:pointer;
+  touch-action:pan-y}
+.clip__wave canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.clip__head{position:absolute;top:2px;bottom:2px;left:0;width:1px;z-index:2;
+  background:var(--gold-hi);box-shadow:0 0 10px rgba(180,212,230,.9);
+  opacity:0;transition:opacity .25s;will-change:transform}
+.clip.is-active .clip__head{opacity:1}
+.clip__ghost{position:absolute;top:6px;bottom:6px;left:0;width:1px;z-index:1;
+  background:rgba(255,255,255,.35);opacity:0;transition:opacity .2s;will-change:transform}
+.clip__scrub{position:absolute;top:-.15rem;left:0;z-index:3;font-size:.56rem;
+  color:var(--text);background:rgba(5,5,6,.9);border:1px solid var(--line-2);
+  padding:.1rem .3rem;opacity:0;transition:opacity .2s;pointer-events:none;
+  white-space:nowrap;will-change:transform}
+@media (hover:hover) and (pointer:fine){
+  .clip__wave:hover .clip__ghost,.clip__wave:hover .clip__scrub{opacity:1}
+}
+.clip__wave:focus-visible{outline:1px solid var(--ice);outline-offset:2px}
+
+.clip__time{grid-area:time;font-size:.66rem;color:var(--muted-2);
+  font-variant-numeric:tabular-nums;transition:color .3s}
+.clip.is-active .clip__time{color:var(--text)}
+
+.deck__foot{position:relative;z-index:2;padding:.85rem clamp(1rem,2.4vw,1.6rem);
+  border-top:1px solid var(--line-2);font-size:.58rem;color:var(--muted-2);text-align:right}
+
+/* Tablet: the spectrum is the first thing to go — it is decoration, and the
+   clock and clip name are not. */
+@media (max-width:900px){
+  .deck__spectrum{display:none}
+  .deck__bar{gap:.75rem}
+}
+/* Phone: the waveform earns a full-width row of its own beneath the name,
+   because a 90px-wide waveform is a smudge, not information. */
+@media (max-width:720px){
+  .clip{grid-template-columns:auto auto minmax(0,1fr) auto;
+    grid-template-areas:"toggle no id time" "wave wave wave wave";
+    row-gap:.85rem;padding:1rem var(--pad)}
+  .clip__wave{height:48px}
+  .clip__id h3{font-size:1.25rem}
+  .deck__bar,.deck__foot{padding-inline:var(--pad)}
+  .deck__now{font-size:.8rem}
+}
+/* Only the genuinely narrow phones lose the character tags — at 390px (most
+   current handsets) the name column still has ~180px, which the tag fits in,
+   and it is the line that tells you what you are about to hear. */
+@media (max-width:360px){
+  .clip__tag{display:none}
+  .clip__toggle{width:40px;height:40px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .deck.is-live .deck__lamp{animation:none}
+  .clip::before{transition:none}
+}
+
+/* ════════ 04 · PEDALBOARD — horizontal rail ════════ */
 .board{position:relative}
 .board__head{max-width:var(--maxw);margin:0 auto;padding:clamp(4rem,8vw,6.5rem) var(--pad) 1.6rem}
 .board__head h2{margin-bottom:1rem}
@@ -449,7 +626,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .board__progress{display:none}
 }
 
-/* ════════ 04 · STUDIO ════════ */
+/* ════════ 05 · STUDIO ════════ */
 .studio{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
   padding:clamp(5.5rem,11vw,9.5rem) var(--pad);
   display:grid;grid-template-columns:1.12fr .88fr;gap:clamp(2.2rem,5vw,5rem);align-items:center}
@@ -480,7 +657,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .vu{display:none}
 }
 
-/* ════════ 05 · CAB ════════ */
+/* ════════ 06 · CAB ════════ */
 .cab{max-width:var(--maxw);margin:0 auto;
   padding:clamp(3.5rem,8vw,6.5rem) var(--pad)}
 .cab__copy{max-width:56ch}
@@ -494,7 +671,7 @@ em{font-style:normal;color:var(--gold-hi)}
 .cab__media img{width:100%;display:block;
   filter:drop-shadow(0 26px 46px rgba(0,0,0,.75))}
 
-/* ════════ 06 · SPECS — two facts, two ruled rows ════════
+/* ════════ 07 · SPECS — two facts, two ruled rows ════════
    The one hard data the download cards don't already carry: what it ships as
    and what rates it runs at. Same hairline-row grammar as everything else. */
 .specs{max-width:var(--maxw);margin:0 auto;padding:clamp(2.5rem,5vw,4rem) var(--pad)}
@@ -598,7 +775,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .chain__wire::before,.chain__pulse{animation:none}
 }
 
-/* ════════ 07 · DOWNLOAD ════════ */
+/* ════════ 08 · DOWNLOAD ════════ */
 .download{position:relative;max-width:var(--maxw);margin:0 auto;overflow:clip;
   padding:clamp(4.5rem,9vw,7rem) var(--pad) clamp(6rem,12vw,10rem)}
 .download__ghost{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);z-index:0;

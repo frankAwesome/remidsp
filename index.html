@@ -78,6 +78,33 @@
         "Runs at 44.1–96 kHz"
       ],
       "publisher": { "@id": "https://remidsp.com/#org" }
+    },
+    {
+      "@type": "AudioObject",
+      "@id": "https://remidsp.com/#clip-clean",
+      "name": "Maine — Clean",
+      "contentUrl": "https://remidsp.com/audio/clean.mp3",
+      "encodingFormat": "audio/mpeg",
+      "duration": "PT23S",
+      "about": { "@id": "https://remidsp.com/#maine" }
+    },
+    {
+      "@type": "AudioObject",
+      "@id": "https://remidsp.com/#clip-edge",
+      "name": "Maine — Edge",
+      "contentUrl": "https://remidsp.com/audio/edge.mp3",
+      "encodingFormat": "audio/mpeg",
+      "duration": "PT27S",
+      "about": { "@id": "https://remidsp.com/#maine" }
+    },
+    {
+      "@type": "AudioObject",
+      "@id": "https://remidsp.com/#clip-rock",
+      "name": "Maine — Rock",
+      "contentUrl": "https://remidsp.com/audio/rock.mp3",
+      "encodingFormat": "audio/mpeg",
+      "duration": "PT14S",
+      "about": { "@id": "https://remidsp.com/#maine" }
     }
   ]
 }
@@ -110,6 +137,7 @@
   </a>
   <nav class="nav__links" aria-label="Primary">
     <a href="#amps" data-scramble>Amps</a>
+    <a href="#sound" data-scramble>Listen</a>
     <a href="#board" data-scramble>Pedalboard</a>
     <a href="#studio" data-scramble>Studio</a>
   </nav>
@@ -303,11 +331,131 @@
   </p>
 </section>
 
-<!-- ░░ 03 · THE PEDALBOARD — horizontal rail ░░ -->
+<!-- ░░ 03 · THE SOUND — three clips, one transport ░░
+     ONE <audio> element sits behind the whole deck, so two clips physically
+     cannot overlap: pressing play on another track re-points that same element.
+     No per-clip <audio> tags, no "remember to pause the other one" bookkeeping —
+     exclusivity is structural rather than something the code has to maintain.
+
+     The waveforms are real peaks, measured off the files at build time and baked
+     into #clipPeaks below. That buys two things: the shapes draw the instant the
+     section reveals (no decode, no fetch), and the page ships ~2 kB of JSON
+     instead of pulling 2.6 MB of MP3 that most visitors never press play on. -->
+<section class="sound" id="sound" data-bg="#04060b">
+  <header class="shead" data-reveal>
+    <span class="shead__no led">03</span>
+    <p class="kicker">The Sound</p>
+    <span class="shead__meta mono">3&nbsp;CLIPS&nbsp;·&nbsp;CLEAN&nbsp;→&nbsp;ROCK</span>
+  </header>
+
+  <div class="sound__head">
+    <h2 data-reveal>Hear it first.</h2>
+    <div class="sound__lede" data-reveal style="--d:.08s">
+      <p>Three clips, three gain stages — the same rig from full headroom to the
+         top of its range.</p>
+      <p>Nothing to install to listen. One at a time, the way you'd audition an
+         amp in the room.</p>
+    </div>
+  </div>
+
+  <div class="deck" data-reveal data-card style="--d:.12s">
+    <!-- transport readout: lamp, state, live track, spectrum, DSEG7 clock -->
+    <div class="deck__bar">
+      <span class="deck__lamp" aria-hidden="true"></span>
+      <span class="deck__state mono" id="deckState">STANDBY</span>
+      <span class="deck__now" id="deckNow">—</span>
+      <canvas class="deck__spectrum" id="deckSpectrum" width="520" height="40" aria-hidden="true"></canvas>
+      <span class="deck__clock" aria-hidden="true">
+        <span class="led" id="deckTime">0:00</span><i>/</i><span class="led" id="deckDur">0:00</span>
+      </span>
+    </div>
+
+    <!-- Live region: the clock is aria-hidden (a DSEG7 counter read aloud twice a
+         second is unusable), so state changes are announced here instead. -->
+    <p class="vh" role="status" aria-live="polite" id="deckLive"></p>
+
+    <ul class="deck__list" id="clips">
+      <li class="clip" data-src="audio/clean.mp3" data-key="clean">
+        <button class="clip__toggle" type="button" aria-label="Play Clean" data-track data-label="Clip · Clean">
+          <svg class="clip__ico clip__ico--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.2v13.6L19 12z"/></svg>
+          <svg class="clip__ico clip__ico--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 5.4h3.1v13.2H8.2zM12.7 5.4h3.1v13.2h-3.1z"/></svg>
+        </button>
+        <span class="clip__no led">01</span>
+        <div class="clip__id">
+          <h3>Clean</h3>
+          <p class="clip__tag mono">HEADROOM · STRING DETAIL</p>
+        </div>
+        <div class="clip__wave" role="slider" tabindex="0" aria-label="Clean — seek"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0:00 of 0:23">
+          <canvas aria-hidden="true"></canvas>
+          <span class="clip__ghost" aria-hidden="true"></span>
+          <span class="clip__head" aria-hidden="true"></span>
+          <span class="clip__scrub mono" aria-hidden="true"></span>
+        </div>
+        <span class="clip__time mono">0:23</span>
+      </li>
+
+      <li class="clip" data-src="audio/edge.mp3" data-key="edge">
+        <button class="clip__toggle" type="button" aria-label="Play Edge" data-track data-label="Clip · Edge">
+          <svg class="clip__ico clip__ico--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.2v13.6L19 12z"/></svg>
+          <svg class="clip__ico clip__ico--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 5.4h3.1v13.2H8.2zM12.7 5.4h3.1v13.2h-3.1z"/></svg>
+        </button>
+        <span class="clip__no led">02</span>
+        <div class="clip__id">
+          <h3>Edge</h3>
+          <p class="clip__tag mono">BREAKUP · PICK-SENSITIVE</p>
+        </div>
+        <div class="clip__wave" role="slider" tabindex="0" aria-label="Edge — seek"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0:00 of 0:27">
+          <canvas aria-hidden="true"></canvas>
+          <span class="clip__ghost" aria-hidden="true"></span>
+          <span class="clip__head" aria-hidden="true"></span>
+          <span class="clip__scrub mono" aria-hidden="true"></span>
+        </div>
+        <span class="clip__time mono">0:27</span>
+      </li>
+
+      <li class="clip" data-src="audio/rock.mp3" data-key="rock">
+        <button class="clip__toggle" type="button" aria-label="Play Rock" data-track data-label="Clip · Rock">
+          <svg class="clip__ico clip__ico--play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.2v13.6L19 12z"/></svg>
+          <svg class="clip__ico clip__ico--pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 5.4h3.1v13.2H8.2zM12.7 5.4h3.1v13.2h-3.1z"/></svg>
+        </button>
+        <span class="clip__no led">03</span>
+        <div class="clip__id">
+          <h3>Rock</h3>
+          <p class="clip__tag mono">HIGH GAIN · TIGHT LOWS</p>
+        </div>
+        <div class="clip__wave" role="slider" tabindex="0" aria-label="Rock — seek"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0:00 of 0:14">
+          <canvas aria-hidden="true"></canvas>
+          <span class="clip__ghost" aria-hidden="true"></span>
+          <span class="clip__head" aria-hidden="true"></span>
+          <span class="clip__scrub mono" aria-hidden="true"></span>
+        </div>
+        <span class="clip__time mono">0:14</span>
+      </li>
+    </ul>
+
+    <p class="deck__foot mono">MP3&nbsp;·&nbsp;320&nbsp;kbps&nbsp;·&nbsp;ONE&nbsp;CLIP&nbsp;AT&nbsp;A&nbsp;TIME</p>
+  </div>
+
+  <!-- Measured peaks, 200 buckets per clip, 0–100. Regenerate whenever a clip
+       is replaced; `dur` is only the placeholder shown before the file's own
+       metadata lands, never what the transport actually seeks against. -->
+  <script type="application/json" id="clipPeaks">
+{
+  "clean": { "dur": 23, "peaks": [4,88,94,93,90,89,100,93,86,81,3,26,1,40,71,63,85,92,89,86,85,91,84,99,57,7,24,4,47,14,32,81,75,72,70,78,86,89,86,40,36,23,1,77,74,70,66,64,62,59,57,57,50,44,62,60,57,52,49,65,82,77,62,36,35,35,79,90,87,82,7,18,4,35,65,58,76,78,75,73,74,97,85,87,14,27,19,11,10,10,46,68,58,52,47,75,80,76,84,42,18,1,63,79,75,69,68,64,63,58,64,62,54,96,84,78,73,69,46,34,45,66,55,50,51,86,83,77,75,4,29,1,20,15,14,14,12,12,10,44,97,81,97,7,13,5,13,12,12,82,100,91,87,85,97,90,93,97,4,2,7,48,53,49,45,44,41,39,33,32,38,35,56,61,52,50,38,21,19,23,30,34,31,27,25,23,24,22,21,20,20,19,18,16,14,14,13,14,12,11] },
+  "edge": { "dur": 27, "peaks": [0,0,0,22,52,38,47,86,86,91,82,78,73,90,79,78,87,71,71,75,74,65,73,58,62,71,63,62,63,68,67,58,64,63,66,63,74,79,67,81,82,72,85,87,88,87,88,62,75,76,74,77,75,70,67,85,76,86,75,68,69,63,63,62,62,65,58,57,65,62,58,75,71,62,72,81,77,90,91,94,94,100,72,82,71,68,73,73,67,64,76,76,73,65,65,70,56,71,70,64,58,60,63,61,64,67,71,67,75,69,68,84,86,82,80,79,75,80,72,65,77,78,76,81,73,72,77,72,69,83,68,69,75,68,66,69,58,54,58,55,57,59,56,47,44,56,48,42,54,80,75,73,68,62,67,59,50,47,50,48,49,42,40,14,7,6,6,7,2,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] },
+  "rock": { "dur": 14.37, "peaks": [1,1,1,81,88,84,77,82,83,78,78,75,79,87,75,84,86,80,82,84,81,80,82,81,85,77,85,89,86,100,85,86,88,84,83,84,85,94,87,87,88,83,84,80,85,20,68,83,15,73,87,87,84,77,78,82,73,79,74,79,93,91,80,79,77,79,86,93,84,91,82,80,78,81,79,78,86,84,85,86,84,20,4,81,48,24,93,83,84,87,82,83,88,80,83,86,86,82,78,76,82,91,78,83,75,97,82,80,70,69,83,84,80,83,86,78,78,94,83,81,86,88,88,89,83,83,79,77,76,74,85,81,80,78,17,69,76,9,87,83,87,78,84,79,80,78,72,73,75,91,84,79,78,71,70,80,77,93,81,72,80,70,84,94,84,88,89,80,84,85,83,80,76,45,73,92,82,80,78,79,74,94,89,83,85,78,65,18,65,90,88,84,82,37,3,1,1,1,0,0] }
+}
+  </script>
+</section>
+
+<!-- ░░ 04 · THE PEDALBOARD — horizontal rail ░░ -->
 <section class="board" id="board">
   <div class="board__head">
     <header class="shead" data-reveal>
-      <span class="shead__no led">03</span>
+      <span class="shead__no led">04</span>
       <p class="kicker">The Pedalboard</p>
       <span class="shead__meta mono">10&nbsp;SLOTS&nbsp;·&nbsp;ANY&nbsp;ORDER</span>
     </header>
@@ -372,7 +520,7 @@
   </div>
 </section>
 
-<!-- ░░ 04 · THE STUDIO STRIP ░░ -->
+<!-- ░░ 05 · THE STUDIO STRIP ░░ -->
 <section class="studio" id="studio" data-bg="#060a10">
   <div class="studio__media" data-reveal-wipe>
     <img src="assets/img/studio.webp" width="1920" height="1208" loading="lazy"
@@ -380,7 +528,7 @@
   </div>
   <div class="studio__copy">
     <header class="shead" data-reveal>
-      <span class="shead__no led">04</span>
+      <span class="shead__no led">05</span>
       <p class="kicker">The Studio Strip</p>
     </header>
     <h2 data-reveal style="--d:.06s">Mix-ready, the moment you plug in.</h2>
@@ -405,11 +553,11 @@
   </div>
 </section>
 
-<!-- ░░ 05 · THE CAB ░░ -->
+<!-- ░░ 06 · THE CAB ░░ -->
 <section class="cab" id="cab">
   <div class="cab__copy">
     <header class="shead" data-reveal>
-      <span class="shead__no led">05</span>
+      <span class="shead__no led">06</span>
       <p class="kicker">The Cab</p>
       <span class="shead__meta mono">IR&nbsp;LOADER</span>
     </header>
@@ -426,10 +574,10 @@
   </div>
 </section>
 
-<!-- ░░ 06 · SPECS — the ten modules, then formats + rates ░░ -->
+<!-- ░░ 07 · SPECS — the ten modules, then formats + rates ░░ -->
 <section class="specs" id="specs">
   <header class="shead" data-reveal>
-    <span class="shead__no led">06</span>
+    <span class="shead__no led">07</span>
     <p class="kicker">Specs</p>
     <span class="shead__meta mono">MACOS&nbsp;11+&nbsp;·&nbsp;WINDOWS&nbsp;10/11&nbsp;·&nbsp;64-BIT</span>
   </header>
@@ -522,11 +670,11 @@
   </dl>
 </section>
 
-<!-- ░░ 07 · DOWNLOAD ░░ -->
+<!-- ░░ 08 · DOWNLOAD ░░ -->
 <section class="download" id="download">
   <div class="download__ghost" aria-hidden="true">PLAY</div>
   <header class="shead" data-reveal>
-    <span class="shead__no led">07</span>
+    <span class="shead__no led">08</span>
     <p class="kicker">Download</p>
     <span class="shead__meta mono">FREE&nbsp;OF&nbsp;ACCOUNTS&nbsp;·&nbsp;FULL&nbsp;VERSION</span>
   </header>
@@ -601,7 +749,7 @@
     <p class="footer__tag">Maine — the all-in-one guitar rig.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Maine</h4><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
+    <div><h4>Maine</h4><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#sound">Listen</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
     <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a></div>
     <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3 &amp; AU</a><a href="#download">Standalone</a></div>
   </div>
