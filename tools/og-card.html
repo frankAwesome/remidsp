@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<!-- Source artboard for assets/img/og-card-portland.jpg — the link-preview
+     card. Not a page: it exists to be screenshotted at exactly 1200x630 by
+     tools/render-og.mjs. noindex rather than a robots.txt Disallow, for the
+     same reason the site states in robots.txt. -->
+<meta name="robots" content="noindex" />
+<title>REMI DSP — OG card artboard (1200x630)</title>
+<style>
+  @font-face{font-family:"Oswald";src:url("../assets/fonts/OswaldBold.ttf") format("truetype");font-weight:700}
+  @font-face{font-family:"Oswald";src:url("../assets/fonts/OswaldMedium.ttf") format("truetype");font-weight:500}
+  @font-face{font-family:"Space Grotesk";src:url("../assets/fonts/SpaceGroteskMedium.ttf") format("truetype");font-weight:500}
+  @font-face{font-family:"Space Grotesk";src:url("../assets/fonts/SpaceGroteskSemi.ttf") format("truetype");font-weight:600}
+
+  :root{
+    --ink:#050506;
+    --line:rgba(255,255,255,.09);
+    --text:#f2f4f7;
+    --muted:#9aa0ab;
+    --gold:#e9eef4;      /* the plugin's white light — the only accent */
+    --ice:#9fd8e8;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#000}
+
+  /* Exact export size. render-og.mjs screenshots this box and nothing else. */
+  .card{
+    position:relative;width:1200px;height:630px;overflow:hidden;
+    background:var(--ink);
+    font-family:"Space Grotesk",system-ui,sans-serif;color:var(--text);
+  }
+
+  /* Portland's wash: the same cold white-ice bloom the site puts behind the
+     head, pushed right so it reads as light coming off the amp. */
+  .card__glow{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(58% 76% at 74% 56%, rgba(159,216,232,.20), transparent 68%),
+      radial-gradient(42% 60% at 74% 58%, rgba(233,238,244,.10), transparent 70%);
+  }
+  .card__grain{
+    position:absolute;inset:0;opacity:.42;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  }
+  /* Vignette last — keeps the crop safe when a client rounds the corners. */
+  .card__vig{
+    position:absolute;inset:0;
+    background:radial-gradient(120% 120% at 50% 45%, transparent 42%, rgba(0,0,0,.72) 100%);
+  }
+
+  /* HUD corners, as on the site. */
+  .card__hud{position:absolute;inset:34px;pointer-events:none}
+  .card__hud i{position:absolute;width:26px;height:26px;border:0 solid var(--line)}
+  .card__hud i:nth-child(1){top:0;left:0;border-top-width:1px;border-left-width:1px}
+  .card__hud i:nth-child(2){top:0;right:0;border-top-width:1px;border-right-width:1px}
+  .card__hud i:nth-child(3){bottom:0;left:0;border-bottom-width:1px;border-left-width:1px}
+  .card__hud i:nth-child(4){bottom:0;right:0;border-bottom-width:1px;border-right-width:1px}
+
+  .card__inner{position:absolute;inset:0;display:grid;grid-template-columns:452px 1fr;align-items:center}
+
+  .copy{padding-left:74px;position:relative;z-index:2}
+
+  .eyebrow{
+    font-size:14px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .eyebrow b{color:var(--gold);font-weight:600}
+
+  h1{
+    margin-top:22px;
+    font-family:"Oswald","Arial Narrow",sans-serif;font-weight:700;
+    font-size:64px;line-height:.98;letter-spacing:.005em;text-transform:uppercase;
+    color:#fff;white-space:nowrap;
+  }
+  h1 span{display:block}
+  h1 .dim{color:var(--gold);opacity:.82}
+
+  .rule{width:132px;height:1px;background:var(--line);margin:30px 0 22px}
+
+  .meta{
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    font-size:14px;line-height:1.85;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .meta b{display:block;color:var(--text);font-weight:500}
+
+  /* The amp. Whole head, nothing cropped — the point of the card is that a
+     stranger seeing the link recognises the amplifier they'll actually get. */
+  .stage{position:relative;height:100%;display:flex;align-items:center;justify-content:center}
+  .stage img{
+    width:706px;height:auto;display:block;
+    margin:6px 8px 0 0;
+    filter:drop-shadow(0 34px 54px rgba(0,0,0,.78));
+  }
+  /* The light the head stands in — the site's stage does the same. */
+  .stage__floor{
+    position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+    width:560px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(159,216,232,.38),transparent);
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card__glow"></div>
+  <div class="card__grain"></div>
+
+  <div class="card__inner">
+    <div class="copy">
+      <p class="eyebrow">REMI&nbsp;DSP&nbsp;<b>·</b>&nbsp;MAINE</p>
+      <h1><span>Three amps.</span><span class="dim">One window.</span></h1>
+      <div class="rule"></div>
+      <p class="meta">
+        <b>Portland &middot; Captured, not modelled</b>
+        VST3 &middot; AU &middot; Standalone
+      </p>
+    </div>
+
+    <div class="stage">
+      <div class="stage__floor"></div>
+      <img src="../assets/img/amp-head-portland.webp" width="1672" height="941"
+           alt="Portland — a black tolex amplifier head with a gold control plate and brass corners" />
+    </div>
+  </div>
+
+  <div class="card__vig"></div>
+  <div class="card__hud"><i></i><i></i><i></i><i></i></div>
+</div>
+
+</body>
+</html>

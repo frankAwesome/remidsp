@@ -17,15 +17,20 @@
 <meta property="og:description" content="Three amplifiers captured from the real things. A pedalboard that reorders itself. A studio strip that finishes the job." />
 <meta property="og:type" content="website" />
 <!-- the head renders carry alpha; social cards must be opaque, so point at the
-     pre-flattened 1200x630 card rather than a plugin asset -->
-<meta property="og:image" content="https://remidsp.com/assets/img/og-card.jpg" />
+     pre-flattened 1200x630 card rather than a plugin asset. Built from
+     tools/og-card.html by `node tools/render-og.mjs`. Scrapers cache a card
+     by URL and re-scrape rarely, so a redesign ships under a NEW filename
+     (or at least a bumped ?v=) — editing the JPG in place will not reach
+     anyone who has already pasted the link. -->
+<meta property="og:image" content="https://remidsp.com/assets/img/og-card-portland.jpg" />
+<meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="The Portland amplifier head — black tolex and gold, with brass corners" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="REMI DSP — Maine, the all-in-one guitar rig" />
 <meta name="twitter:description" content="Three amplifiers captured from the real things." />
-<meta name="twitter:image" content="https://remidsp.com/assets/img/og-card.jpg" />
+<meta name="twitter:image" content="https://remidsp.com/assets/img/og-card-portland.jpg" />
 <meta name="twitter:image:alt" content="The Portland amplifier head — black tolex and gold, with brass corners" />
 <meta name="theme-color" content="#050506" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -67,7 +72,7 @@
       "applicationSubCategory": "Audio plugin",
       "operatingSystem": "macOS 11+, Windows 10/11",
       "url": "https://remidsp.com/",
-      "image": "https://remidsp.com/assets/img/og-card-maine.jpg",
+      "image": "https://remidsp.com/assets/img/og-card-portland.jpg",
       "description": "An all-in-one guitar rig: three amplifiers captured from real, mic'd-up rigs, a pedalboard that reorders itself and a studio strip that finishes the job.",
       "softwareVersion": "0.3.0",
       "featureList": [
