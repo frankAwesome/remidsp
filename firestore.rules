@@ -64,14 +64,25 @@ service cloud.firestore {
     // key pin makes an 'ip' field impossible; if someone later "just adds"
     // one, the write fails instead of quietly turning this into personal
     // data that needs a consent banner.
+    // lat/lon are the map pins. analytics.js rounds them to one decimal — ~11km,
+    // a city and not a street, so they say nothing the city name beside them
+    // does not already say. The range check is what stops the field being
+    // repurposed as a general-purpose number smuggler.
+    function coordOk(v, limit) {
+      return v == null || (v is number && v >= -limit && v <= limit);
+    }
+
     function geoOk(g) {
       return g is map
-        && g.keys().hasOnly(['country', 'countryName', 'region', 'city', 'tz'])
+        && g.keys().hasOnly(['country', 'countryName', 'region', 'city', 'tz',
+                             'lat', 'lon'])
         && sOrNull(g.get('country', null), 8)
         && sOrNull(g.get('countryName', null), 80)
         && sOrNull(g.get('region', null), 120)
         && sOrNull(g.get('city', null), 120)
-        && sOrNull(g.get('tz', null), 60);
+        && sOrNull(g.get('tz', null), 60)
+        && coordOk(g.get('lat', null), 90)
+        && coordOk(g.get('lon', null), 180);
     }
 
     function envelopeOk() {
@@ -127,6 +138,27 @@ service cloud.firestore {
         && sOrNull(request.resource.data.get('href', null), 400)
         && sOrNull(request.resource.data.get('placement', null), 40)
         && request.resource.data.kind in ['outbound', 'anchor', 'internal'];
+      allow read, update, delete: if false;
+    }
+
+    // One summary row per visit, written on the way out — how long the page was
+    // actually visible, how far down it was read, how many links were clicked.
+    // Bounded hard: dwell cannot exceed a day and scroll is a fraction, so a
+    // scripted row cannot inflate the averages without being obviously wrong.
+    match /engagement/{id} {
+      allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['dwellMs', 'maxScroll', 'clicks', 'section']))
+        && request.resource.data.dwellMs is number
+        && request.resource.data.dwellMs >= 0
+        && request.resource.data.dwellMs <= 86400000
+        && request.resource.data.maxScroll is number
+        && request.resource.data.maxScroll >= 0
+        && request.resource.data.maxScroll <= 1
+        && request.resource.data.clicks is int
+        && request.resource.data.clicks >= 0
+        && request.resource.data.clicks <= 10000
+        && sOrNull(request.resource.data.get('section', null), 60);
       allow read, update, delete: if false;
     }
 

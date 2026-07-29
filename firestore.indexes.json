@@ -39,6 +39,22 @@
         { "fieldPath": "product", "order": "ASCENDING" },
         { "fieldPath": "ts", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "engagement",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "product", "order": "ASCENDING" },
+        { "fieldPath": "ts", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "engagement",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "geo.country", "order": "ASCENDING" },
+        { "fieldPath": "ts", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
