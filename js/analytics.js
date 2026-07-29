@@ -318,12 +318,26 @@ function placementOf(a) {
 
 let clickCount = 0;
 
+/* What to call the thing that was clicked.
+
+   textContent alone is wrong here: the nav links run a scramble animation on
+   hover, and a click landing mid-animation records whatever glyphs happened to
+   be on screen — "Studio" arrived as Stud/O, PedalboaX1 and AmpA, splitting one
+   link across four rows in the report. main.js stashes the real string in
+   data-orig before it touches the text, so that is the truth when it exists. */
+function labelOf(a) {
+  const raw = a.dataset.label
+           ?? a.dataset.orig
+           ?? (a.textContent.trim() || a.getAttribute("aria-label") || "");
+  return cap(String(raw).replace(/\s+/g, " ").trim(), 120);
+}
+
 function onClick(e) {
   const a = e.target.closest("a[href], button[data-track]");
   if (!a) return;
   const href = a.getAttribute("href") || "";
   const abs  = a.href || "";
-  const label = cap(a.dataset.label || a.textContent.trim().replace(/\s+/g, " "), 120);
+  const label = labelOf(a);
   const placement = placementOf(a);
   clickCount++;
 
