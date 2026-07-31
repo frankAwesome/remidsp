@@ -4,9 +4,13 @@ rules_version = '2';
 //
 // The browser writes these collections unauthenticated, so the rules are the
 // only thing standing between a public endpoint and someone scripting your
-// bill upward. Posture: create-only, never readable, KEY-PINNED (every field
-// the client can send is enumerated; anything else is rejected), size-capped.
-// Reading or correcting events is console / Admin SDK work.
+// bill upward. Posture: create-only, KEY-PINNED (every field the client can
+// send is enumerated; anything else is rejected), size-capped.
+//
+// Reading is allowed for exactly one signed-in Google account — the dashboard
+// reads live rather than through a build step. See dashboardReader() below.
+// Unauthenticated reads are refused, so the public API key grants nothing.
+// Correcting or deleting an event is still console / Admin SDK work.
 //
 // These rules mirror js/analytics.js envelope() EXACTLY. If you add a field
 // there, add it here in the same commit or the write silently fails — send()
@@ -106,13 +110,35 @@ service cloud.firestore {
       return request.method == 'create' && envelopeOk();
     }
 
+    // ── reading ──────────────────────────────────────────────────────────
+    //
+    // Writing is public and unauthenticated because it has to be — a visitor's
+    // browser does the writing. Reading is the opposite: these rows carry
+    // coarse geo and user agents for real visitors, and nothing about that
+    // should be fetchable by anyone who reads the page source.
+    //
+    // The dashboard reads live, so "no reads at all" is no longer an option.
+    // This is the narrowest thing that still works: one named Google account,
+    // checked server-side on every query. An API key alone gets you nothing —
+    // request.auth is null and every read below is refused.
+    //
+    // Adding a second person is one more address in this list. Anything else
+    // (a second project, a service account, an anonymous sign-in) is not
+    // covered and stays refused.
+    function dashboardReader() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['sheepdeklerk@gmail.com'];
+    }
+
     match /pageviews/{id} {
       allow create: if createOnly()
         && request.resource.data.keys().hasOnly(
              envelopeKeys().concat(['loadMs', 'entry']))
         && numOrNull(request.resource.data.get('loadMs', null))
         && request.resource.data.get('entry', false) is bool;
-      allow read, update, delete: if false;
+      allow read: if dashboardReader();
+      allow update, delete: if false;
     }
 
     match /downloads/{id} {
@@ -127,7 +153,8 @@ service cloud.firestore {
         && sOrNull(request.resource.data.get('label', null), 120)
         && sOrNull(request.resource.data.get('placement', null), 40)
         && request.resource.data.channel in ['github-releases', 'direct'];
-      allow read, update, delete: if false;
+      allow read: if dashboardReader();
+      allow update, delete: if false;
     }
 
     match /clicks/{id} {
@@ -138,7 +165,8 @@ service cloud.firestore {
         && sOrNull(request.resource.data.get('href', null), 400)
         && sOrNull(request.resource.data.get('placement', null), 40)
         && request.resource.data.kind in ['outbound', 'anchor', 'internal'];
-      allow read, update, delete: if false;
+      allow read: if dashboardReader();
+      allow update, delete: if false;
     }
 
     // One summary row per visit, written on the way out — how long the page was
@@ -159,7 +187,8 @@ service cloud.firestore {
         && request.resource.data.clicks >= 0
         && request.resource.data.clicks <= 10000
         && sOrNull(request.resource.data.get('section', null), 60);
-      allow read, update, delete: if false;
+      allow read: if dashboardReader();
+      allow update, delete: if false;
     }
 
     // Everything else is closed. (This is already the default; stated so the
