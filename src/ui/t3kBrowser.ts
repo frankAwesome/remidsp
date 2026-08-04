@@ -47,9 +47,15 @@ export class T3kBrowser {
           <button class="t3k__pill" data-sort="downloads-all-time">ALL-TIME</button>
         </div>
         <div class="t3k__list"></div>
+        <div class="t3k__keyrow" hidden>
+          <input type="password" placeholder="t3k_pub_… (tone3000.com → Settings → API Keys)" spellcheck="false" />
+          <button class="t3k__pill" data-act="key-save">USE KEY</button>
+          <button class="t3k__pill" data-act="key-reset">RESET</button>
+        </div>
         <div class="t3k__foot">
           <button class="t3k__pill" data-act="connect">CONNECT</button>
-          <span class="mono">PER-USER DELIVERY · CREATOR LICENSES APPLY</span>
+          <button class="t3k__pill" data-act="key" title="the publishable key used for sign-in"></button>
+          <span class="mono">CREATOR LICENSES APPLY</span>
           <a class="mono" style="margin-left:auto" href="https://www.tone3000.com" target="_blank" rel="noreferrer">TONE3000.COM ↗</a>
         </div>
       </div>`;
@@ -88,6 +94,40 @@ export class T3kBrowser {
       }
     });
     this.connectBtn.addEventListener('click', () => this.handleConnect());
+
+    // Publishable-key management: pasted once, kept in localStorage. The
+    // baked-in default works out of the box; players can bring their own.
+    const keyRow = this.root.querySelector<HTMLElement>('.t3k__keyrow')!;
+    const keyInput = keyRow.querySelector('input')!;
+    const keyBtn = this.root.querySelector<HTMLButtonElement>('[data-act=key]')!;
+    const syncKeyBtn = () => {
+      keyBtn.textContent = `KEY · ${t3k.hasCustomKey ? 'YOURS' : 'DEFAULT'} (${t3k.maskedKey})`;
+    };
+    syncKeyBtn();
+    keyBtn.addEventListener('click', () => {
+      keyRow.hidden = !keyRow.hidden;
+      if (!keyRow.hidden) keyInput.focus();
+    });
+    keyRow.querySelector('[data-act=key-save]')!.addEventListener('click', () => {
+      const k = keyInput.value.trim();
+      if (!k.startsWith('t3k_pub_')) { toast('That does not look like a publishable key (t3k_pub_…).'); return; }
+      t3k.disconnect(); // tokens belong to the old client
+      t3k.pubKey = k;
+      keyInput.value = '';
+      keyRow.hidden = true;
+      syncKeyBtn();
+      this.syncConnected();
+      toast('<b>Key saved.</b> Hit CONNECT to sign in with it.');
+    });
+    keyRow.querySelector('[data-act=key-reset]')!.addEventListener('click', () => {
+      t3k.disconnect();
+      t3k.clearKey();
+      keyRow.hidden = true;
+      syncKeyBtn();
+      this.syncConnected();
+      toast('Back on the built-in key.');
+    });
+
     this.syncConnected();
   }
 
@@ -113,12 +153,6 @@ export class T3kBrowser {
       this.syncConnected();
       return;
     }
-    if (!t3k.pubKey) {
-      const k = prompt(
-        'Paste your TONE3000 publishable key (t3k_pub_…).\n\nCreate one free: tone3000.com → Settings → API Keys.\nLocalhost redirect URIs are allowed automatically in dev.');
-      if (!k) return;
-      t3k.pubKey = k;
-    }
     try {
       toast('Opening TONE3000 sign-in…');
       await t3k.connect();
@@ -127,7 +161,10 @@ export class T3kBrowser {
       this.mode = 'search';
       this.refresh();
     } catch (err) {
-      toast(`Connect failed — ${(err as Error).message}`);
+      const msg = (err as Error).message;
+      toast(/invalid|client|unauthorized/i.test(msg)
+        ? `Connect failed — ${msg}. Check the KEY below (yours comes from tone3000.com → Settings → API Keys, with this site's /t3k-callback.html as a redirect URI).`
+        : `Connect failed — ${msg}`, 6000);
     }
   }
 

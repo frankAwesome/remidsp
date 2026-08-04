@@ -51,6 +51,14 @@ interface Tokens { access_token: string; refresh_token: string; expires_at: numb
 export class Tone3000 {
   get pubKey(): string { return localStorage.getItem(LS_KEY) ?? DEFAULT_PUB_KEY; }
   set pubKey(k: string) { localStorage.setItem(LS_KEY, k.trim()); }
+  /** True when the player pasted their own key over the baked-in default. */
+  get hasCustomKey(): boolean { return !!localStorage.getItem(LS_KEY); }
+  clearKey() { localStorage.removeItem(LS_KEY); }
+  /** Masked form for display: t3k_pub_AB…YZ */
+  get maskedKey(): string {
+    const k = this.pubKey;
+    return k.length > 16 ? `${k.slice(0, 10)}…${k.slice(-4)}` : k;
+  }
 
   private get tokens(): Tokens | null {
     try { return JSON.parse(localStorage.getItem(LS_TOKENS) ?? 'null'); } catch { return null; }
