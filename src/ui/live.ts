@@ -231,6 +231,25 @@ export function sauceScope(): HTMLCanvasElement {
   return c;
 }
 
+/* ── Pedal pilot jewel — lit lens when engaged, dark glass when bypassed ──
+ * The renders bake a LIT pilot, so the live jewel is drawn slightly larger
+ * with a feathered dark surround that swallows the baked bloom when off. */
+export function pilotLed(onParam: string, nx: number, ny: number, nr: number): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'pilot';
+  wrap.style.cssText = `position:absolute;left:${nx * 100}%;top:${ny * 100}%;
+    width:${nr * 2 * 2.6 * 100}%;transform:translate(-50%,-50%);pointer-events:none`;
+  const lens = document.createElement('i');
+  wrap.appendChild(lens);
+  const sync = () => wrap.classList.toggle('on', store.get(onParam) > 0.5);
+  sync();
+  const un = store.subscribe((id) => {
+    if (!wrap.isConnected) { un(); return; }
+    if (id === onParam || id === '*') sync();
+  });
+  return wrap;
+}
+
 /* ── Delay: the ECHO SYNC lamp — A/B jewels flickering at echo tempo ── */
 export function delayLamp(engineIdx: 0 | 1): HTMLElement {
   const geo = engineIdx === 0

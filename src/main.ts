@@ -8,7 +8,7 @@ import { toast } from './ui/toast';
 import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, Preset } from './presets';
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, CaptureRef } from './captures';
 import { t3k } from './tone3000';
-import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp } from './ui/live';
+import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed } from './ui/live';
 import { LooperSection } from './ui/looper';
 
 /* ────────────────────────── app state ────────────────────────── */
@@ -302,6 +302,16 @@ function pedalPanel(key: SlotKey): HTMLElement {
   const m = map[key]!;
   const f = facePanel(m.def, m.on);
   const ov = f.querySelector('.face__overlay')!;
+  // Live pilot jewel over the render's painted pilot spot (desktop geometry).
+  const pilots: Partial<Record<SlotKey, [number, number, number]>> = {
+    gate: [0.4941, 0.0958, 0.0149],
+    comp: [0.4992, 0.0908, 0.0124],
+    drive: [0.5, 0.098, 0.011],
+    chorus: [0.5035, 0.1091, 0.0147],
+    sauce: [0.5, 0.075, 0.009],
+  };
+  const pg = pilots[key];
+  if (pg) ov.appendChild(pilotLed(m.on, pg[0], pg[1], pg[2]));
   if (key === 'gate') {
     ov.appendChild(gateMeter());
     // AUTO + GLOBAL keys over their baked twins (desktop resizedExtras geometry).
@@ -397,6 +407,7 @@ function reverbPanel(): HTMLElement {
   ov.appendChild(seat(interval, 0.675, 0.128, 0.15, 0.055));
   const duck = paramToggle('rvb_duck', 'DUCK');
   ov.appendChild(seat(duck, 0.339, 0.847)); // over the print's baked DUCK pill
+  ov.appendChild(pilotLed('rvb_on', 0.5, 0.132, 0.011));
   return f;
 }
 

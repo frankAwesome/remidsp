@@ -283,6 +283,19 @@ select{font:inherit}
 .gateway__status{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;color:var(--ice);
   min-height:1em;text-transform:uppercase}
 
+/* pedal pilot jewel — covers the baked (always-lit) LED; .on relights it */
+.pilot{aspect-ratio:1/1;display:grid;place-items:center;
+  background:radial-gradient(circle,rgba(8,5,5,.92) 0%,rgba(8,5,5,.75) 42%,transparent 68%)}
+.pilot i{display:block;width:46%;aspect-ratio:1/1;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#4a2a26,#2a1512 55%,#1a0c0a);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.8), inset 0 -1px 1px rgba(255,255,255,.05),
+    0 0 0 1px rgba(0,0,0,.6);
+  transition:background .15s, box-shadow .15s}
+.pilot.on{background:radial-gradient(circle,rgba(255,83,64,.30) 0%,rgba(255,83,64,.12) 40%,transparent 68%)}
+.pilot.on i{background:radial-gradient(circle at 35% 30%,#ffd9cf,#ff5340 55%,#8f1d12);
+  box-shadow:0 0 12px rgba(255,83,64,.85), 0 0 26px rgba(255,83,64,.4),
+    inset 0 0 3px rgba(255,255,255,.55), 0 0 0 1px rgba(60,10,6,.8)}
+
 /* gate AUTO / GLOBAL keys — live twins fully covering the baked prints */
 .gate-key{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:6%;border-radius:7px;overflow:hidden;
