@@ -202,6 +202,7 @@ class StompComp {
     this.level = new Smooth(0, 25, sr); // dB
     this.env = 1e-6;
     this.g = 1;
+    this.grDb = 0; // gain reduction for the panel's live strip
   }
   set(id, v) {
     if (id === 'on') this.on = v > 0.5;
@@ -210,9 +211,10 @@ class StompComp {
     else if (id === 'level') this.level.set(v);
   }
   process(L, R, n) {
-    if (!this.on) return;
+    if (!this.on) { this.grDb = 0; return; }
     const aA = Math.exp(-1 / (0.001 * Math.max(0.5, this.attack) * this.sr));
     const aR = Math.exp(-1 / (0.180 * this.sr));
+    let grPeak = 0;
     for (let i = 0; i < n; i++) {
       const s = this.sustain.next();
       const threshDb = -18 - s * 26;         // more sustain digs deeper
@@ -223,9 +225,11 @@ class StompComp {
       const envDb = 20 * Math.log10(this.env + 1e-9);
       let grDb = 0;
       if (envDb > threshDb) grDb = (envDb - threshDb) * (1 - 1 / ratio);
+      if (grDb > grPeak) grPeak = grDb;
       this.g = dbToGain(-grDb) * makeup; // env is already smooth
       L[i] *= this.g; R[i] *= this.g;
     }
+    this.grDb = Math.max(this.grDb * 0.92, grPeak);
   }
 }
 
@@ -865,6 +869,165 @@ class SaucePedal {
   }
 }
 
+/* ---------- looper + metronome (practice section) ---------- */
+
+// Two-partial "wood click" metronome — a tuned ping (accented downbeat a
+// fifth up) with a soft noise transient, exponential decay. Musical, not harsh.
+class Metronome {
+  constructor(sr) {
+    this.sr = sr;
+    this.gain = 0.7;
+    this.phase = 0; this.phase2 = 0;
+    this.env = 0; this.noiseEnv = 0;
+    this.freq = 1046.5;
+    this.envDecay = Math.exp(-1 / (0.055 * sr));
+    this.noiseDecay = Math.exp(-1 / (0.0035 * sr));
+    this.lp = new OnePoleLP();
+    this.lp.setFc(6500, sr);
+  }
+  trigger(accent) {
+    this.env = 1; this.noiseEnv = 1;
+    this.freq = accent ? 1568 : 1046.5; // G6 / C6
+    this.phase = 0; this.phase2 = 0;
+  }
+  tick() {
+    if (this.env < 1e-4 && this.noiseEnv < 1e-4) return 0;
+    this.phase += TWO_PI * this.freq / this.sr;
+    this.phase2 += TWO_PI * this.freq * 2.42 / this.sr;
+    const tone = (Math.sin(this.phase) + Math.sin(this.phase2) * 0.35) * this.env;
+    const click = (Math.random() - 0.5) * this.noiseEnv * 0.7;
+    this.env *= this.envDecay;
+    this.noiseEnv *= this.noiseDecay;
+    return this.lp.tick(tone * 0.55 + click) * this.gain;
+  }
+}
+
+// Bar-count looper on the FINAL rig output: count-in → record N bars →
+// seamless loop playback, live signal always passing. The metronome rides
+// the count-in and record passes (and can run free for practice) but is
+// added AFTER the capture tap, so clicks are never printed into the loop.
+class Looper {
+  constructor(sr, port) {
+    this.sr = sr;
+    this.port = port;
+    this.state = 'idle';
+    this.bars = 4;
+    this.countBars = 2;
+    this.beatsPerBar = 4;
+    this.bpm = 120;
+    this.clickOn = true;       // click during count-in + record
+    this.freeMetro = false;    // standalone practice metronome
+    this.metro = new Metronome(sr);
+    this.bufL = null; this.bufR = null;
+    this.len = 0; this.recPos = 0; this.playPos = 0;
+    this.spb = Math.round(sr * 60 / this.bpm);
+    this.beatSample = 0; this.beatIndex = 0;
+    this.loopGain = new Smooth(1, 15, sr);
+  }
+  setOpt(id, v) {
+    if (id === 'bars') this.bars = v | 0;
+    else if (id === 'countin') this.countBars = v | 0;
+  }
+  setMetro(id, v) {
+    if (id === 'on') {
+      this.freeMetro = v > 0.5;
+      if (this.freeMetro && this.state === 'idle') { this.beatSample = 0; this.beatIndex = -1; }
+    }
+    else if (id === 'gain') this.metro.gain = v;
+    else if (id === 'bpm') { this.bpm = v; if (this.state === 'idle') this.spb = Math.round(this.sr * 60 / v); }
+  }
+  cmd(m) {
+    if (m.cmd === 'arm') {
+      this.bpm = m.bpm || this.bpm;
+      if (m.bars) this.bars = m.bars;
+      if (m.countBars !== undefined) this.countBars = m.countBars;
+      this.spb = Math.round(this.sr * 60 / this.bpm);
+      this.len = this.bars * this.beatsPerBar * this.spb;
+      this.bufL = new Float32Array(this.len);
+      this.bufR = new Float32Array(this.len);
+      this.recPos = 0; this.beatSample = 0; this.beatIndex = -1;
+      this.state = this.countBars > 0 ? 'count' : 'rec';
+      this.post();
+    } else if (m.cmd === 'stop') {
+      this.state = 'idle';
+      this.post();
+    } else if (m.cmd === 'play') {
+      if (this.bufL && this.len) { this.state = 'play'; this.playPos = 0; this.loopGain.jump(1); this.post(); }
+    } else if (m.cmd === 'clear') {
+      this.state = 'idle'; this.bufL = this.bufR = null; this.len = 0;
+      this.post();
+    }
+  }
+  post(extra) {
+    this.port.postMessage({
+      type: 'looper', state: this.state,
+      beat: this.beatIndex, beatsPerBar: this.beatsPerBar,
+      countBeats: this.countBars * this.beatsPerBar,
+      bars: this.bars, bpm: this.bpm, ...extra,
+    });
+  }
+  finalize() {
+    // Peak pyramid for the UI waveform: 1200 min/max bins of the mono sum.
+    const bins = 1200;
+    const peaks = new Float32Array(bins * 2);
+    const per = this.len / bins;
+    for (let b = 0; b < bins; b++) {
+      let lo = 0, hi = 0;
+      const s = Math.floor(b * per), e = Math.min(this.len, Math.ceil((b + 1) * per));
+      for (let i = s; i < e; i++) {
+        const v = (this.bufL[i] + this.bufR[i]) * 0.5;
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+      peaks[b * 2] = lo; peaks[b * 2 + 1] = hi;
+    }
+    this.state = 'play';
+    this.playPos = 0;
+    this.loopGain.jump(1);
+    this.port.postMessage({ type: 'wave', peaks, bins, bars: this.bars, bpm: this.bpm }, [peaks.buffer]);
+    this.post();
+  }
+  // Runs on the final output block. Captures first, then adds loop + click.
+  process(L, R, n) {
+    const counting = this.state === 'count', recording = this.state === 'rec';
+    const playing = this.state === 'play';
+    const clockOn = counting || recording;
+    const freeTick = this.freeMetro && !clockOn;
+    for (let i = 0; i < n; i++) {
+      if (clockOn || freeTick) {
+        if (this.beatSample === 0) {
+          this.beatIndex++;
+          const inBar = this.beatIndex % this.beatsPerBar;
+          if (clockOn || this.freeMetro) {
+            if (clockOn ? this.clickOn : true) this.metro.trigger(inBar === 0);
+          }
+          if (clockOn) {
+            if (counting && this.beatIndex >= this.countBars * this.beatsPerBar) {
+              this.state = 'rec';
+              this.recPos = 0;
+            }
+            this.post();
+          }
+        }
+        if (++this.beatSample >= this.spb) this.beatSample = 0;
+      }
+      if (this.state === 'rec') {
+        this.bufL[this.recPos] = L[i];
+        this.bufR[this.recPos] = R[i];
+        if (++this.recPos >= this.len) { this.finalize(); }
+      }
+      if (playing && this.bufL) {
+        const g = this.loopGain.next();
+        L[i] += this.bufL[this.playPos] * g;
+        R[i] += this.bufR[this.playPos] * g;
+        if (++this.playPos >= this.len) this.playPos = 0;
+      }
+      const c = this.metro.tick();
+      if (c !== 0) { L[i] += c; R[i] += c; }
+    }
+  }
+}
+
 /* ---------- the two chain stages ---------- */
 
 // stage 'pre'  (mono):  input trim → gate → comp → drive → capture-in trim
@@ -896,6 +1059,7 @@ class RemiChainProcessor extends AudioWorkletProcessor {
       this.chorus = new BbdChorus(sr);
       this.delay = new DelayBlock(sr);
       this.reverb = new VastSkyReverb(sr);
+      this.looper = new Looper(sr, this.port);
       this.bufL = new Float32Array(128);
       this.bufR = new Float32Array(128);
     }
@@ -905,6 +1069,7 @@ class RemiChainProcessor extends AudioWorkletProcessor {
   onMessage(m) {
     if (m.type === 'param') this.setParam(m.id, m.v);
     else if (m.type === 'params') for (const [id, v] of m.list) this.setParam(id, v);
+    else if (m.type === 'looper-cmd' && this.stage === 'post') this.looper.cmd(m);
     else if (m.type === 'reset' && this.stage === 'post') {
       this.delay.A.reset(); this.delay.B.reset(); this.reverb.reset();
     }
@@ -938,12 +1103,13 @@ class RemiChainProcessor extends AudioWorkletProcessor {
           if (rest === 'on') { this.eq.set('on', v); this.fet.set('on', v); }
           return;
         case 'cho': this.chorus.set(rest, v); return;
-        case 'dly':
-          if (rest.startsWith('A_')) this.delay.A.set(rest.slice(2), v);
-          else if (rest.startsWith('B_')) this.delay.B.set(rest.slice(2), v);
-          else this.delay.set(rest, v);
-          return;
+        // 'dlyA_time' splits at the FIRST underscore → head 'dlyA', not 'dly'.
+        case 'dlyA': this.delay.A.set(rest, v); return;
+        case 'dlyB': this.delay.B.set(rest, v); return;
+        case 'dly': this.delay.set(rest, v); return;
         case 'rvb': this.reverb.set(rest, v); return;
+        case 'loop': this.looper.setOpt(rest, v); return;
+        case 'metro': this.looper.setMetro(rest, v); return;
       }
     }
   }
@@ -993,7 +1159,6 @@ class RemiChainProcessor extends AudioWorkletProcessor {
       this.chorus.process(L, R, n);
       this.delay.process(L, R, n);
       this.reverb.process(L, R, n, L, R);
-      let pk = 0;
       for (let i = 0; i < n; i++) {
         const g = this.outGain.next();
         // Soft safety ceiling — musical instead of digital wrap.
@@ -1001,7 +1166,12 @@ class RemiChainProcessor extends AudioWorkletProcessor {
         if (l > 1.2 || l < -1.2) l = Math.tanh(l * 0.8) * 1.25;
         if (r > 1.2 || r < -1.2) r = Math.tanh(r * 0.8) * 1.25;
         L[i] = l; R[i] = r;
-        const a = Math.max(Math.abs(l), Math.abs(r));
+      }
+      // Looper taps the finished rig sound, then adds loop + click on top.
+      this.looper.process(L, R, n);
+      let pk = 0;
+      for (let i = 0; i < n; i++) {
+        const a = Math.max(Math.abs(L[i]), Math.abs(R[i]));
         if (a > pk) pk = a;
       }
       out[0].set(L.subarray(0, n));
@@ -1013,10 +1183,17 @@ class RemiChainProcessor extends AudioWorkletProcessor {
     if (++this.meterCount >= 6) {
       this.meterCount = 0;
       if (this.stage === 'pre') {
-        this.port.postMessage({ type: 'meters', in: this.peakIn, gate: this.gate.gr });
+        this.port.postMessage({
+          type: 'meters', in: this.peakIn, gate: this.gate.gr, compGr: this.comp.grDb,
+        });
         this.peakIn = 0;
       } else {
-        this.port.postMessage({ type: 'meters', out: this.peakOut, gr: this.fet.grDb });
+        const lp = this.looper;
+        this.port.postMessage({
+          type: 'meters', out: this.peakOut, gr: this.fet.grDb,
+          loopState: lp.state,
+          loopPos: lp.len ? (lp.state === 'rec' ? lp.recPos : lp.playPos) / lp.len : 0,
+        });
         this.peakOut = 0;
         this.fet.grDb *= 0.6;
       }

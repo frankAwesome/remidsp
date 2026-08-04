@@ -8,6 +8,8 @@ import { toast } from './ui/toast';
 import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, Preset } from './presets';
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, CaptureRef } from './captures';
 import { t3k } from './tone3000';
+import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp } from './ui/live';
+import { LooperSection } from './ui/looper';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -298,7 +300,12 @@ function pedalPanel(key: SlotKey): HTMLElement {
     sauce: { def: PEDAL_FACES.sauce, on: 'sauce_on' },
   };
   const m = map[key]!;
-  return facePanel(m.def, m.on);
+  const f = facePanel(m.def, m.on);
+  const ov = f.querySelector('.face__overlay')!;
+  if (key === 'gate') ov.appendChild(gateMeter());
+  else if (key === 'comp') ov.appendChild(compGrStrip());
+  else if (key === 'sauce') ov.appendChild(sauceScope());
+  return f;
 }
 
 function reverbPanel(): HTMLElement {
@@ -530,6 +537,8 @@ function delayPanel(): HTMLElement {
   ov.appendChild(seat(paramSelect('dly_routing'), 0.6903, 0.827, 0.155, 0.052));
   // PING-PONG chip under the tempo lamp.
   ov.appendChild(seat(paramToggle(p + 'pingpong', 'PING-PONG'), 0.5, 0.235));
+  // Live ECHO SYNC lamp — A/B jewels flicker at each engine's echo tempo.
+  ov.appendChild(delayLamp(delayEngineShown));
 
   // foot: stomps the ACTIVE engine (and revives the master).
   const hit = el('button', '');
@@ -579,11 +588,8 @@ function studioPanel(): HTMLElement {
     if (id === 'fet_ratio' || id === '*') syncRatio();
   });
   ov.appendChild(seat(ratio, 0.6574, 0.8226, 0.169, 0.085));
-  // GR readout over the VU window.
-  const gr = el('div', 'led-text');
-  gr.id = 'grReadout';
-  gr.style.cssText = 'color:#2b2416;font-size:1.1rem;text-shadow:0 0 6px rgba(0,0,0,.2)';
-  ov.appendChild(seat(gr, 0.868, 0.82));
+  // Live VU needle over the baked GAIN REDUCTION dial window.
+  ov.appendChild(vuNeedle());
   f.appendChild(ov);
   return f;
 }
@@ -677,15 +683,12 @@ async function boot() {
   store.pushAll();
   void loadBundledIr(0);
 
-  engine.onMeters = (m) => {
+  engine.onMeters = (m) => meterBus.dispatch(m);
+  meterBus.hooks.add((m) => {
     if (m.in !== undefined && meters.in) meters.in.style.height = `${levelPct(m.in)}%`;
     if (m.out !== undefined && meters.out) meters.out.style.height = `${levelPct(m.out)}%`;
     if (m.gate !== undefined) document.getElementById('gateLed')?.classList.toggle('on', m.gate > 0.5);
-    if (m.gr !== undefined) {
-      const el2 = document.getElementById('grReadout');
-      if (el2) el2.textContent = m.gr > 0.3 ? `-${m.gr.toFixed(0)}` : '0';
-    }
-  };
+  });
 
   const lat = engine.latencyMs();
   const latEl = document.getElementById('latency');
@@ -720,6 +723,7 @@ function build() {
   app.appendChild(buildRibbon());
   stage.className = 'stage';
   app.appendChild(stage);
+  app.appendChild(new LooperSection().root);
   const foot = el('footer', 'foot');
   foot.innerHTML = `<span class="foot__brand">Remi</span>
     <span class="mono">MAINE · WEB SUITE · v0.1</span>

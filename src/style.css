@@ -283,6 +283,34 @@ select{font:inherit}
 .gateway__status{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;color:var(--ice);
   min-height:1em;text-transform:uppercase}
 
+/* ════════ looper — the practice section ════════ */
+.looper{border:1px solid var(--line);border-top:0;background:#07070a;
+  padding:.8rem 1rem 1rem;display:flex;flex-direction:column;gap:.7rem}
+.looper__head{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap}
+.looper__title{font-family:var(--font-display);font-weight:700;font-size:1.15rem;
+  letter-spacing:.06em;text-transform:uppercase}
+.looper__status{margin-left:.4rem;background:#030304;border:1px solid var(--line-2);
+  padding:.28rem .7rem;font-size:.95rem;color:var(--light-hi);min-width:104px;text-align:center;
+  text-shadow:0 0 12px rgba(180,212,230,.6)}
+.looper__controls{margin-left:auto;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.looper__field{display:flex;align-items:center;gap:.35rem}
+.looper__field span{font-size:.52rem;font-weight:600;letter-spacing:.3em;color:var(--muted-2)}
+.looper__field select{background:#0a0a0d;color:var(--text);border:1px solid var(--line-2);
+  font-size:.72rem;font-weight:600;padding:.3rem .45rem}
+.looper__controls input[type=range]{width:70px;accent-color:#e9eef4}
+.looper__rec{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-2);
+  color:#d84a4a;font-size:1.15rem;display:grid;place-items:center;transition:.2s;background:#0a0a0d}
+.looper__rec:hover{border-color:rgba(216,74,74,.6)}
+.looper__rec.armed{color:#e9b765;border-color:#e9b765;animation:looperBlink .5s steps(2) infinite}
+.looper__rec.rec{color:#fff;background:#d84a4a;border-color:#d84a4a;
+  box-shadow:0 0 18px rgba(216,74,74,.6)}
+@keyframes looperBlink{50%{opacity:.35}}
+.looper__btn{width:40px;height:40px;border:1px solid var(--line-2);color:var(--text);
+  font-size:.95rem;display:grid;place-items:center;background:#0a0a0d;transition:.2s}
+.looper__btn:hover:not(:disabled){border-color:rgba(159,216,232,.6)}
+.looper__btn:disabled{opacity:.3;cursor:default}
+.looper__wave{width:100%;height:118px;display:block;border:1px solid var(--line)}
+
 /* footer strip */
 .foot{display:flex;align-items:center;gap:1.2rem;padding:.55rem .2rem;flex-wrap:wrap}
 .foot__brand{font-family:"Yellowtail",cursive;color:var(--muted);font-size:1rem}

@@ -40,7 +40,16 @@ export interface CaptureInfo {
   url?: string;
 }
 
-export interface Meters { in: number; out: number; gr: number; gate: number }
+export interface Meters {
+  in: number; out: number; gr: number; gate: number; compGr: number;
+  loopState: string; loopPos: number;
+}
+export interface LooperMsg {
+  type: 'looper' | 'wave';
+  state?: string; beat?: number; beatsPerBar?: number; countBeats?: number;
+  bars?: number; bpm?: number;
+  peaks?: Float32Array; bins?: number;
+}
 
 type EngineState = 'idle' | 'booting' | 'running' | 'error';
 
@@ -67,6 +76,8 @@ export class RigEngine {
   cabOn = false;
   ampActive = true;
   micError: string | null = null;
+  analyser: AnalyserNode | null = null;
+  onLooper: ((m: LooperMsg) => void) | null = null;
   onMeters: ((m: Partial<Meters>) => void) | null = null;
   onStateChange: ((s: EngineState, detail?: string) => void) | null = null;
   onCaptureChange: ((c: CaptureInfo | null) => void) | null = null;
@@ -139,9 +150,19 @@ export class RigEngine {
     this.cabDry.connect(this.post);
     this.post.connect(ctx.destination);
 
-    const onMsg = (e: MessageEvent) => this.onMeters?.(e.data.type === 'meters' ? e.data : {});
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data;
+      if (d?.type === 'meters') this.onMeters?.(d);
+      else if (d?.type === 'looper' || d?.type === 'wave') this.onLooper?.(d);
+    };
     this.pre.port.onmessage = onMsg;
     this.post.port.onmessage = onMsg;
+
+    // Spectrum tap for the SAUCE glass (and anything else that wants to look).
+    this.analyser = ctx.createAnalyser();
+    this.analyser.fftSize = 4096;
+    this.analyser.smoothingTimeConstant = 0.82;
+    this.post.connect(this.analyser);
 
     for (const [id, v] of this.paramQueue) this.sendParam(id, v);
     this.paramQueue = [];
@@ -273,6 +294,10 @@ export class RigEngine {
     this.namOut.gain.setTargetAtTime(on ? 1 : 0, t, 0.015);
     this.ampBypass.gain.setTargetAtTime(on ? 0 : 1, t, 0.015);
     this.sendParam('amp_on', on ? 1 : 0); // post stage gates the tone stack too
+  }
+
+  sendLooper(msg: Record<string, unknown>) {
+    this.post?.port.postMessage({ type: 'looper-cmd', ...msg });
   }
 
   sendParam(id: string, v: number) {
