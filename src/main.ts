@@ -636,27 +636,40 @@ function delayPanel(): HTMLElement {
   const f = facePanel(delayFace(delayEngineShown), p + 'on', false);
   const ov = f.querySelector('.face__overlay')!;
 
-  // A/B engine keys + ENABLE + SYNC seated on the print's baked frames.
+  // A/B engine keys + ENABLE + SYNC seated on the print's baked frames —
+  // desktop-measured centre AND size, children stretched to fill the seat so
+  // the live chip covers its baked twin exactly.
   const tg = delayEngineShown === 0
-    ? { keyA: [0.2307, 0.1132], keyB: [0.2674, 0.1137], en: [0.36, 0.1137, 0.0966, 0.0541], sy: [0.6477, 0.1137, 0.0802, 0.0541] }
-    : { keyA: [0.2311, 0.1063], keyB: [0.2678, 0.1063], en: [0.3542, 0.104, 0.0825, 0.0596], sy: [0.6483, 0.104, 0.0808, 0.0596] };
-  const mkKey = (label: string, idx: 0 | 1, at: number[]) => {
+    ? { keyA: [0.2307, 0.1132, 0.0322, 0.0529], keyB: [0.2674, 0.1137, 0.0322, 0.0518],
+        en: [0.36, 0.1137, 0.0966, 0.0541], sy: [0.6477, 0.1137, 0.0802, 0.0541] }
+    : { keyA: [0.2311, 0.1063, 0.0328, 0.0551], keyB: [0.2678, 0.1063, 0.0328, 0.0551],
+        en: [0.3542, 0.104, 0.0825, 0.0596], sy: [0.6483, 0.104, 0.0808, 0.0596] };
+  const seatFill = (child: HTMLElement, g: number[]) => {
+    child.style.cssText += ';width:100%;height:100%;padding:0;display:grid;place-items:center';
+    const s = seat(child, g[0], g[1], g[2], g[3]);
+    ov.appendChild(s);
+  };
+  const mkKey = (label: string, idx: 0 | 1, g: number[]) => {
     const b = el('button', 'tab' + (delayEngineShown === idx ? ' on' : ''), label);
     b.addEventListener('click', () => { delayEngineShown = idx; renderStage(); });
-    ov.appendChild(seat(b, at[0], at[1]));
+    seatFill(b, g);
   };
   mkKey('A', 0, tg.keyA);
   mkKey('B', 1, tg.keyB);
-  ov.appendChild(seat(paramToggle(p + 'on', 'ENABLE', 'tab tab--lightlit'), tg.en[0], tg.en[1]));
-  ov.appendChild(seat(paramToggle(p + 'sync', 'SYNC', 'tab tab--lightlit'), tg.sy[0], tg.sy[1]));
+  seatFill(paramToggle(p + 'on', 'ENABLE', 'tab tab--lightlit'), tg.en);
+  seatFill(paramToggle(p + 'sync', 'SYNC', 'tab tab--lightlit'), tg.sy);
 
   // DIVISION (bottom left) + ROUTING (bottom right) over their baked boxes.
-  ov.appendChild(seat(paramSelect(p + 'div'), 0.3086, 0.827, 0.153, 0.052));
-  ov.appendChild(seat(paramSelect('dly_routing'), 0.6903, 0.827, 0.155, 0.052));
+  const divSel = paramSelect(p + 'div');
+  divSel.style.height = '100%';
+  ov.appendChild(seat(divSel, 0.3086, 0.827, 0.153, 0.052));
+  const routSel = paramSelect('dly_routing');
+  routSel.style.height = '100%';
+  ov.appendChild(seat(routSel, 0.6903, 0.827, 0.155, 0.052));
   // PING-PONG chip under the tempo lamp.
   ov.appendChild(seat(paramToggle(p + 'pingpong', 'PING-PONG'), 0.5, 0.235));
-  // Live ECHO SYNC lamp — A/B jewels flicker at each engine's echo tempo.
-  ov.appendChild(delayLamp(delayEngineShown));
+  // Live ECHO SYNC lamp — flashes the routing's ACTUAL echo rhythm.
+  ov.appendChild(delayLamp());
 
   // foot: stomps the ACTIVE engine (and revives the master).
   const hit = el('button', '');

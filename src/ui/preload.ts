@@ -35,8 +35,15 @@ export function preloadAssets(onProgress: (done: number, total: number) => void)
     const img = new Image();
     img.src = url;
     pinned.push(img);
-    return img.decode().catch(() => { /* a missing file must not stall boot */ })
-      .then(() => onProgress(++done, total));
+    // decode() can stall indefinitely in a hidden/background tab — a missing
+    // file or a throttled decode must never gate the PLUG IN button.
+    return Promise.race([
+      img.decode().catch(() => undefined),
+      new Promise((r) => setTimeout(r, 8000)),
+    ]).then(() => onProgress(++done, total));
   });
-  return Promise.all(jobs).then(() => undefined);
+  return Promise.race([
+    Promise.all(jobs),
+    new Promise((r) => setTimeout(r, 12000)),
+  ]).then(() => undefined);
 }

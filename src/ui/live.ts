@@ -154,7 +154,10 @@ export function vuNeedle(): HTMLCanvasElement {
 
 /* ── Sauce: live spectrum + the EQ curve, in the render's glass ── */
 export function sauceScope(): HTMLCanvasElement {
-  const c = canvasIn(0.5, 0.274, 0.688, 0.3);
+  // Glass interior measured off the render itself (pixel scan, red-excluded),
+  // pulled in a touch so the drawing never kisses the bezel.
+  const c = canvasIn(0.4997, 0.277, 0.655, 0.262);
+  c.style.borderRadius = '4px';
   const bins = new Float32Array(2048);
   const fMin = 40, fMax = 16000;
 
@@ -250,41 +253,84 @@ export function pilotLed(onParam: string, nx: number, ny: number, nr: number): H
   return wrap;
 }
 
-/* ── Delay: the ECHO SYNC lamp — A/B jewels flickering at echo tempo ── */
-export function delayLamp(engineIdx: 0 | 1): HTMLElement {
-  const geo = engineIdx === 0
-    ? { x: 0.5023, y: 0.1334, w: 0.1846, h: 0.0642 }
-    : { x: 0.5082, y: 0.1277, w: 0.1949, h: 0.0754 };
+/* ── Delay: the ECHO SYNC lamp — the ACTUAL echo rhythm, routing-aware ──
+ * A virtual note strikes on a repeating cycle and the jewels flash exactly
+ * when each engine's echoes would land, amplitude and all:
+ *   A fires at k·tA (decaying by A's feedback).
+ *   B in PARALLEL hears only the dry note → m·tB.
+ *   B in SERIES hears the dry note AND A's whole train → m·tB, tA+m·tB,
+ *   2tA+m·tB… — the compound rhythm the routing really produces. */
+export function delayLamp(): HTMLElement {
+  // Lamp window measured off the prints (both A and B bake it identically).
+  const geo = { x: 0.509, y: 0.134, w: 0.175, h: 0.062 };
   const wrap = document.createElement('div');
   wrap.style.cssText = `position:absolute;left:${geo.x * 100}%;top:${geo.y * 100}%;width:${geo.w * 100}%;height:${geo.h * 100}%;transform:translate(-50%,-50%);pointer-events:none`;
   const mk = (color: string, at: number) => {
     const d = document.createElement('div');
-    d.style.cssText = `position:absolute;left:${at * 100}%;top:50%;width:14%;aspect-ratio:1;max-width:16px;
+    d.style.cssText = `position:absolute;left:${at * 100}%;top:50%;width:13%;aspect-ratio:1;max-width:15px;
       transform:translate(-50%,-50%);border-radius:50%;background:${color};opacity:.12;transition:none`;
     wrap.appendChild(d);
     return d;
   };
-  const dotA = mk('#5ec9c0', 0.3);
-  const dotB = mk('#e2a35c', 0.7);
-  const pulse = (dot: HTMLElement, on: boolean, ms: number, offsetMs: number, color: string) => {
-    if (!on) { dot.style.opacity = '0.1'; dot.style.boxShadow = 'none'; return; }
-    const t = performance.now() - offsetMs;
-    const ph = ((t % ms) + ms) % ms / ms;
-    const b = Math.pow(1 - ph, 2.4);
-    dot.style.opacity = String(0.18 + b * 0.82);
-    dot.style.boxShadow = `0 0 ${4 + b * 14}px ${color}`;
-  };
-  const loop = () => {
-    if (!wrap.isConnected) return;
+  const dotA = mk('#5ec9c0', 0.28);
+  const dotB = mk('#e2a35c', 0.72);
+
+  interface Ev { t: number; a: number }
+  let evA: Ev[] = [], evB: Ev[] = [], period = 4000, sig = '', epoch = performance.now();
+
+  const rebuild = () => {
+    const clamp01 = (v: number, hi: number) => Math.min(hi, Math.max(0, v));
     const master = store.get('dly_on') > 0.5;
-    const aOn = store.get('dlyA_on') > 0.5, bOn = store.get('dlyB_on') > 0.5;
+    const aOn = master && store.get('dlyA_on') > 0.5;
+    const bOn = master && store.get('dlyB_on') > 0.5;
+    const series = store.get('dly_routing') < 0.5;
     const tA = Math.max(40, store.get('dlyA_time'));
     const tB = Math.max(40, store.get('dlyB_time'));
-    // Series (A → B): B echoes A's repeats, so its train runs at B's period
-    // but lands A's time late — the lamp shows that actual rhythm.
-    const seriesLag = store.get('dly_routing') < 0.5 && aOn ? tA : 0;
-    pulse(dotA, master && aOn, tA, 0, 'rgba(94,201,192,.8)');
-    pulse(dotB, master && bOn, tB, seriesLag, 'rgba(226,163,92,.8)');
+    const fbA = clamp01(store.get('dlyA_fb'), 0.92);
+    const fbB = clamp01(store.get('dlyB_fb'), 0.92);
+    const HORIZON = 6500, FLOOR = 0.09;
+    evA = [];
+    if (aOn) for (let k = 1, a = 1; k < 40; k++) {
+      const t = k * tA; a = Math.pow(fbA, k - 1);
+      if (t > HORIZON || a < FLOOR) break;
+      evA.push({ t, a });
+    }
+    evB = [];
+    if (bOn) {
+      // What B hears: the dry note, plus (series only) A's whole echo train.
+      const sources: Ev[] = [{ t: 0, a: 1 }, ...(series ? evA : [])];
+      for (const src of sources) for (let m = 1; m < 40; m++) {
+        const t = src.t + m * tB;
+        const a = src.a * Math.pow(fbB, m - 1);
+        if (t > HORIZON || a < FLOOR) break;
+        evB.push({ t, a });
+      }
+      evB.sort((x, y) => x.t - y.t);
+    }
+    const last = Math.max(0, ...evA.map((e) => e.t), ...evB.map((e) => e.t));
+    period = Math.max(1600, last + 650);
+    epoch = performance.now();
+  };
+
+  const shine = (dot: HTMLElement, events: Ev[], phase: number, color: string) => {
+    let b = 0;
+    for (const e of events) {
+      let dt = phase - e.t;
+      if (dt < 0) dt += period; // the strike cycle wraps
+      if (dt >= 0 && dt < 320) b = Math.max(b, e.a * Math.exp(-dt / 110));
+    }
+    dot.style.opacity = String(0.12 + Math.min(1, b) * 0.88);
+    dot.style.boxShadow = b > 0.04 ? `0 0 ${3 + b * 16}px ${color}` : 'none';
+  };
+
+  const loop = () => {
+    if (!wrap.isConnected) return;
+    const now = ['dly_on', 'dlyA_on', 'dlyB_on', 'dly_routing', 'dlyA_time', 'dlyB_time', 'dlyA_fb', 'dlyB_fb']
+      .map((id) => Math.round(store.get(id) * 100)).join(',');
+    if (now !== sig) { sig = now; rebuild(); }
+    const phase = (performance.now() - epoch) % period;
+    shine(dotA, evA, phase, 'rgba(94,201,192,.85)');
+    shine(dotB, evB, phase, 'rgba(226,163,92,.85)');
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
