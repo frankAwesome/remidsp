@@ -1,0 +1,16 @@
+{
+  "name": "remi-dsp-maine-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "REMI DSP — Maine · web guitar suite. NAM capture amp + cab, dual-engine delay, Vast Sky reverb, studio strip — WASM + AudioWorklet, zero added latency.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  }
+}

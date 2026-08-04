@@ -1,0 +1,1028 @@
+/* REMI DSP — Maine · web suite
+ * The whole rig runs inside this one AudioWorkletProcessor: gate → comp →
+ * drive → NAM capture amp (WASM) → [cab convolver lives in the graph] →
+ * sauce → studio strip → chorus → dual-engine delay → Vast Sky reverb.
+ * 128-sample quanta, no lookahead, no internal buffering: the chain adds
+ * zero latency beyond the render quantum.
+ *
+ * Everything is Float32 mono-in / stereo-out. Parameters arrive over the
+ * MessagePort as {type:'param', id, v} and land in per-module smoothers, so
+ * the audio thread never sees a zipper.
+ */
+
+'use strict';
+
+const TWO_PI = Math.PI * 2;
+
+/* ---------- small DSP utilities ---------- */
+
+function dbToGain(db) { return Math.pow(10, db / 20); }
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+// One-pole parameter smoother (~time constant in ms).
+class Smooth {
+  constructor(v = 0, ms = 12, sr = 48000) {
+    this.z = v; this.target = v;
+    this.setTime(ms, sr);
+  }
+  setTime(ms, sr) { this.a = Math.exp(-1 / (0.001 * ms * sr)); }
+  set(v) { this.target = v; }
+  jump(v) { this.target = v; this.z = v; }
+  next() { return (this.z = this.target + this.a * (this.z - this.target)); }
+  get() { return this.z; }
+}
+
+// RBJ biquad, transposed direct form II.
+class Biquad {
+  constructor() { this.b0 = 1; this.b1 = 0; this.b2 = 0; this.a1 = 0; this.a2 = 0; this.z1 = 0; this.z2 = 0; }
+  reset() { this.z1 = 0; this.z2 = 0; }
+  tick(x) {
+    const y = this.b0 * x + this.z1;
+    this.z1 = this.b1 * x - this.a1 * y + this.z2;
+    this.z2 = this.b2 * x - this.a2 * y;
+    return y;
+  }
+  set(b0, b1, b2, a0, a1, a2) {
+    const inv = 1 / a0;
+    this.b0 = b0 * inv; this.b1 = b1 * inv; this.b2 = b2 * inv;
+    this.a1 = a1 * inv; this.a2 = a2 * inv;
+  }
+  lowpass(fc, q, sr) {
+    const w = TWO_PI * clamp(fc, 10, sr * 0.49) / sr, c = Math.cos(w), s = Math.sin(w), al = s / (2 * q);
+    this.set((1 - c) / 2, 1 - c, (1 - c) / 2, 1 + al, -2 * c, 1 - al);
+  }
+  highpass(fc, q, sr) {
+    const w = TWO_PI * clamp(fc, 10, sr * 0.49) / sr, c = Math.cos(w), s = Math.sin(w), al = s / (2 * q);
+    this.set((1 + c) / 2, -(1 + c), (1 + c) / 2, 1 + al, -2 * c, 1 - al);
+  }
+  peak(fc, q, gainDb, sr) {
+    const A = Math.pow(10, gainDb / 40);
+    const w = TWO_PI * clamp(fc, 10, sr * 0.49) / sr, c = Math.cos(w), s = Math.sin(w), al = s / (2 * q);
+    this.set(1 + al * A, -2 * c, 1 - al * A, 1 + al / A, -2 * c, 1 - al / A);
+  }
+  lowshelf(fc, gainDb, sr, slope = 0.9) {
+    const A = Math.pow(10, gainDb / 40);
+    const w = TWO_PI * clamp(fc, 10, sr * 0.49) / sr, c = Math.cos(w), s = Math.sin(w);
+    const al = s / 2 * Math.sqrt((A + 1 / A) * (1 / slope - 1) + 2);
+    const sq = 2 * Math.sqrt(A) * al;
+    this.set(A * ((A + 1) - (A - 1) * c + sq), 2 * A * ((A - 1) - (A + 1) * c), A * ((A + 1) - (A - 1) * c - sq),
+             (A + 1) + (A - 1) * c + sq, -2 * ((A - 1) + (A + 1) * c), (A + 1) + (A - 1) * c - sq);
+  }
+  highshelf(fc, gainDb, sr, slope = 0.9) {
+    const A = Math.pow(10, gainDb / 40);
+    const w = TWO_PI * clamp(fc, 10, sr * 0.49) / sr, c = Math.cos(w), s = Math.sin(w);
+    const al = s / 2 * Math.sqrt((A + 1 / A) * (1 / slope - 1) + 2);
+    const sq = 2 * Math.sqrt(A) * al;
+    this.set(A * ((A + 1) + (A - 1) * c + sq), -2 * A * ((A - 1) + (A + 1) * c), A * ((A + 1) + (A - 1) * c - sq),
+             (A + 1) - (A - 1) * c + sq, 2 * ((A - 1) - (A + 1) * c), (A + 1) - (A - 1) * c - sq);
+  }
+}
+
+// One-pole lowpass (cheap damping / tone corners).
+class OnePoleLP {
+  constructor() { this.z = 0; this.a = 0; }
+  setFc(fc, sr) { this.a = Math.exp(-TWO_PI * clamp(fc, 10, sr * 0.49) / sr); }
+  tick(x) { return (this.z = x + this.a * (this.z - x)); }
+  reset() { this.z = 0; }
+}
+class OnePoleHP {
+  constructor() { this.lp = new OnePoleLP(); }
+  setFc(fc, sr) { this.lp.setFc(fc, sr); }
+  tick(x) { return x - this.lp.tick(x); }
+  reset() { this.lp.reset(); }
+}
+
+// Schroeder allpass on a fixed delay (diffusion building block).
+class Allpass {
+  constructor(samples, g = 0.55) {
+    this.buf = new Float32Array(Math.max(1, samples | 0));
+    this.i = 0; this.g = g;
+  }
+  tick(x) {
+    const d = this.buf[this.i];
+    const y = d - this.g * x;
+    this.buf[this.i] = x + this.g * d;
+    if (++this.i >= this.buf.length) this.i = 0;
+    return y;
+  }
+  reset() { this.buf.fill(0); }
+}
+
+// Fractional delay line with cubic (Hermite) interpolation.
+class FracDelay {
+  constructor(maxSamples) {
+    const n = 1 << Math.ceil(Math.log2(maxSamples + 8));
+    this.buf = new Float32Array(n);
+    this.mask = n - 1;
+    this.w = 0;
+  }
+  write(x) { this.buf[this.w] = x; this.w = (this.w + 1) & this.mask; }
+  // Read `d` samples behind the write head (d >= 1).
+  read(d) {
+    const rp = this.w - d;
+    const i = Math.floor(rp);
+    const f = rp - i;
+    const m = this.mask, b = this.buf;
+    const x0 = b[(i - 1) & m], x1 = b[i & m], x2 = b[(i + 1) & m], x3 = b[(i + 2) & m];
+    const c0 = x1;
+    const c1 = 0.5 * (x2 - x0);
+    const c2 = x0 - 2.5 * x1 + 2 * x2 - 0.5 * x3;
+    const c3 = 0.5 * (x3 - x0) + 1.5 * (x1 - x2);
+    return ((c3 * f + c2) * f + c1) * f + c0;
+  }
+  reset() { this.buf.fill(0); }
+}
+
+// tanh with first-order ADAA — keeps clipping harmonics from folding back.
+class AdaaTanh {
+  constructor() { this.x1 = 0; this.F1 = 0; }
+  static F(x) { // antiderivative of tanh = ln(cosh)
+    const a = Math.abs(x);
+    return a > 12 ? a - Math.LN2 : Math.log(Math.cosh(x));
+  }
+  tick(x) {
+    const dx = x - this.x1;
+    const F = AdaaTanh.F(x);
+    let y;
+    if (Math.abs(dx) < 1e-4) y = Math.tanh(0.5 * (x + this.x1));
+    else y = (F - this.F1) / dx;
+    this.x1 = x; this.F1 = F;
+    return y;
+  }
+  reset() { this.x1 = 0; this.F1 = 0; }
+}
+
+/* ---------- modules ---------- */
+
+// Noise gate — peak follower, hysteresis, soft range floor.
+class NoiseGate {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = true;
+    this.thresh = new Smooth(-56, 30, sr);   // dB
+    this.release = 140;                       // ms
+    this.range = 80;                          // dB of max attenuation
+    this.env = 0;
+    this.gain = 1;
+    this.envA = Math.exp(-1 / (0.0002 * sr)); // 0.2ms attack follower
+    this.gr = 0; // for UI LED
+  }
+  set(id, v) {
+    if (id === 'on') this.on = v > 0.5;
+    else if (id === 'thresh') this.thresh.set(v);
+    else if (id === 'release') this.release = v;
+    else if (id === 'range') this.range = v;
+  }
+  process(L, R, n) {
+    if (!this.on) { this.gr = 0; return; }
+    const envR = Math.exp(-1 / (0.001 * Math.max(5, this.release) * this.sr));
+    const openA = Math.exp(-1 / (0.0015 * this.sr));
+    const floor = dbToGain(-this.range);
+    for (let i = 0; i < n; i++) {
+      const t = dbToGain(this.thresh.next());
+      const x = Math.max(Math.abs(L[i]), Math.abs(R[i]));
+      this.env = x > this.env ? x + this.envA * (this.env - x) : x + envR * (this.env - x);
+      // 4 dB hysteresis around the threshold
+      const target = this.env > t ? 1 : (this.env > t * 0.63 && this.gain > 0.5 ? 1 : floor);
+      const a = target > this.gain ? openA : envR;
+      this.gain = target + a * (this.gain - target);
+      L[i] *= this.gain; R[i] *= this.gain;
+    }
+    this.gr = this.gain;
+  }
+}
+
+// CS-2-style stomp compressor: sustain macro sets threshold + makeup.
+class StompComp {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = true;
+    this.sustain = new Smooth(0.35, 25, sr);
+    this.attack = 8;   // ms
+    this.level = new Smooth(0, 25, sr); // dB
+    this.env = 1e-6;
+    this.g = 1;
+  }
+  set(id, v) {
+    if (id === 'on') this.on = v > 0.5;
+    else if (id === 'sustain') this.sustain.set(v);
+    else if (id === 'attack') this.attack = v;
+    else if (id === 'level') this.level.set(v);
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    const aA = Math.exp(-1 / (0.001 * Math.max(0.5, this.attack) * this.sr));
+    const aR = Math.exp(-1 / (0.180 * this.sr));
+    for (let i = 0; i < n; i++) {
+      const s = this.sustain.next();
+      const threshDb = -18 - s * 26;         // more sustain digs deeper
+      const ratio = 2.5 + s * 3.5;
+      const makeup = dbToGain(-threshDb * (1 - 1 / ratio) * 0.6 + this.level.next());
+      const x = Math.max(Math.abs(L[i]), Math.abs(R[i]));
+      this.env = x > this.env ? x + aA * (this.env - x) : x + aR * (this.env - x);
+      const envDb = 20 * Math.log10(this.env + 1e-9);
+      let grDb = 0;
+      if (envDb > threshDb) grDb = (envDb - threshDb) * (1 - 1 / ratio);
+      this.g = dbToGain(-grDb) * makeup; // env is already smooth
+      L[i] *= this.g; R[i] *= this.g;
+    }
+  }
+}
+
+// Op-amp diode-feedback drive: gain-dependent knee, tilt tone, ADAA clip.
+class DrivePedal {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = false;
+    this.gain = new Smooth(0.35, 20, sr);
+    this.tone = new Smooth(0.5, 20, sr);
+    this.level = new Smooth(0.5, 20, sr);
+    this.clipL = new AdaaTanh(); this.clipR = new AdaaTanh();
+    this.hpL = new OnePoleHP(); this.hpR = new OnePoleHP();
+    this.lpL = new OnePoleLP(); this.lpR = new OnePoleLP();
+    this.hpL.setFc(35, sr); this.hpR.setFc(35, sr);
+    this.toneZ = -1;
+  }
+  set(id, v) {
+    if (id === 'on') this.on = v > 0.5;
+    else if (id === 'gain') this.gain.set(v);
+    else if (id === 'tone') this.tone.set(v);
+    else if (id === 'level') this.level.set(v);
+    else if (id === 'air') {
+      if (!this.airL) { this.airL = new Biquad(); this.airR = new Biquad(); }
+      this.airL.highshelf(7500, (v - 0.5) * 12, this.sr);
+      this.airR.highshelf(7500, (v - 0.5) * 12, this.sr);
+      this.airOn = Math.abs(v - 0.5) > 0.01;
+    }
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    for (let i = 0; i < n; i++) {
+      const d = this.gain.next();
+      const t = this.tone.next();
+      if (Math.abs(t - this.toneZ) > 1e-3) {
+        const fc = 750 * Math.pow(2, t * 4.2); // 750 Hz .. 13.8 kHz
+        this.lpL.setFc(fc, this.sr); this.lpR.setFc(fc, this.sr);
+        this.toneZ = t;
+      }
+      const pre = 1 + d * d * 55;              // up to ~35 dB, square-law feel
+      const comp = 1 / Math.pow(pre, 0.62);    // knee moves, level stays put
+      const lv = dbToGain(-6) * (0.25 + this.level.next() * 1.5);
+      let l = this.lpL.tick(this.clipL.tick(this.hpL.tick(L[i]) * pre)) * comp * lv;
+      let r = this.lpR.tick(this.clipR.tick(this.hpR.tick(R[i]) * pre)) * comp * lv;
+      if (this.airOn) { l = this.airL.tick(l); r = this.airR.tick(r); }
+      L[i] = l; R[i] = r;
+    }
+  }
+}
+
+// Post-capture amp tone stack — neutral at defaults, AC30-style CUT.
+class ToneStack {
+  constructor(sr) {
+    this.sr = sr;
+    this.bassF = new Biquad(); this.midF = new Biquad(); this.trebF = new Biquad();
+    this.cutF = new OnePoleLP();
+    this.bassFR = new Biquad(); this.midFR = new Biquad(); this.trebFR = new Biquad();
+    this.cutFR = new OnePoleLP();
+    this.p = { bass: 0.5, mid: 0.5, treble: 0.55, cut: 0.25 };
+    this.dirty = true;
+  }
+  set(id, v) { this.p[id] = v; this.dirty = true; }
+  update() {
+    const sr = this.sr, p = this.p;
+    const bassDb = (p.bass - 0.5) * 24;
+    const midDb = (p.mid - 0.5) * 18;
+    const trebDb = (p.treble - 0.55) * 24; // neutral at the 0.55 default
+    this.bassF.lowshelf(110, bassDb, sr); this.bassFR.lowshelf(110, bassDb, sr);
+    this.midF.peak(680, 0.8, midDb, sr); this.midFR.peak(680, 0.8, midDb, sr);
+    this.trebF.highshelf(2200, trebDb, sr); this.trebFR.highshelf(2200, trebDb, sr);
+    // CUT: transparent at/below its 0.25 default, then closes to ~2.2 kHz.
+    const c = Math.max(0, (p.cut - 0.25) / 0.75);
+    const fc = 21000 * Math.pow(2200 / 21000, c);
+    this.cutF.setFc(fc, sr); this.cutFR.setFc(fc, sr);
+    this.cutBypass = c < 1e-3;
+    this.dirty = false;
+  }
+  process(L, R, n) {
+    if (this.dirty) this.update();
+    for (let i = 0; i < n; i++) {
+      let l = this.trebF.tick(this.midF.tick(this.bassF.tick(L[i])));
+      let r = this.trebFR.tick(this.midFR.tick(this.bassFR.tick(R[i])));
+      if (!this.cutBypass) { l = this.cutF.tick(l); r = this.cutFR.tick(r); }
+      L[i] = l; R[i] = r;
+    }
+  }
+}
+
+// CE-2-style BBD chorus: triangle-clock sweep, companding softness, dark wet.
+class BbdChorus {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = false;
+    this.rate = new Smooth(0.55, 30, sr);
+    this.depth = new Smooth(0.4, 30, sr);
+    this.tone = new Smooth(0.5, 30, sr);
+    this.mix = new Smooth(0.5, 30, sr);
+    this.dl = new FracDelay(0.03 * sr);
+    this.dr = new FracDelay(0.03 * sr);
+    this.phase = 0;
+    this.clockZ = 0;                        // BBD clock inertia
+    this.wetLpL = new OnePoleLP(); this.wetLpR = new OnePoleLP();
+    this.satL = new AdaaTanh(); this.satR = new AdaaTanh();
+    this.toneZ = -1;
+  }
+  set(id, v) {
+    if (id === 'on') this.on = v > 0.5;
+    else if (id === 'rate') this.rate.set(v);
+    else if (id === 'depth') this.depth.set(v);
+    else if (id === 'tone') this.tone.set(v);
+    else if (id === 'mix') this.mix.set(v);
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    const sr = this.sr;
+    const clockA = Math.exp(-1 / (0.0009 * sr)); // reconstruction smoothing
+    for (let i = 0; i < n; i++) {
+      const rate = 0.1 + Math.pow(this.rate.next(), 1.6) * 6.0;
+      const depth = this.depth.next();
+      const t = this.tone.next();
+      if (Math.abs(t - this.toneZ) > 1e-3) {
+        const fc = 2200 * Math.pow(2, t * 2.2); // 2.2k .. 10.1k
+        this.wetLpL.setFc(fc, sr); this.wetLpR.setFc(fc, sr);
+        this.toneZ = t;
+      }
+      this.phase += rate / sr;
+      if (this.phase >= 1) this.phase -= 1;
+      // Triangle in delay-time domain (the BBD-clock reciprocal sweep).
+      const tri = this.phase < 0.5 ? this.phase * 4 - 1 : 3 - this.phase * 4;
+      this.clockZ = tri + clockA * (this.clockZ - tri);
+      const base = 0.0052 * sr;
+      const sweep = depth * 0.0038 * sr;
+      const dL = base + this.clockZ * sweep;
+      const dR = base - this.clockZ * sweep;   // inverted right sweep = width
+      this.dl.write(this.satL.tick(L[i] * 0.9) * 1.11);
+      this.dr.write(this.satR.tick(R[i] * 0.9) * 1.11);
+      const wl = this.wetLpL.tick(this.dl.read(Math.max(4, dL)));
+      const wr = this.wetLpR.tick(this.dr.read(Math.max(4, dR)));
+      const m = this.mix.next();
+      L[i] = L[i] * (1 - m * 0.5) + wl * m;
+      R[i] = R[i] * (1 - m * 0.5) + wr * m;
+    }
+  }
+}
+
+/* ---------- the delay: one block, two engines, repeats with soul ---------- */
+
+// One delay engine — Digital / Studio / Analog / Tape voicings, in-loop
+// saturation + compounding HF loss, diffusion smear, wow & flutter, ducking.
+class DelayEngine {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = false;
+    this.mode = 1; // Studio
+    this.timeMs = new Smooth(357, 90, sr); // analog-style pitch bend on change
+    this.fb = new Smooth(0.42, 25, sr);
+    this.mix = new Smooth(0.35, 25, sr);
+    this.modRate = 0.8;
+    this.modDepth = new Smooth(0.15, 40, sr);
+    this.grit = new Smooth(0.25, 40, sr);
+    this.duck = new Smooth(0, 40, sr);
+    this.pingpong = false;
+    this.offsetMs = 0;
+    const cap = Math.ceil(1.7 * sr);
+    this.dL = new FracDelay(cap); this.dR = new FracDelay(cap);
+    this.fbL = 0; this.fbR = 0;
+    // In-loop tone: compounding darkness + grit saturation + diffusion smear.
+    this.loopLpL = new OnePoleLP(); this.loopLpR = new OnePoleLP();
+    this.loopHpL = new OnePoleHP(); this.loopHpR = new OnePoleHP();
+    this.loopHpL.setFc(90, sr); this.loopHpR.setFc(90, sr);
+    this.satL = new AdaaTanh(); this.satR = new AdaaTanh();
+    this.hicutL = new OnePoleLP(); this.hicutR = new OnePoleLP();
+    this.hicutL.setFc(9000, sr); this.hicutR.setFc(9000, sr);
+    this.difL = [new Allpass(0.0079 * sr, 0.52), new Allpass(0.0123 * sr, 0.48)];
+    this.difR = [new Allpass(0.0091 * sr, 0.52), new Allpass(0.0137 * sr, 0.48)];
+    // Wet-only EQ trims.
+    this.wetHpL = new OnePoleHP(); this.wetHpR = new OnePoleHP();
+    this.wetLpL = new OnePoleLP(); this.wetLpR = new OnePoleLP();
+    this.wetHpHz = 20; this.wetLpHz = 20000;
+    this.wetHpL.setFc(20, sr); this.wetHpR.setFc(20, sr);
+    this.wetLpL.setFc(20000, sr); this.wetLpR.setFc(20000, sr);
+    // Head-bump body for Tape (low bell on the loop).
+    this.bumpL = new Biquad(); this.bumpR = new Biquad();
+    this.bumpL.peak(110, 0.9, 2.6, sr); this.bumpR.peak(110, 0.9, 2.6, sr);
+    this.lfoPhase = Math.random();
+    this.flutterZ = 0; this.wowZ = 0;
+    this.duckEnv = 0;
+    this.hiss = 0;
+    this.applyMode();
+  }
+  applyMode() {
+    const sr = this.sr;
+    const fcBase = [16000, 11500, 3400, 5200][this.mode];
+    const g = this.grit.get();
+    const fc = fcBase * Math.pow(0.45, g);
+    this.loopLpL.setFc(fc, sr); this.loopLpR.setFc(fc, sr);
+    this.diffAmt = [0.0, 0.55, 0.25, 0.45][this.mode];
+    this.lastGrit = g;
+  }
+  set(id, v) {
+    if (id === 'on') this.on = v > 0.5;
+    else if (id === 'time') this.timeMs.set(clamp(v, 20, 1500));
+    else if (id === 'fb') this.fb.set(v);
+    else if (id === 'mix') this.mix.set(v);
+    else if (id === 'mode') { this.mode = v | 0; this.applyMode(); }
+    else if (id === 'mod_rate') this.modRate = v;
+    else if (id === 'mod_depth') this.modDepth.set(v);
+    else if (id === 'grit') this.grit.set(v);
+    else if (id === 'duck') this.duck.set(v);
+    else if (id === 'pingpong') this.pingpong = v > 0.5;
+    else if (id === 'offset') this.offsetMs = v;
+    else if (id === 'hicut') { this.hicutL.setFc(v, this.sr); this.hicutR.setFc(v, this.sr); }
+    else if (id === 'wet_hp') { this.wetHpHz = v; this.wetHpL.setFc(v, this.sr); this.wetHpR.setFc(v, this.sr); }
+    else if (id === 'wet_lp') { this.wetLpHz = v; this.wetLpL.setFc(v, this.sr); this.wetLpR.setFc(v, this.sr); }
+  }
+  // Processes in place: out = in + wet*mix. `dryRef` feeds the ducker.
+  process(L, R, n, dryRefL, dryRefR) {
+    if (!this.on) return;
+    const sr = this.sr;
+    const isTape = this.mode === 3, isAnalog = this.mode === 2, isDigital = this.mode === 0;
+    const duckA = Math.exp(-1 / (0.004 * sr)), duckR = Math.exp(-1 / (0.35 * sr));
+    for (let i = 0; i < n; i++) {
+      const g = this.grit.next();
+      if (Math.abs(g - this.lastGrit) > 0.01) this.applyMode();
+      const t = this.timeMs.next();
+      const fb = this.fb.next();
+      const mix = this.mix.next();
+      const modD = this.modDepth.next();
+      // LFO + tape wow/flutter (random component).
+      this.lfoPhase += this.modRate / sr;
+      if (this.lfoPhase >= 1) this.lfoPhase -= 1;
+      let modMs = Math.sin(TWO_PI * this.lfoPhase) * modD * (isTape ? 2.6 : 1.8);
+      if (isTape) {
+        this.flutterZ += 0.002 * ((Math.random() - 0.5) - this.flutterZ);
+        this.wowZ += 0.00012 * ((Math.random() - 0.5) * 2 - this.wowZ);
+        modMs += this.flutterZ * 14 * (0.3 + modD) + this.wowZ * 260 * (0.3 + modD);
+      } else if (isAnalog) {
+        this.flutterZ += 0.0006 * ((Math.random() - 0.5) - this.flutterZ);
+        modMs += this.flutterZ * 6;
+      }
+      const off = this.offsetMs * 0.5;
+      const dSampL = clamp((t + modMs - off) * 0.001 * sr, 8, this.dL.buf.length - 8);
+      const dSampR = clamp((t + modMs + off) * 0.001 * sr, 8, this.dR.buf.length - 8);
+      let echoL = this.dL.read(dSampL);
+      let echoR = this.dR.read(dSampR);
+      // Ducking (dry side-chain).
+      const dx = Math.max(Math.abs(dryRefL[i]), Math.abs(dryRefR[i]));
+      this.duckEnv = dx > this.duckEnv ? dx + duckA * (this.duckEnv - dx) : dx + duckR * (this.duckEnv - dx);
+      const duckAmt = this.duck.next();
+      const duckG = 1 - duckAmt * clamp(this.duckEnv * 2.6, 0, 1) * 0.85;
+      // Feedback into the loop: saturate → darken → (tape body) → diffuse.
+      const drive = 1 + g * 5 + (isTape ? 0.8 : 0) + (isAnalog ? 0.5 : 0);
+      const norm = 1 / Math.pow(drive, 0.55);
+      let fbInL = this.satL.tick((this.pingpong ? echoR : echoL) * fb * drive) * norm;
+      let fbInR = this.satR.tick((this.pingpong ? echoL : echoR) * fb * drive) * norm;
+      fbInL = this.hicutL.tick(this.loopLpL.tick(this.loopHpL.tick(fbInL)));
+      fbInR = this.hicutR.tick(this.loopLpR.tick(this.loopHpR.tick(fbInR)));
+      if (isTape) { fbInL = this.bumpL.tick(fbInL); fbInR = this.bumpR.tick(fbInR); }
+      const dAmt = this.diffAmt * (0.5 + g * 0.5);
+      if (!isDigital && dAmt > 0.01) {
+        fbInL = fbInL + dAmt * (this.difL[1].tick(this.difL[0].tick(fbInL)) - fbInL);
+        fbInR = fbInR + dAmt * (this.difR[1].tick(this.difR[0].tick(fbInR)) - fbInR);
+      }
+      if (isTape && g > 0.05) { // hiss rides the repeats only
+        const h = (Math.random() - 0.5) * 0.00035 * g;
+        fbInL += h; fbInR -= h;
+      }
+      this.dL.write(L[i] + fbInL);
+      this.dR.write(R[i] + fbInR);
+      let wl = this.wetLpL.tick(this.wetHpL.tick(echoL));
+      let wr = this.wetLpR.tick(this.wetHpR.tick(echoR));
+      L[i] += wl * mix * duckG;
+      R[i] += wr * mix * duckG;
+    }
+  }
+  reset() {
+    this.dL.reset(); this.dR.reset();
+    this.difL.forEach(a => a.reset()); this.difR.forEach(a => a.reset());
+  }
+}
+
+// The delay block: engines A + B in Series (B echoes A's repeats) or Parallel.
+class DelayBlock {
+  constructor(sr) {
+    this.on = true;
+    this.routing = 0; // 0 = Series, 1 = Parallel
+    this.A = new DelayEngine(sr);
+    this.B = new DelayEngine(sr);
+    this.B.on = false;
+    this.tmpL = new Float32Array(128); this.tmpR = new Float32Array(128);
+    this.dryL = new Float32Array(128); this.dryR = new Float32Array(128);
+  }
+  set(id, v) {
+    if (id === 'on') this.on = v > 0.5;
+    else if (id === 'routing') this.routing = v | 0;
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    this.dryL.set(L.subarray(0, n)); this.dryR.set(R.subarray(0, n));
+    if (this.routing === 0) {
+      this.A.process(L, R, n, this.dryL, this.dryR);
+      this.B.process(L, R, n, this.dryL, this.dryR);
+    } else {
+      this.tmpL.set(this.dryL.subarray(0, n)); this.tmpR.set(this.dryR.subarray(0, n));
+      this.A.process(L, R, n, this.dryL, this.dryR);
+      this.B.process(this.tmpL, this.tmpR, n, this.dryL, this.dryR);
+      for (let i = 0; i < n; i++) { // add B's wet on top (dry already in L/R)
+        L[i] += this.tmpL[i] - this.dryL[i];
+        R[i] += this.tmpR[i] - this.dryR[i];
+      }
+    }
+  }
+}
+
+/* ---------- Vast Sky reverb: modulated 8-line FDN + shimmer ---------- */
+
+// Simple granular octave-up shifter for the shimmer feed (2 grains, 90 ms).
+class OctaveShifter {
+  constructor(sr, ratio = 2) {
+    this.sr = sr; this.ratio = ratio;
+    this.buf = new FracDelay(0.25 * sr);
+    this.grain = 0.090 * sr;
+    this.ph = 0;
+  }
+  tick(x) {
+    this.buf.write(x);
+    this.ph += (this.ratio - 1);
+    if (this.ph >= this.grain) this.ph -= this.grain;
+    // Two half-offset grains, sine windows — each grain's delay shrinks from
+    // `grain` to 0 as its phase runs, giving a constant pitch-up read.
+    const p2 = (this.ph + this.grain * 0.5) % this.grain;
+    const d1 = this.grain - this.ph;
+    const d2 = this.grain - p2;
+    const w1 = Math.sin(Math.PI * this.ph / this.grain);
+    const w2 = Math.sin(Math.PI * p2 / this.grain);
+    return this.buf.read(Math.max(2, d1)) * w1 + this.buf.read(Math.max(2, d2)) * w2;
+  }
+  reset() { this.buf.reset(); }
+}
+
+class VastSkyReverb {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = true;
+    this.machine = 1; // Room / Hall / Plate / Spring
+    this.decay = new Smooth(3.5, 60, sr);
+    this.predelayMs = 20;
+    this.mix = new Smooth(0.3, 40, sr);
+    this.tone = new Smooth(0, 60, sr);   // -1..1
+    this.mod = new Smooth(0.35, 60, sr);
+    this.shimmer = new Smooth(0, 60, sr);
+    this.shimmerMode = 0; // 0: +oct, 1: +oct&5th
+    this.duckOn = false;
+    this.hpHz = 20; this.lpHz = 20000;
+    this.pre = new FracDelay(0.52 * sr);
+    // Input diffusion — Dattorro's cascade.
+    this.inDiff = [
+      new Allpass(0.0047 * sr, 0.75), new Allpass(0.0036 * sr, 0.75),
+      new Allpass(0.0127 * sr, 0.625), new Allpass(0.0093 * sr, 0.625),
+    ];
+    // 8 FDN lines (base times in ms — scaled per machine).
+    this.baseMs = [29.7, 37.1, 41.1, 43.7, 53.3, 61.9, 73.7, 79.3];
+    this.lines = this.baseMs.map(ms => new FracDelay(ms * 4.2 * 0.001 * sr + 64));
+    this.damp = this.baseMs.map(() => new OnePoleLP());
+    this.lineOut = new Float32Array(8);
+    this.fbVec = new Float32Array(8);
+    this.lens = new Float32Array(8);
+    this.gains = new Float32Array(8);
+    this.modPhase = [0.0, 0.13, 0.27, 0.4, 0.53, 0.67, 0.8, 0.93];
+    this.modRateHz = [0.31, 0.43, 0.57, 0.71, 0.37, 0.49, 0.63, 0.79];
+    this.shifter = new OctaveShifter(sr, 2);
+    this.shifter5 = new OctaveShifter(sr, 3);
+    this.wetHpL = new OnePoleHP(); this.wetHpR = new OnePoleHP();
+    this.wetLpL = new OnePoleLP(); this.wetLpR = new OnePoleLP();
+    this.wetHpL.setFc(20, sr); this.wetHpR.setFc(20, sr);
+    this.wetLpL.setFc(20000, sr); this.wetLpR.setFc(20000, sr);
+    this.springChirp = [new Allpass(0.0011 * sr, 0.6), new Allpass(0.0013 * sr, 0.6),
+                        new Allpass(0.0017 * sr, 0.6), new Allpass(0.0019 * sr, 0.6)];
+    this.duckEnv = 0;
+    this.dirty = true;
+  }
+  set(id, v) {
+    if (id === 'on') this.on = v > 0.5;
+    else if (id === 'machine') { this.machine = v | 0; this.dirty = true; }
+    else if (id === 'decay') this.decay.set(v);
+    else if (id === 'predelay') this.predelayMs = v;
+    else if (id === 'mix') this.mix.set(v);
+    else if (id === 'tone') { this.tone.set(v); this.dirty = true; }
+    else if (id === 'mod') this.mod.set(v);
+    else if (id === 'shimmer') this.shimmer.set(v);
+    else if (id === 'shimmer_mode') this.shimmerMode = v | 0;
+    else if (id === 'duck') this.duckOn = v > 0.5;
+    else if (id === 'hp') { this.hpHz = v; this.wetHpL.setFc(v, this.sr); this.wetHpR.setFc(v, this.sr); }
+    else if (id === 'lp') { this.lpHz = v; this.wetLpL.setFc(v, this.sr); this.wetLpR.setFc(v, this.sr); }
+  }
+  update() {
+    const sr = this.sr;
+    const scale = [0.62, 1.35, 0.5, 0.42][this.machine];
+    for (let k = 0; k < 8; k++) this.lens[k] = this.baseMs[k] * scale * 0.001 * sr;
+    // Damping follows TONE: -1 dark (2.2k) .. +1 open (14k); plate brighter.
+    const t = this.tone.get();
+    const base = this.machine === 2 ? 9000 : 5500;
+    const fc = base * Math.pow(2, t * 1.35);
+    for (const d of this.damp) d.setFc(fc, sr);
+    this.dirty = false;
+  }
+  process(L, R, n, dryRefL, dryRefR) {
+    if (!this.on) return;
+    if (this.dirty) this.update();
+    const sr = this.sr;
+    const isSpring = this.machine === 3;
+    const duckA = Math.exp(-1 / (0.004 * sr)), duckR = Math.exp(-1 / (0.42 * sr));
+    for (let i = 0; i < n; i++) {
+      const decay = this.decay.next();
+      const mix = this.mix.next();
+      const modAmt = this.mod.next();
+      const shim = this.shimmer.next();
+      // Per-line feedback gain for T60 = decay.
+      for (let k = 0; k < 8; k++) {
+        const T = this.lens[k] / sr;
+        this.gains[k] = Math.pow(10, (-3 * T) / Math.max(0.05, decay));
+      }
+      let x = 0.5 * (L[i] + R[i]);
+      if (isSpring) { // dispersive chirp on the way in
+        for (const a of this.springChirp) x = a.tick(x);
+      }
+      this.pre.write(x);
+      let d = this.pre.read(Math.max(2, this.predelayMs * 0.001 * sr));
+      for (const a of this.inDiff) d = a.tick(d);
+      // Shimmer feed: pitch-shifted tail regenerating into the tank.
+      if (shim > 0.005) {
+        const tail = 0.25 * (this.lineOut[0] + this.lineOut[3] + this.lineOut[5] + this.lineOut[6]);
+        let s = this.shifter.tick(tail);
+        if (this.shimmerMode === 1) s = 0.7 * s + 0.5 * this.shifter5.tick(tail);
+        d += s * shim * 0.6;
+      }
+      // Read all lines (modulated, Hermite-interpolated).
+      for (let k = 0; k < 8; k++) {
+        let ph = this.modPhase[k] + this.modRateHz[k] / sr;
+        if (ph >= 1) ph -= 1;
+        this.modPhase[k] = ph;
+        const wob = Math.sin(TWO_PI * ph) * modAmt * (0.0007 * sr) * (k % 2 ? 0.7 : 1);
+        this.lineOut[k] = this.lines[k].read(clamp(this.lens[k] + wob, 4, this.lines[k].buf.length - 8));
+      }
+      // Hadamard 8x8 butterfly (energy-preserving mix).
+      const o = this.lineOut, f = this.fbVec;
+      let a0 = o[0] + o[1], a1 = o[0] - o[1], a2 = o[2] + o[3], a3 = o[2] - o[3];
+      let a4 = o[4] + o[5], a5 = o[4] - o[5], a6 = o[6] + o[7], a7 = o[6] - o[7];
+      let b0 = a0 + a2, b1 = a1 + a3, b2 = a0 - a2, b3 = a1 - a3;
+      let b4 = a4 + a6, b5 = a5 + a7, b6 = a4 - a6, b7 = a5 - a7;
+      const inv = 1 / Math.SQRT2 / 2; // 1/sqrt(8)
+      f[0] = (b0 + b4) * inv; f[1] = (b1 + b5) * inv; f[2] = (b2 + b6) * inv; f[3] = (b3 + b7) * inv;
+      f[4] = (b0 - b4) * inv; f[5] = (b1 - b5) * inv; f[6] = (b2 - b6) * inv; f[7] = (b3 - b7) * inv;
+      for (let k = 0; k < 8; k++)
+        this.lines[k].write(this.damp[k].tick(f[k] * this.gains[k]) + d * (k < 4 ? 0.25 : 0.2));
+      // Decorrelated stereo taps.
+      let wl = o[0] - o[2] + o[4] - o[6];
+      let wr = o[1] - o[3] + o[5] - o[7];
+      wl = this.wetLpL.tick(this.wetHpL.tick(wl));
+      wr = this.wetLpR.tick(this.wetHpR.tick(wr));
+      let wetG = 1;
+      if (this.duckOn) {
+        const dx = Math.max(Math.abs(dryRefL[i]), Math.abs(dryRefR[i]));
+        this.duckEnv = dx > this.duckEnv ? dx + duckA * (this.duckEnv - dx) : dx + duckR * (this.duckEnv - dx);
+        wetG = 1 - clamp(this.duckEnv * 2.4, 0, 1) * 0.7;
+      }
+      L[i] += wl * mix * wetG;
+      R[i] += wr * mix * wetG;
+    }
+  }
+  reset() {
+    this.lines.forEach(l => l.reset());
+    this.pre.reset();
+    this.inDiff.forEach(a => a.reset());
+  }
+}
+
+/* ---------- studio strip: REMI 4000 channel EQ + 2026 FET comp ---------- */
+
+class StudioEq {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = true;
+    // HPF 18 dB/oct (3-pole butterworth-ish: biquad + one-pole).
+    this.hpfBi = [new Biquad(), new Biquad()]; // stereo biquads
+    this.hpf1 = [new OnePoleHP(), new OnePoleHP()];
+    this.bands = { lf: [new Biquad(), new Biquad()], lmf: [new Biquad(), new Biquad()],
+                   hmf: [new Biquad(), new Biquad()], hf: [new Biquad(), new Biquad()] };
+    this.p = { hpf: 20, lf_g: 0, lf_f: 110, lmf_g: 0, lmf_f: 700,
+               hmf_g: 0, hmf_f: 2400, hf_g: 0, hf_f: 8000, trim: 0 };
+    this.trim = new Smooth(1, 20, sr);
+    this.dirty = true;
+  }
+  set(id, v) {
+    if (id === 'on') { this.on = v > 0.5; return; }
+    if (id === 'trim') { this.trim.set(dbToGain(v)); return; }
+    this.p[id] = v; this.dirty = true;
+  }
+  update() {
+    const sr = this.sr, p = this.p;
+    for (let c = 0; c < 2; c++) {
+      this.hpfBi[c].highpass(p.hpf, 0.85, sr);
+      this.hpf1[c].setFc(p.hpf, sr);
+      this.bands.lf[c].lowshelf(p.lf_f, p.lf_g, sr);
+      this.bands.lmf[c].peak(p.lmf_f, 0.75, p.lmf_g, sr);
+      this.bands.hmf[c].peak(p.hmf_f, 0.85, p.hmf_g, sr);
+      this.bands.hf[c].highshelf(p.hf_f, p.hf_g, sr);
+    }
+    this.hpfOn = p.hpf > 22;
+    this.dirty = false;
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    if (this.dirty) this.update();
+    for (let i = 0; i < n; i++) {
+      let l = L[i], r = R[i];
+      if (this.hpfOn) {
+        l = this.hpf1[0].tick(this.hpfBi[0].tick(l));
+        r = this.hpf1[1].tick(this.hpfBi[1].tick(r));
+      }
+      l = this.bands.hf[0].tick(this.bands.hmf[0].tick(this.bands.lmf[0].tick(this.bands.lf[0].tick(l))));
+      r = this.bands.hf[1].tick(this.bands.hmf[1].tick(this.bands.lmf[1].tick(this.bands.lf[1].tick(r))));
+      const t = this.trim.next();
+      L[i] = l * t; R[i] = r * t;
+    }
+  }
+}
+
+// Blue-stripe FET compressor/limiter — program-dependent, ratio buttons, GR out.
+class FetComp {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = true;
+    this.input = new Smooth(0.5, 25, sr);   // 0..1 drives into the threshold
+    this.output = new Smooth(0.5, 25, sr);
+    this.attackK = new Smooth(0.35, 25, sr);  // 0..1 → 20..800 µs
+    this.releaseK = new Smooth(0.4, 25, sr);  // 0..1 → 50..1100 ms
+    this.mix = new Smooth(1, 25, sr);
+    this.ratio = 4;
+    this.env = 0;
+    this.grDb = 0;
+  }
+  set(id, v) {
+    if (id === 'on') this.on = v > 0.5;
+    else if (id === 'input') this.input.set(v);
+    else if (id === 'output') this.output.set(v);
+    else if (id === 'attack') this.attackK.set(v);
+    else if (id === 'release') this.releaseK.set(v);
+    else if (id === 'mix') this.mix.set(v);
+    else if (id === 'ratio') this.ratio = v;
+  }
+  process(L, R, n) {
+    if (!this.on) { this.grDb = 0; return; }
+    const sr = this.sr;
+    for (let i = 0; i < n; i++) {
+      const inG = dbToGain(-12 + this.input.next() * 30);   // -12..+18 dB into the FET
+      const outG = dbToGain(-18 + this.output.next() * 30);
+      const atkS = (0.00002 + Math.pow(this.attackK.next(), 2) * 0.00078);
+      const relS = (0.05 + Math.pow(this.releaseK.next(), 1.5) * 1.05);
+      const aA = Math.exp(-1 / (atkS * sr));
+      const aR = Math.exp(-1 / (relS * sr));
+      const mix = this.mix.next();
+      const dl = L[i], dr = R[i];
+      const x = Math.max(Math.abs(dl), Math.abs(dr)) * inG;
+      this.env = x > this.env ? x + aA * (this.env - x) : x + aR * (this.env - x);
+      const envDb = 20 * Math.log10(this.env + 1e-9);
+      const threshDb = -16;
+      let gr = 0;
+      if (envDb > threshDb) gr = (envDb - threshDb) * (1 - 1 / this.ratio);
+      if (gr > 30) gr = 30;
+      this.grDb = Math.max(this.grDb * 0.999, gr);
+      const g = dbToGain(-gr) * inG * outG;
+      L[i] = dl * (1 - mix) + dl * g * mix;
+      R[i] = dr * (1 - mix) + dr * g * mix;
+    }
+  }
+}
+
+/* ---------- SAUCE — the enhancer pedal ---------- */
+
+class SaucePedal {
+  constructor(sr) {
+    this.sr = sr;
+    this.on = false;
+    this.k = { body: 0, sub: 0, tight: 0, tame: 0, smooth: 0, punch: 0, pres: 0, air: 0, mix: 1 };
+    this.f = {};
+    for (const name of ['body', 'sub', 'tame', 'smooth', 'pres', 'air'])
+      this.f[name] = [new Biquad(), new Biquad()];
+    this.tightHp = [new OnePoleHP(), new OnePoleHP()];
+    this.fastEnv = 0; this.slowEnv = 0;
+    this.mix = new Smooth(1, 30, sr);
+    this.dirty = true;
+    this.dryL = new Float32Array(128); this.dryR = new Float32Array(128);
+  }
+  set(id, v) {
+    if (id === 'on') { this.on = v > 0.5; return; }
+    if (id === 'mix') { this.k.mix = v; this.mix.set(v); return; }
+    this.k[id] = v; this.dirty = true;
+  }
+  update() {
+    const sr = this.sr, k = this.k;
+    for (let c = 0; c < 2; c++) {
+      this.f.body[c].peak(180, 0.9, k.body * 6, sr);
+      this.f.sub[c].lowshelf(65, k.sub * 6, sr);
+      this.f.tame[c].peak(3000, 0.8, -k.tame * 8, sr);
+      this.f.smooth[c].peak(6500, 0.9, -k.smooth * 8, sr);
+      this.f.pres[c].highshelf(3500, k.pres * 5, sr);
+      this.f.air[c].highshelf(12000, k.air * 6, sr);
+      this.tightHp[c].setFc(20 + k.tight * 110, sr);
+    }
+    this.dirty = false;
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    if (this.dirty) this.update();
+    const sr = this.sr, k = this.k;
+    const aF = Math.exp(-1 / (0.0008 * sr)), aS = Math.exp(-1 / (0.05 * sr));
+    this.dryL.set(L.subarray(0, n)); this.dryR.set(R.subarray(0, n));
+    for (let i = 0; i < n; i++) {
+      let l = L[i], r = R[i];
+      l = this.tightHp[0].tick(l); r = this.tightHp[1].tick(r);
+      // PUNCH: transient lift from fast-vs-slow envelope difference.
+      if (k.punch > 0.01) {
+        const x = Math.max(Math.abs(l), Math.abs(r));
+        this.fastEnv = x > this.fastEnv ? x + aF * (this.fastEnv - x) : x + aS * (this.fastEnv - x);
+        this.slowEnv = x + aS * (this.slowEnv - x);
+        const tr = clamp((this.fastEnv - this.slowEnv) * 4, 0, 1);
+        const g = 1 + tr * k.punch * 1.2;
+        l *= g; r *= g;
+      }
+      l = this.f.air[0].tick(this.f.pres[0].tick(this.f.smooth[0].tick(this.f.tame[0].tick(this.f.sub[0].tick(this.f.body[0].tick(l))))));
+      r = this.f.air[1].tick(this.f.pres[1].tick(this.f.smooth[1].tick(this.f.tame[1].tick(this.f.sub[1].tick(this.f.body[1].tick(r))))));
+      const m = this.mix.next();
+      L[i] = this.dryL[i] * (1 - m) + l * m;
+      R[i] = this.dryR[i] * (1 - m) + r * m;
+    }
+  }
+}
+
+/* ---------- the two chain stages ---------- */
+
+// stage 'pre'  (mono):  input trim → gate → comp → drive → capture-in trim
+// stage 'post' (stereo): tone stack → master → sauce → studio EQ → FET comp
+//                        → chorus → delay block → reverb → output → meters
+class RemiChainProcessor extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    const sr = sampleRate;
+    this.stage = options?.processorOptions?.stage || 'post';
+    this.inGain = new Smooth(1, 20, sr);
+    this.outGain = new Smooth(1, 20, sr);
+    this.meterCount = 0;
+    this.peakIn = 0; this.peakOut = 0;
+    if (this.stage === 'pre') {
+      this.gate = new NoiseGate(sr);
+      this.comp = new StompComp(sr);
+      this.drive = new DrivePedal(sr);
+      this.captureIn = new Smooth(1, 20, sr);
+    } else {
+      this.tone = new ToneStack(sr);
+      this.master = new Smooth(1, 20, sr); // neutral at its 0.7 default
+      this.ampTrim = new Smooth(1, 20, sr);
+      this.ampOn = true;
+      this.sauce = new SaucePedal(sr);
+      this.eq = new StudioEq(sr);
+      this.fet = new FetComp(sr);
+      this.studioOn = true;
+      this.chorus = new BbdChorus(sr);
+      this.delay = new DelayBlock(sr);
+      this.reverb = new VastSkyReverb(sr);
+      this.bufL = new Float32Array(128);
+      this.bufR = new Float32Array(128);
+    }
+    this.port.onmessage = (e) => this.onMessage(e.data);
+  }
+
+  onMessage(m) {
+    if (m.type === 'param') this.setParam(m.id, m.v);
+    else if (m.type === 'params') for (const [id, v] of m.list) this.setParam(id, v);
+    else if (m.type === 'reset' && this.stage === 'post') {
+      this.delay.A.reset(); this.delay.B.reset(); this.reverb.reset();
+    }
+  }
+
+  setParam(id, v) {
+    const dot = id.indexOf('_');
+    const head = dot < 0 ? id : id.slice(0, dot);
+    const rest = dot < 0 ? '' : id.slice(dot + 1);
+    if (this.stage === 'pre') {
+      switch (head) {
+        case 'in': this.inGain.set(dbToGain(v)); return;
+        case 'gate': this.gate.set(rest, v); return;
+        case 'comp': this.comp.set(rest, v); return;
+        case 'drive': this.drive.set(rest, v); return;
+        case 'amp': if (rest === 'gain') this.captureIn.set(dbToGain((v - 0.45) * 24)); return;
+      }
+    } else {
+      switch (head) {
+        case 'out': this.outGain.set(dbToGain(v)); return;
+        case 'amp':
+          if (rest === 'master') this.master.set(dbToGain((v - 0.7) * 30));
+          else if (rest === 'output') this.ampTrim.set(dbToGain((v - 0.5) * 24));
+          else if (rest === 'on') this.ampOn = v > 0.5;
+          else this.tone.set(rest, v);
+          return;
+        case 'sauce': this.sauce.set(rest, v); return;
+        case 'eq': this.eq.set(rest, v); return;
+        case 'fet': this.fet.set(rest, v); return;
+        case 'studio':
+          if (rest === 'on') { this.eq.set('on', v); this.fet.set('on', v); }
+          return;
+        case 'cho': this.chorus.set(rest, v); return;
+        case 'dly':
+          if (rest.startsWith('A_')) this.delay.A.set(rest.slice(2), v);
+          else if (rest.startsWith('B_')) this.delay.B.set(rest.slice(2), v);
+          else this.delay.set(rest, v);
+          return;
+        case 'rvb': this.reverb.set(rest, v); return;
+      }
+    }
+  }
+
+  process(inputs, outputs) {
+    const inp = inputs[0];
+    const out = outputs[0];
+    if (!out || out.length === 0) return true;
+    const n = out[0].length;
+
+    if (this.stage === 'pre') {
+      const o = out[0];
+      const x = inp && inp[0] ? inp[0] : null;
+      if (x) o.set(x); else o.fill(0);
+      let pk = 0;
+      for (let i = 0; i < n; i++) {
+        o[i] *= this.inGain.next();
+        const a = Math.abs(o[i]);
+        if (a > pk) pk = a;
+      }
+      this.peakIn = Math.max(this.peakIn, pk);
+      // Mono chain: the modules are written stereo, so feed a scratch copy as
+      // the right channel — passing the same array twice would apply every
+      // gain twice.
+      if (!this.scratch) this.scratch = new Float32Array(n);
+      this.scratch.set(o.subarray(0, n));
+      this.gate.process(o, this.scratch, n);
+      this.comp.process(o, this.scratch, n);
+      this.drive.process(o, this.scratch, n);
+      for (let i = 0; i < n; i++) o[i] *= this.captureIn.next();
+      if (out.length > 1) out[1].set(o);
+    } else {
+      const L = this.bufL, R = this.bufR;
+      const iL = inp && inp[0] ? inp[0] : null;
+      const iR = inp && inp.length > 1 ? inp[1] : iL;
+      if (iL) { L.set(iL); R.set(iR || iL); } else { L.fill(0); R.fill(0); }
+      if (this.ampOn) {
+        this.tone.process(L, R, n);
+        for (let i = 0; i < n; i++) {
+          const m = this.master.next() * this.ampTrim.next();
+          L[i] *= m; R[i] *= m;
+        }
+      }
+      this.sauce.process(L, R, n);
+      this.eq.process(L, R, n);
+      this.fet.process(L, R, n);
+      this.chorus.process(L, R, n);
+      this.delay.process(L, R, n);
+      this.reverb.process(L, R, n, L, R);
+      let pk = 0;
+      for (let i = 0; i < n; i++) {
+        const g = this.outGain.next();
+        // Soft safety ceiling — musical instead of digital wrap.
+        let l = L[i] * g, r = R[i] * g;
+        if (l > 1.2 || l < -1.2) l = Math.tanh(l * 0.8) * 1.25;
+        if (r > 1.2 || r < -1.2) r = Math.tanh(r * 0.8) * 1.25;
+        L[i] = l; R[i] = r;
+        const a = Math.max(Math.abs(l), Math.abs(r));
+        if (a > pk) pk = a;
+      }
+      out[0].set(L.subarray(0, n));
+      if (out.length > 1) out[1].set(R.subarray(0, n));
+      this.peakOut = Math.max(this.peakOut, pk);
+    }
+
+    // Meter frames every ~16 ms.
+    if (++this.meterCount >= 6) {
+      this.meterCount = 0;
+      if (this.stage === 'pre') {
+        this.port.postMessage({ type: 'meters', in: this.peakIn, gate: this.gate.gr });
+        this.peakIn = 0;
+      } else {
+        this.port.postMessage({ type: 'meters', out: this.peakOut, gr: this.fet.grDb });
+        this.peakOut = 0;
+        this.fet.grDb *= 0.6;
+      }
+    }
+    return true;
+  }
+}
+
+registerProcessor('remi-chain', RemiChainProcessor);

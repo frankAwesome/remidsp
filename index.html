@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>REMI DSP — Maine · Web Suite</title>
+  <meta name="description" content="REMI DSP Maine guitar suite in the browser — NAM capture amp, cab IRs, dual-engine delay and Vast Sky reverb. WASM + AudioWorklet, zero added latency." />
+  <link rel="icon" href="/assets/app_icon_256.png" />
+</head>
+<body>
+  <div class="bg"><div class="bg__grain"></div></div>
+  <div class="hud" aria-hidden="true">
+    <i class="hud__corner hud__corner--tl"></i><i class="hud__corner hud__corner--tr"></i>
+    <i class="hud__corner hud__corner--bl"></i><i class="hud__corner hud__corner--br"></i>
+  </div>
+
+  <div class="gateway" id="gateway">
+    <img class="gateway__logo" src="/assets/ui/brand_logo.png" alt="REMI DSP" />
+    <h1>Over the Edge<small>REMI DSP · MAINE · WEB SUITE</small></h1>
+    <button class="gateway__cta" id="startBtn">Plug In</button>
+    <p class="gateway__note">Plug your interface in, pick it as the browser's microphone when asked,
+      and kill echo cancellation dreams — we already did. Runs the NAM capture engine in WASM inside
+      an AudioWorklet: the chain itself adds zero latency beyond one 128-sample quantum.</p>
+    <div class="gateway__status" id="bootStatus"></div>
+  </div>
+
+  <main class="app" id="app" hidden></main>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
