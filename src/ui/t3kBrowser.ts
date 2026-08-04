@@ -133,25 +133,31 @@ export class T3kBrowser {
 
   private async refresh() {
     this.list.innerHTML = `<div class="t3k__note">Loading…</div>`;
+    let tones: Tone[];
+    let footNote = '';
     try {
-      let tones: Tone[];
-      let footNote = '';
       if (this.mode === 'search' && t3k.connected) {
         const gears = this.gear === 'cab' ? 'cab' : this.gear;
         const res = await t3k.search({
           query: this.query || undefined, sort: this.sort, page: this.page,
           gears, format: this.gear === 'cab' ? 'ir' : 'nam',
         });
-        tones = res.data;
+        tones = res.data ?? [];
         footNote = `page ${res.page} / ${res.total_pages}`;
       } else {
-        tones = await t3k.trending(this.gear as Tone['gear'] | undefined);
+        tones = await t3k.trending(this.gear as Tone['gear'] | undefined) ?? [];
         footNote = t3k.connected ? '' :
           `Trending only — <b>CONNECT</b> a free TONE3000 key below to search the full library (latest · popular · all-time).`;
       }
-      this.render(tones, footNote);
     } catch (err) {
       this.list.innerHTML = `<div class="t3k__note">TONE3000 unreachable — ${(err as Error).message}</div>`;
+      return;
+    }
+    try {
+      this.render(tones, footNote);
+    } catch (err) {
+      this.list.innerHTML = `<div class="t3k__note">Display error — ${(err as Error).message}</div>`;
+      console.error('t3k render', err, tones);
     }
   }
 
@@ -178,14 +184,14 @@ export class T3kBrowser {
     el.className = 'tone-card';
     const img = t.images?.[0];
     el.innerHTML = `
-      ${img ? `<img class="tone-card__img" crossorigin="anonymous" loading="lazy" src="${img}" alt="">` : `<div class="tone-card__img"></div>`}
+      ${img ? `<img class="tone-card__img" crossorigin="anonymous" loading="lazy" src="${escapeHtml(img)}" alt="">` : `<div class="tone-card__img"></div>`}
       <div class="tone-card__body">
-        <div class="tone-card__title">${escapeHtml(t.title)}</div>
+        <div class="tone-card__title">${escapeHtml(t.title ?? `tone ${t.id}`)}</div>
         <div class="tone-card__meta">by <b>${escapeHtml(t.user?.username ?? '—')}</b>
-          · ${t.downloads_count.toLocaleString()} downloads · ${escapeHtml(t.license)}</div>
+          · ${(t.downloads_count ?? 0).toLocaleString()} downloads · ${escapeHtml(t.license ?? '—')}</div>
         <div class="tone-card__tags">
-          <span class="tone-card__tag">${t.gear}</span>
-          <span class="tone-card__tag">${t.format}</span>
+          ${t.gear ? `<span class="tone-card__tag">${escapeHtml(t.gear)}</span>` : ''}
+          ${t.format ? `<span class="tone-card__tag">${escapeHtml(t.format)}</span>` : ''}
           ${t.a2_models_count ? `<span class="tone-card__tag">A2 ×${t.a2_models_count}</span>` : ''}
           ${t.irs_count ? `<span class="tone-card__tag">IR ×${t.irs_count}</span>` : ''}
         </div>
@@ -217,7 +223,7 @@ export class T3kBrowser {
     const row = document.createElement('div');
     row.className = 't3k__model';
     row.innerHTML = `<b>${escapeHtml(m.name || `model ${m.id}`)}</b>
-      <span>${isIr ? 'IR' : `A${m.architecture_version}`}${m.size && m.size !== 'custom' ? ` · ${m.size}` : ''}</span>
+      <span>${isIr ? 'IR' : `A${escapeHtml(m.architecture_version ?? '?')}`}${m.size && m.size !== 'custom' ? ` · ${escapeHtml(m.size)}` : ''}</span>
       <button>${isIr ? 'LOAD CAB' : 'LOAD AMP'}</button>`;
     row.querySelector('button')!.addEventListener('click', async () => {
       try {
@@ -253,6 +259,6 @@ export class T3kBrowser {
   }
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+function escapeHtml(s: unknown): string {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 }
