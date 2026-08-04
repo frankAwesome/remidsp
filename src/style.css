@@ -199,6 +199,7 @@ select{font:inherit}
   background:rgba(238,241,246,.14);
   box-shadow:0 0 12px rgba(238,241,246,.35), inset 0 0 8px rgba(238,241,246,.12)}
 .face__overlay select{background:rgba(6,6,10,.6);backdrop-filter:blur(2px)}
+.face__overlay .tab--mini{font-size:.46rem;padding:.18rem .4rem;letter-spacing:.1em;white-space:nowrap}
 .seat--fill{display:flex}
 .seat--fill>*{flex:1}
 

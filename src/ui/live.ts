@@ -154,10 +154,10 @@ export function vuNeedle(): HTMLCanvasElement {
 
 /* ── Sauce: live spectrum + the EQ curve, in the render's glass ── */
 export function sauceScope(): HTMLCanvasElement {
-  // Glass interior measured off the render itself (pixel scan, red-excluded),
-  // pulled in a touch so the drawing never kisses the bezel.
-  const c = canvasIn(0.4997, 0.277, 0.655, 0.262);
-  c.style.borderRadius = '4px';
+  // The glass's visible grid area, calibrated against the render with a
+  // debug outline: inside the inner bevel on every side.
+  const c = canvasIn(0.5005, 0.2715, 0.622, 0.25);
+  c.style.borderRadius = '3px';
   const bins = new Float32Array(2048);
   const fMin = 40, fMax = 16000;
 

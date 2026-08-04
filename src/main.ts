@@ -427,8 +427,10 @@ function reverbPanel(): HTMLElement {
   ov.appendChild(seat(machine, 0.325, 0.128, 0.14, 0.055));
   const interval = paramSelect('rvb_shimmer_mode');
   ov.appendChild(seat(interval, 0.675, 0.128, 0.15, 0.055));
+  // DUCK latch fully covering its baked button (desktop resizedExtras geo).
   const duck = paramToggle('rvb_duck', 'DUCK');
-  ov.appendChild(seat(duck, 0.339, 0.847)); // over the print's baked DUCK pill
+  duck.style.cssText += ';width:100%;height:100%;padding:0;display:grid;place-items:center';
+  ov.appendChild(seat(duck, 0.316, 0.79, 0.112, 0.07));
   ov.appendChild(pilotLed('rvb_on', 0.5, 0.132, 0.011));
   return f;
 }
@@ -666,8 +668,10 @@ function delayPanel(): HTMLElement {
   const routSel = paramSelect('dly_routing');
   routSel.style.height = '100%';
   ov.appendChild(seat(routSel, 0.6903, 0.827, 0.155, 0.052));
-  // PING-PONG chip under the tempo lamp.
-  ov.appendChild(seat(paramToggle(p + 'pingpong', 'PING-PONG'), 0.5, 0.235));
+  // PING-PONG chip: no baked twin — it joins the top mode row, in the clear
+  // starfield right of SYNC, sized like its neighbours.
+  const pp = paramToggle(p + 'pingpong', 'PING-PONG', 'tab tab--mini');
+  seatFill(pp, [0.762, 0.1137, 0.105, 0.048]);
   // Live ECHO SYNC lamp — flashes the routing's ACTUAL echo rhythm.
   ov.appendChild(delayLamp());
 
