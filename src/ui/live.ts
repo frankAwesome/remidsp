@@ -304,8 +304,15 @@ export function delayLamp(engineIdx: 0 | 1 = 0): HTMLElement {
     }
     evB = [];
     if (bOn) {
-      // What B hears: the dry note, plus (series only) A's whole echo train.
-      const sources: Ev[] = [{ t: 0, a: 1 }, ...(series ? evA : [])];
+      // The lamp tells the ROUTING's story. In series B answers A: its jewel
+      // fires for B's echoes OF A'S TRAIN (k·tA + m·tB) — first light, then
+      // the second, exactly the A → B hand-off. (The dry note technically
+      // passes through B too, but showing that echo would land on top of A's
+      // first flash whenever the times match and read as "simultaneous".)
+      // In parallel both engines answer the dry note independently.
+      const sources: Ev[] = series
+        ? (aOn ? evA : [{ t: 0, a: 1 }])
+        : [{ t: 0, a: 1 }];
       for (const src of sources) for (let m = 1; m < 40; m++) {
         const t = src.t + m * tB;
         const a = src.a * Math.pow(fbB, m - 1);
