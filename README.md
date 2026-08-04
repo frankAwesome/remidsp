@@ -67,6 +67,27 @@ Pick your audio interface as the browser "microphone" (echo cancellation / noise
 suppression / AGC are all disabled). Use 48 kHz output if you can — captures are
 48 kHz-native and the engine runs at the device rate.
 
+## Accounts, profiles & the feed (optional)
+
+Sign-in is optional — the rig runs fully without it. With an account you get a profile
+(username · bio · avatar URL), a **cloud preset library** (params + amp/voice + capture
+provenance, including TONE3000 model refs — the reference is stored, never the file),
+and **THE FEED**: share a sound with a description when you save it, browse everyone's
+tones or just the people you **follow** (user search + follow live in the feed header),
+sort by latest / most liked / most loaded, filter by amp, like ♥ and comment. Feed posts
+render the whole rig: amp-accented card, the chain in chip art, DSEG7 tempo/delay/reverb
+tiles, capture provenance.
+
+Backend is Firebase (project `remidsp-98208`): Auth + Firestore. Rules and indexes are
+deployed from this repo (`firestore.rules` **also contains the remidsp-site analytics
+rules** — the two apps share the project, edit both here). Email/password sign-in is
+enabled; **Google needs one console click** (Firebase console → Authentication →
+Sign-in method → Google → enable, which mints its OAuth client). Apple/GitHub/Facebook
+need their platform credentials in the same screen — the buttons are wired and will work
+the moment a provider is switched on. Provider sign-in uses the redirect flow (the page
+is cross-origin isolated, which breaks auth popups) and therefore works on the deployed
+origin, not localhost.
+
 ## Licensing notes
 
 - NAM core + wasm build: MIT (`public/t3k-wasm-LICENSE.txt`).

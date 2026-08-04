@@ -1,0 +1,323 @@
+rules_version = '2';
+
+// REMI DSP — analytics rules
+//
+// The browser writes these collections unauthenticated, so the rules are the
+// only thing standing between a public endpoint and someone scripting your
+// bill upward. Posture: create-only, KEY-PINNED (every field the client can
+// send is enumerated; anything else is rejected), size-capped.
+//
+// Reading is allowed for exactly one signed-in Google account — the dashboard
+// reads live rather than through a build step. See dashboardReader() below.
+// Unauthenticated reads are refused, so the public API key grants nothing.
+// Correcting or deleting an event is still console / Admin SDK work.
+//
+// These rules mirror js/analytics.js envelope() EXACTLY. If you add a field
+// there, add it here in the same commit or the write silently fails — send()
+// swallows errors by design (a metric must never break the page).
+//
+// Pair with App Check *enforced* (Firestore → Settings) once a reCAPTCHA key
+// is set in js/analytics.js — validation alone cannot stop a determined
+// scripter, it only stops a lazy one. See ANALYTICS.md.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // string of at most n, or null — nearly every envelope value is this shape
+    function sOrNull(v, n) {
+      return v == null || (v is string && v.size() <= n);
+    }
+    function numOrNull(v) {
+      return v == null || v is number;
+    }
+
+    function pageOk(p) {
+      return p is map
+        && p.keys().hasOnly(['path', 'title', 'referrer', 'host'])
+        && sOrNull(p.get('path', null), 300)
+        && sOrNull(p.get('title', null), 200)
+        && sOrNull(p.get('referrer', null), 300)
+        && sOrNull(p.get('host', null), 120);
+    }
+
+    function utmOk(u) {
+      return u is map
+        && u.keys().hasOnly(['source', 'medium', 'campaign', 'term', 'content'])
+        && sOrNull(u.get('source', null), 120)
+        && sOrNull(u.get('medium', null), 120)
+        && sOrNull(u.get('campaign', null), 120)
+        && sOrNull(u.get('term', null), 120)
+        && sOrNull(u.get('content', null), 120);
+    }
+
+    function deviceOk(d) {
+      return d is map
+        && d.keys().hasOnly(['ua', 'lang', 'platform', 'mobile', 'tz',
+                             'screenW', 'screenH', 'dpr', 'viewW', 'viewH'])
+        && sOrNull(d.get('ua', null), 400)
+        && sOrNull(d.get('lang', null), 20)
+        && sOrNull(d.get('platform', null), 60)
+        && d.get('mobile', false) is bool
+        && sOrNull(d.get('tz', null), 60)
+        && numOrNull(d.get('screenW', null)) && numOrNull(d.get('screenH', null))
+        && numOrNull(d.get('dpr', null))
+        && numOrNull(d.get('viewW', null)) && numOrNull(d.get('viewH', null));
+    }
+
+    // Structural guarantee, not a convention: no IP may ever be written. The
+    // key pin makes an 'ip' field impossible; if someone later "just adds"
+    // one, the write fails instead of quietly turning this into personal
+    // data that needs a consent banner.
+    // lat/lon are the map pins. analytics.js rounds them to one decimal — ~11km,
+    // a city and not a street, so they say nothing the city name beside them
+    // does not already say. The range check is what stops the field being
+    // repurposed as a general-purpose number smuggler.
+    function coordOk(v, limit) {
+      return v == null || (v is number && v >= -limit && v <= limit);
+    }
+
+    function geoOk(g) {
+      return g is map
+        && g.keys().hasOnly(['country', 'countryName', 'region', 'city', 'tz',
+                             'lat', 'lon'])
+        && sOrNull(g.get('country', null), 8)
+        && sOrNull(g.get('countryName', null), 80)
+        && sOrNull(g.get('region', null), 120)
+        && sOrNull(g.get('city', null), 120)
+        && sOrNull(g.get('tz', null), 60)
+        && coordOk(g.get('lat', null), 90)
+        && coordOk(g.get('lon', null), 180);
+    }
+
+    function envelopeOk() {
+      let d = request.resource.data;
+      return d.schema is int && d.schema > 0 && d.schema <= 10
+        // serverTimestamp() only — a client cannot backdate or forge an event
+        && d.ts == request.time
+        && sOrNull(d.get('clientTs', null), 40)
+        && d.session is string && d.session.size() <= 64
+        && sOrNull(d.get('product', null), 40)
+        && pageOk(d.page) && utmOk(d.utm) && deviceOk(d.device) && geoOk(d.geo);
+    }
+
+    // Shared envelope keys every event carries.
+    function envelopeKeys() {
+      return ['schema', 'ts', 'clientTs', 'session', 'product',
+              'page', 'utm', 'device', 'geo'];
+    }
+
+    function createOnly() {
+      return request.method == 'create' && envelopeOk();
+    }
+
+    // ── reading ──────────────────────────────────────────────────────────
+    //
+    // Writing is public and unauthenticated because it has to be — a visitor's
+    // browser does the writing. Reading is the opposite: these rows carry
+    // coarse geo and user agents for real visitors, and nothing about that
+    // should be fetchable by anyone who reads the page source.
+    //
+    // The dashboard reads live, so "no reads at all" is no longer an option.
+    // This is the narrowest thing that still works: one named Google account,
+    // checked server-side on every query. An API key alone gets you nothing —
+    // request.auth is null and every read below is refused.
+    //
+    // Adding a second person is one more address in this list. Anything else
+    // (a second project, a service account, an anonymous sign-in) is not
+    // covered and stays refused.
+    function dashboardReader() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['sheepdeklerk@gmail.com'];
+    }
+
+    match /pageviews/{id} {
+      allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['loadMs', 'entry']))
+        && numOrNull(request.resource.data.get('loadMs', null))
+        && request.resource.data.get('entry', false) is bool;
+      allow read: if dashboardReader();
+      allow update, delete: if false;
+    }
+
+    match /downloads/{id} {
+      allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['asset', 'os', 'url', 'label',
+                                    'placement', 'channel']))
+        && request.resource.data.asset is string
+        && request.resource.data.asset.size() <= 120
+        && request.resource.data.os in ['macos', 'windows', 'linux', 'unknown']
+        && sOrNull(request.resource.data.get('url', null), 400)
+        && sOrNull(request.resource.data.get('label', null), 120)
+        && sOrNull(request.resource.data.get('placement', null), 40)
+        && request.resource.data.channel in ['github-releases', 'direct'];
+      allow read: if dashboardReader();
+      allow update, delete: if false;
+    }
+
+    match /clicks/{id} {
+      allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['label', 'href', 'placement', 'kind']))
+        && sOrNull(request.resource.data.get('label', null), 120)
+        && sOrNull(request.resource.data.get('href', null), 400)
+        && sOrNull(request.resource.data.get('placement', null), 40)
+        && request.resource.data.kind in ['outbound', 'anchor', 'internal'];
+      allow read: if dashboardReader();
+      allow update, delete: if false;
+    }
+
+    // One summary row per visit, written on the way out — how long the page was
+    // actually visible, how far down it was read, how many links were clicked.
+    // Bounded hard: dwell cannot exceed a day and scroll is a fraction, so a
+    // scripted row cannot inflate the averages without being obviously wrong.
+    match /engagement/{id} {
+      allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['dwellMs', 'maxScroll', 'clicks', 'section']))
+        && request.resource.data.dwellMs is number
+        && request.resource.data.dwellMs >= 0
+        && request.resource.data.dwellMs <= 86400000
+        && request.resource.data.maxScroll is number
+        && request.resource.data.maxScroll >= 0
+        && request.resource.data.maxScroll <= 1
+        && request.resource.data.clicks is int
+        && request.resource.data.clicks >= 0
+        && request.resource.data.clicks <= 10000
+        && sOrNull(request.resource.data.get('section', null), 60);
+      allow read: if dashboardReader();
+      allow update, delete: if false;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // REMI DSP — Maine web suite (remidsp-maine.web.app)
+    // Optional accounts: profiles, the cloud preset library, and the feed.
+    // Same posture as the analytics rules above: key-pinned, size-capped.
+    // ══════════════════════════════════════════════════════════════════
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profileShapeOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(
+               ['username', 'usernameLower', 'bio', 'avatarUrl',
+                'followersCount', 'followingCount', 'createdAt', 'updatedAt'])
+        && d.username is string
+        && d.username.size() >= 1 && d.username.size() <= 40
+        && sOrNull(d.get('usernameLower', null), 40)
+        && sOrNull(d.get('bio', null), 400)
+        && sOrNull(d.get('avatarUrl', null), 500);
+    }
+    // Follow/unfollow rides a batched write that also creates/deletes the
+    // follower's edge doc — the counter may move by exactly one.
+    function followerBump() {
+      let diff = request.resource.data.diff(resource.data);
+      return signedIn()
+        && diff.affectedKeys().hasOnly(['followersCount'])
+        && (request.resource.data.followersCount - resource.data.get('followersCount', 0)) <= 1
+        && (request.resource.data.followersCount - resource.data.get('followersCount', 0)) >= -1;
+    }
+    match /profiles/{uid} {
+      allow read: if true; // public byline for feed cards + user search
+      allow create: if signedIn() && request.auth.uid == uid && profileShapeOk();
+      allow update: if (signedIn() && request.auth.uid == uid && profileShapeOk())
+        || followerBump();
+      allow delete: if false;
+
+      // Who {uid} follows — one edge doc per target, owned by {uid}.
+      match /following/{targetUid} {
+        allow read: if true;
+        allow create, delete: if signedIn() && request.auth.uid == uid;
+        allow update: if false;
+      }
+    }
+
+    function presetShapeOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(
+               ['uid', 'username', 'avatarUrl', 'name', 'amp', 'voice', 'params', 'capture',
+                'shared', 'description', 'likesCount', 'commentsCount',
+                'downloadsCount', 'createdAt', 'updatedAt'])
+        && d.uid == request.auth.uid
+        && d.username is string && d.username.size() <= 40
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
+        && d.amp is string && d.amp.size() <= 30
+        && d.voice is string && d.voice.size() <= 40
+        && d.params is map
+        && (d.capture == null
+            || (d.capture is map && d.capture.keys().hasOnly(
+                  ['source', 'label', 'stem', 'modelId', 'modelUrl',
+                   'creator', 'license', 'toneUrl'])
+                && d.capture.source in ['bundled', 'tone3000']
+                && sOrNull(d.capture.get('modelUrl', null), 500)))
+        && d.shared is bool
+        && d.description is string && d.description.size() <= 500
+        && d.likesCount is int && d.commentsCount is int && d.downloadsCount is int;
+    }
+
+    // Counter bumps by other people: likes/comments ride batched writes that
+    // also touch the like/comment doc; downloads may come from anyone.
+    function likeBump() {
+      let diff = request.resource.data.diff(resource.data);
+      return signedIn()
+        && diff.affectedKeys().hasOnly(['likesCount'])
+        && (request.resource.data.likesCount - resource.data.likesCount) <= 1
+        && (request.resource.data.likesCount - resource.data.likesCount) >= -1;
+    }
+    function commentBump() {
+      let diff = request.resource.data.diff(resource.data);
+      return signedIn()
+        && diff.affectedKeys().hasOnly(['commentsCount'])
+        && (request.resource.data.commentsCount - resource.data.commentsCount) == 1;
+    }
+    function downloadBump() {
+      let diff = request.resource.data.diff(resource.data);
+      return diff.affectedKeys().hasOnly(['downloadsCount'])
+        && (request.resource.data.downloadsCount - resource.data.downloadsCount) == 1;
+    }
+
+    match /presets/{presetId} {
+      allow read: if resource.data.shared == true
+        || (signedIn() && request.auth.uid == resource.data.uid);
+      allow create: if signedIn() && presetShapeOk()
+        && request.resource.data.likesCount == 0
+        && request.resource.data.commentsCount == 0
+        && request.resource.data.downloadsCount == 0;
+      allow update: if (signedIn() && request.auth.uid == resource.data.uid
+                        && presetShapeOk())
+        || likeBump() || commentBump() || downloadBump();
+      allow delete: if signedIn() && request.auth.uid == resource.data.uid;
+
+      match /likes/{likerUid} {
+        allow read: if true;
+        allow create, delete: if signedIn() && request.auth.uid == likerUid;
+        allow update: if false;
+      }
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(
+               ['uid', 'username', 'text', 'createdAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.username is string
+          && request.resource.data.username.size() <= 40
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 500;
+        allow update: if false;
+        allow delete: if signedIn() && request.auth.uid == resource.data.uid;
+      }
+    }
+
+    // Everything else is closed. (This is already the default; stated so the
+    // intent survives the next person editing this file.)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -11,6 +11,10 @@ import { t3k } from './tone3000';
 import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed } from './ui/live';
 import { LooperSection } from './ui/looper';
 import { preloadAssets } from './ui/preload';
+import { AccountUI } from './ui/account';
+import { FeedView } from './ui/feed';
+import { openSaveDialog } from './ui/saveDialog';
+import type { CloudPreset, CaptureRefDoc } from './cloud/store';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -35,6 +39,10 @@ let delayEngineShown: 0 | 1 = 0;
 let quality: 'full' | 'eco' = 'full';
 let customIrName: string | null = null;
 let presetIdx = 0;
+let feedMode = false;
+let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: 'camden_clean', label: 'camden clean' };
+let account: AccountUI;
+let feedView: FeedView;
 
 const BUNDLED_IRS = [
   'uk_2x12_blue_onaxis', 'uk_2x12_blue_offaxis',
@@ -159,10 +167,10 @@ function buildHeader(): HTMLElement {
   next.addEventListener('click', () => stepPreset(1));
   name.addEventListener('click', openPresetMenu);
   save.addEventListener('click', () => {
-    const n = prompt('Preset name');
-    if (!n) return;
-    saveUserPreset({ name: n, group: 'USER', amp: currentAmp, voice: currentVoice, params: store.snapshot() });
-    toast(`Saved <b>${n}</b>`);
+    openSaveDialog(
+      () => ({ amp: currentAmp, voice: currentVoice, params: store.snapshot(), capture: currentCaptureRef }),
+      (n) => saveUserPreset({ name: n, group: 'USER', amp: currentAmp, voice: currentVoice, params: store.snapshot() }),
+    );
   });
 
   // tempo
@@ -182,6 +190,19 @@ function buildHeader(): HTMLElement {
   cap.append(capBtn, el('div', 'hdr__caption', 'TONE3000'));
   h.appendChild(cap);
   capBtn.addEventListener('click', () => t3kBrowser.open());
+
+  // the feed
+  const fg = el('div', 'hdr__group');
+  const feedBtn = el('button', 'hdr__btn', 'FEED');
+  feedBtn.id = 'feedBtn';
+  fg.append(feedBtn, el('div', 'hdr__caption', 'COMMUNITY'));
+  h.appendChild(fg);
+  feedBtn.addEventListener('click', () => setFeedMode(!feedMode));
+
+  // account
+  const ag = el('div', 'hdr__group');
+  ag.append(account.chip, el('div', 'hdr__caption', 'PROFILE'));
+  h.appendChild(ag);
 
   h.appendChild(el('div', 'hdr__spacer'));
 
@@ -537,6 +558,7 @@ async function loadBundledVoice(stem: string) {
     lastCaptureJson = json;
     await engine.loadCapture(json, info, quality === 'eco');
     currentVoice = stem;
+    currentCaptureRef = { source: 'bundled', stem, label: stem.replace('_', ' ') };
     if (selectedSlot === 'amp') renderStage();
   } catch (err) {
     toast(`Capture load failed — ${(err as Error).message}`);
@@ -559,6 +581,10 @@ async function loadCaptureRef(ref: CaptureRef) {
       name: ref.label, source: 'tone3000',
       creator: ref.creator, license: ref.license, url: ref.toneUrl,
     }, quality === 'eco');
+    currentCaptureRef = {
+      source: 'tone3000', label: ref.label, modelId: ref.id, modelUrl: ref.url,
+      creator: ref.creator, license: ref.license, toneUrl: ref.toneUrl,
+    };
     store.set('amp_on', 1);
     toast(`<b>${ref.label}</b> on the amp${ref.creator ? ` · by ${ref.creator}` : ''}`);
     if (selectedSlot === 'amp') renderStage();
@@ -834,11 +860,15 @@ function levelPct(v: number): number {
 /* ────────────────────────── assemble ────────────────────────── */
 
 function build() {
+  account = new AccountUI(applyCloudPreset);
+  feedView = new FeedView(applyCloudPreset, () => account.open());
+  account.onSessionChange = () => { if (feedMode) void feedView.refresh(); };
   app.appendChild(buildHeader());
   app.appendChild(buildRibbon());
   stage.className = 'stage';
   app.appendChild(stage);
   app.appendChild(new LooperSection().root);
+  app.appendChild(feedView.root);
   const foot = el('footer', 'foot');
   foot.innerHTML = `<span class="foot__brand">Remi</span>
     <span class="mono">MAINE · WEB SUITE · v0.1</span>
@@ -859,7 +889,42 @@ function build() {
 
 build();
 document.getElementById('startBtn')!.addEventListener('click', () => void boot());
-// A TONE3000 load lands in the CAPTURE menu's recents — refresh the drawer.
+// A TONE3000 load lands in the CAPTURE menu's recents — refresh the drawer
+// and remember it as the current capture for cloud saves.
 window.addEventListener('remi:capture-loaded', () => {
+  const r = loadRecents()[0];
+  if (r) currentCaptureRef = {
+    source: 'tone3000', label: r.label, modelId: r.id, modelUrl: r.url,
+    creator: r.creator, license: r.license, toneUrl: r.toneUrl,
+  };
   if (selectedSlot === 'amp') renderStage();
 });
+
+/* ── the feed / rig view switch + cloud preset apply ── */
+
+function setFeedMode(on: boolean) {
+  feedMode = on;
+  document.querySelector<HTMLElement>('.ribbon')!.hidden = on;
+  stage.hidden = on;
+  document.querySelector<HTMLElement>('.looper')!.hidden = on;
+  feedView.root.hidden = !on;
+  const btn = document.getElementById('feedBtn');
+  if (btn) {
+    btn.textContent = on ? 'BACK TO RIG' : 'FEED';
+    btn.classList.toggle('hdr__btn--lit', on);
+  }
+  if (on) void feedView.refresh();
+}
+
+async function applyCloudPreset(p: CloudPreset) {
+  await applyPreset({ name: p.name, group: 'USER', amp: p.amp, voice: p.voice, params: p.params });
+  // A TONE3000 capture ref rides the preset — swap it in over the bundled voice.
+  if (p.capture?.source === 'tone3000' && p.capture.modelUrl) {
+    await loadCaptureRef({
+      kind: 'tone3000', id: p.capture.modelId ?? p.capture.modelUrl, label: p.capture.label,
+      url: p.capture.modelUrl, creator: p.capture.creator, license: p.capture.license,
+      toneUrl: p.capture.toneUrl,
+    });
+  }
+  setFeedMode(false);
+}
