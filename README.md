@@ -1,5 +1,11 @@
 # REMI DSP — Maine · Web Suite
 
+**Live: https://remidsp-maine.web.app** · deployed on Firebase Hosting (site `remidsp-maine`
+in project `remidsp-98208`; `npm run build && npx firebase-tools deploy --only hosting`).
+For TONE3000 CONNECT on the live site, register
+`https://remidsp-maine.web.app/t3k-callback.html` as a redirect URI on your publishable key
+(tone3000.com → Settings → API Keys) — localhost is auto-allowed in dev, production is not.
+
 The **REMI DSP "Over the Edge" guitar suite** ([the_guitar_guy](../the_guitar_guy)) rebuilt
 for the browser: the NAM capture amp runs in **WebAssembly inside an AudioWorklet**, the
 rest of the rig (gate · comp · drive · sauce · studio strip · chorus · dual-engine delay ·

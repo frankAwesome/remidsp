@@ -266,9 +266,10 @@ export function delayLamp(engineIdx: 0 | 1): HTMLElement {
   };
   const dotA = mk('#5ec9c0', 0.3);
   const dotB = mk('#e2a35c', 0.7);
-  const pulse = (dot: HTMLElement, on: boolean, ms: number, color: string) => {
+  const pulse = (dot: HTMLElement, on: boolean, ms: number, offsetMs: number, color: string) => {
     if (!on) { dot.style.opacity = '0.1'; dot.style.boxShadow = 'none'; return; }
-    const ph = (performance.now() % ms) / ms;
+    const t = performance.now() - offsetMs;
+    const ph = ((t % ms) + ms) % ms / ms;
     const b = Math.pow(1 - ph, 2.4);
     dot.style.opacity = String(0.18 + b * 0.82);
     dot.style.boxShadow = `0 0 ${4 + b * 14}px ${color}`;
@@ -276,8 +277,14 @@ export function delayLamp(engineIdx: 0 | 1): HTMLElement {
   const loop = () => {
     if (!wrap.isConnected) return;
     const master = store.get('dly_on') > 0.5;
-    pulse(dotA, master && store.get('dlyA_on') > 0.5, Math.max(40, store.get('dlyA_time')), 'rgba(94,201,192,.8)');
-    pulse(dotB, master && store.get('dlyB_on') > 0.5, Math.max(40, store.get('dlyB_time')), 'rgba(226,163,92,.8)');
+    const aOn = store.get('dlyA_on') > 0.5, bOn = store.get('dlyB_on') > 0.5;
+    const tA = Math.max(40, store.get('dlyA_time'));
+    const tB = Math.max(40, store.get('dlyB_time'));
+    // Series (A → B): B echoes A's repeats, so its train runs at B's period
+    // but lands A's time late — the lamp shows that actual rhythm.
+    const seriesLag = store.get('dly_routing') < 0.5 && aOn ? tA : 0;
+    pulse(dotA, master && aOn, tA, 0, 'rgba(94,201,192,.8)');
+    pulse(dotB, master && bOn, tB, seriesLag, 'rgba(226,163,92,.8)');
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
