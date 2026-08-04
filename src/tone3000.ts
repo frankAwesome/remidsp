@@ -12,6 +12,9 @@
 const API = 'https://www.tone3000.com/api/v1';
 const LS_KEY = 't3k_pub_key';
 const LS_TOKENS = 't3k_tokens';
+// Publishable key (t3k_pub_… — safe for browser code by design; the secret
+// key never leaves tone3000.com). Override via the CONNECT prompt if needed.
+const DEFAULT_PUB_KEY = 't3k_pub_BGEnQopyUb7-rabiGgkTTAP1tpNCEKep';
 
 export type Gear = 'amp' | 'amp-cab' | 'pedal' | 'outboard' | 'cab' | 'space' | 'experimental';
 
@@ -46,7 +49,7 @@ export interface T3kModel {
 interface Tokens { access_token: string; refresh_token: string; expires_at: number }
 
 export class Tone3000 {
-  get pubKey(): string { return localStorage.getItem(LS_KEY) ?? ''; }
+  get pubKey(): string { return localStorage.getItem(LS_KEY) ?? DEFAULT_PUB_KEY; }
   set pubKey(k: string) { localStorage.setItem(LS_KEY, k.trim()); }
 
   private get tokens(): Tokens | null {
@@ -67,12 +70,14 @@ export class Tone3000 {
     return (await r.json()).data as Tone[];
   }
 
-  /* ---- OAuth PKCE ---- */
+  /* ---- OAuth PKCE (mirrors the official tone3000-client.ts flow) ---- */
   async connect(): Promise<void> {
     if (!this.pubKey) throw new Error('no publishable key');
-    const verifier = this.randomString(64);
+    const verifier = this.b64url(crypto.getRandomValues(new Uint8Array(32)));
     const challenge = await this.s256(verifier);
+    const state = this.b64url(crypto.getRandomValues(new Uint8Array(16)));
     sessionStorage.setItem('t3k_verifier', verifier);
+    sessionStorage.setItem('t3k_state', state);
     const redirect = `${location.origin}/t3k-callback.html`;
     const u = new URL(`${API}/oauth/authorize`);
     u.searchParams.set('client_id', this.pubKey);
@@ -80,23 +85,27 @@ export class Tone3000 {
     u.searchParams.set('response_type', 'code');
     u.searchParams.set('code_challenge', challenge);
     u.searchParams.set('code_challenge_method', 'S256');
+    u.searchParams.set('state', state); // required — omitting it is an invalid request
     const popup = window.open(u.toString(), 't3k_auth', 'width=520,height=720');
     const code = await new Promise<string>((res, rej) => {
       const bc = new BroadcastChannel('t3k_oauth');
       const timer = setTimeout(() => { bc.close(); rej(new Error('sign-in timed out')); }, 300000);
       bc.onmessage = (e) => {
+        const d = e.data ?? {};
         clearTimeout(timer); bc.close();
-        if (e.data?.code) res(e.data.code);
-        else rej(new Error(e.data?.error ?? 'sign-in cancelled'));
+        if (d.state !== state) rej(new Error('state mismatch — try again'));
+        else if (d.error) rej(new Error(d.error));
+        else if (d.canceled || !d.code) rej(new Error('sign-in cancelled'));
+        else res(d.code);
       };
     });
     popup?.close();
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      client_id: this.pubKey,
-      redirect_uri: redirect,
       code_verifier: sessionStorage.getItem('t3k_verifier') ?? '',
+      redirect_uri: redirect,
+      client_id: this.pubKey,
     });
     const r = await fetch(`${API}/oauth/token`, {
       method: 'POST',
@@ -177,15 +186,13 @@ export class Tone3000 {
   }
 
   /* ---- helpers ---- */
-  private randomString(len: number): string {
-    const a = new Uint8Array(len);
-    crypto.getRandomValues(a);
-    return Array.from(a, (b) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~'[b % 66]).join('');
+  private b64url(buf: Uint8Array): string {
+    return btoa(String.fromCharCode(...buf))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   }
   private async s256(v: string): Promise<string> {
     const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
-    return btoa(String.fromCharCode(...new Uint8Array(d)))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return this.b64url(new Uint8Array(d));
   }
 }
 

@@ -8,7 +8,15 @@
 <script>
   const q = new URLSearchParams(location.search);
   const bc = new BroadcastChannel('t3k_oauth');
-  bc.postMessage({ code: q.get('code'), error: q.get('error') });
+  bc.postMessage({
+    type: 't3k_oauth_callback',
+    code: q.get('code'),
+    state: q.get('state'),
+    error: q.get('error'),
+    canceled: q.get('canceled'),
+    tone_id: q.get('tone_id'),
+    model_id: q.get('model_id'),
+  });
   bc.close();
   setTimeout(() => window.close(), 400);
 </script>
