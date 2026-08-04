@@ -283,6 +283,23 @@ select{font:inherit}
 .gateway__status{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;color:var(--ice);
   min-height:1em;text-transform:uppercase}
 
+/* gate AUTO / GLOBAL keys — live twins fully covering the baked prints */
+.gate-key{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:6%;border-radius:7px;overflow:hidden;
+  background:linear-gradient(180deg,#191a20,#0b0b0f 78%);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:0 3px 8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
+  transition:border-color .2s, box-shadow .2s}
+.gate-key b{font-size:clamp(7px,1.3vw,12px);font-weight:600;letter-spacing:.22em;color:#e8e2d4;line-height:1}
+.gate-key small{font-size:clamp(5px,.9vw,8px);letter-spacing:.14em;text-transform:uppercase;color:#8f939c;line-height:1}
+.gate-key:hover{border-color:rgba(159,216,232,.5)}
+.gate-key.on{border-color:rgba(238,241,246,.85);
+  background:linear-gradient(180deg,#2a2d38,#141722 78%);
+  box-shadow:0 0 14px rgba(238,241,246,.3), inset 0 1px 0 rgba(255,255,255,.16)}
+.gate-key.on b{color:#ffffff;text-shadow:0 0 8px rgba(159,216,232,.7)}
+.gate-key.learning{border-color:#e9b765;animation:looperBlink .5s steps(2) infinite}
+.gate-key.learning b{color:#ffe1a6}
+
 /* ════════ looper — the practice section ════════ */
 .looper{border:1px solid var(--line);border-top:0;background:#07070a;
   padding:.8rem 1rem 1rem;display:flex;flex-direction:column;gap:.7rem}

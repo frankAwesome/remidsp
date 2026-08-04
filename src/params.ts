@@ -54,6 +54,7 @@ export const PARAMS: ParamDef[] = [
   { id: 'tempo', label: 'TEMPO', min: 40, max: 240, def: 120, unit: 'BPM' },
 
   { id: 'gate_on', label: 'GATE', min: 0, max: 1, def: 1 },
+  { id: 'gate_global', label: 'GLOBAL', min: 0, max: 1, def: 1 },
   { id: 'gate_thresh', label: 'THRESH', min: -90, max: -20, def: -56, unit: 'dB' },
   { id: 'gate_release', label: 'RELEASE', min: 20, max: 600, def: 140, skew: 0.4, unit: 'ms', format: ms0 },
   { id: 'gate_range', label: 'RANGE', min: 6, max: 90, def: 80, unit: 'dB' },

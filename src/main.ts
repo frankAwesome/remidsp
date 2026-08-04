@@ -302,10 +302,90 @@ function pedalPanel(key: SlotKey): HTMLElement {
   const m = map[key]!;
   const f = facePanel(m.def, m.on);
   const ov = f.querySelector('.face__overlay')!;
-  if (key === 'gate') ov.appendChild(gateMeter());
+  if (key === 'gate') {
+    ov.appendChild(gateMeter());
+    // AUTO + GLOBAL keys over their baked twins (desktop resizedExtras geometry).
+    ov.appendChild(seat(autoThresholdKey(), 0.3906, 0.5665, 0.2131, 0.0868));
+    ov.appendChild(seat(globalGateKey(), 0.6116, 0.5677, 0.2097, 0.0823));
+  }
   else if (key === 'comp') ov.appendChild(compGrStrip());
   else if (key === 'sauce') ov.appendChild(sauceScope());
   return f;
+}
+
+/* ── Gate keys: AUTO learns the noise floor, GLOBAL pins the gate across presets ── */
+
+const GATE_KEYS = ['gate_on', 'gate_thresh', 'gate_release', 'gate_range'] as const;
+const LS_GLOBAL_GATE = 'remi_global_gate';
+
+function autoThresholdKey(): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = 'gate-key';
+  b.innerHTML = '<b>AUTO</b><small>learn noise floor</small>';
+  const sub = b.querySelector('small')!;
+  let busy = false;
+  b.addEventListener('click', () => {
+    if (busy) return;
+    busy = true;
+    b.classList.add('learning');
+    // Listen to the gate's own input (post input-trim peaks from the pre
+    // worklet) while the player keeps quiet, then sit just above the floor.
+    const frames: number[] = [];
+    const hook = (m: { in?: number }) => { if (m.in !== undefined) frames.push(m.in); };
+    meterBus.hooks.add(hook);
+    let left = 2.0;
+    const tick = window.setInterval(() => {
+      left -= 0.25;
+      sub.textContent = `listening… ${left.toFixed(1).replace(/\.0$/, '')}s`;
+    }, 250);
+    window.setTimeout(() => {
+      clearInterval(tick);
+      meterBus.hooks.delete(hook);
+      b.classList.remove('learning');
+      sub.textContent = 'learn noise floor';
+      busy = false;
+      if (frames.length < 6) { toast('No signal to measure — is the input open?'); return; }
+      const floorDb = 20 * Math.log10(Math.max(...frames) + 1e-6);
+      const th = Math.min(-20, Math.max(-90, floorDb + 6));
+      store.set('gate_thresh', th);
+      toast(`Noise floor ${floorDb.toFixed(0)} dB — gate threshold set to <b>${th.toFixed(0)} dB</b>`);
+    }, 2000);
+  });
+  return b;
+}
+
+function globalGateKey(): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.className = 'gate-key';
+  b.innerHTML = '<b>GLOBAL</b><small>every preset</small>';
+  const sync = () => b.classList.toggle('on', store.get('gate_global') > 0.5);
+  sync();
+  const un = store.subscribe((id) => {
+    if (!b.isConnected) { un(); return; }
+    if (id === 'gate_global' || id === '*') sync();
+  });
+  b.addEventListener('click', () => {
+    const on = store.get('gate_global') > 0.5 ? 0 : 1;
+    store.set('gate_global', on);
+    toast(on ? 'Gate is <b>global</b> — presets leave it alone'
+             : 'Gate follows the <b>preset</b>');
+  });
+  return b;
+}
+
+function persistGlobalGate() {
+  const snap: Record<string, number> = { gate_global: store.get('gate_global') };
+  for (const k of GATE_KEYS) snap[k] = store.get(k);
+  localStorage.setItem(LS_GLOBAL_GATE, JSON.stringify(snap));
+}
+
+function restoreGlobalGate() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_GLOBAL_GATE) ?? 'null');
+    if (!saved || !(saved.gate_global > 0.5)) return;
+    store.set('gate_global', 1, false);
+    for (const k of GATE_KEYS) if (typeof saved[k] === 'number') store.set(k, saved[k]);
+  } catch { /* stale entry */ }
 }
 
 function reverbPanel(): HTMLElement {
@@ -601,6 +681,12 @@ function allPresets(): Preset[] { return [...FACTORY_PRESETS, ...loadUserPresets
 async function applyPreset(p: Preset) {
   const snap: Record<string, number> = { ...Object.fromEntries(
     [...store.values.keys()].map((k) => [k, paramById.get(k)?.def ?? 0])), ...p.params };
+  // GLOBAL is the player's switch, never the preset's; with it on, the
+  // current gate settings outrank whatever the preset says.
+  snap.gate_global = store.get('gate_global');
+  if (snap.gate_global > 0.5) {
+    for (const k of GATE_KEYS) snap[k] = store.get(k);
+  }
   store.load(snap);
   currentAmp = p.amp;
   await loadBundledVoice(p.voice);
@@ -679,7 +765,9 @@ async function boot() {
     if (id === 'amp_on') engine.enableAmp(v > 0.5);
     else if (id === 'cab_on') engine.enableCab(v > 0.5);
     else if (id === 'cab_ir' && v < 90) void loadBundledIr(v | 0);
+    else if (id.startsWith('gate_') || id === '*') persistGlobalGate();
   });
+  restoreGlobalGate();
   store.pushAll();
   void loadBundledIr(0);
 
