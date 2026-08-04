@@ -10,6 +10,7 @@ import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, CaptureRef }
 import { t3k } from './tone3000';
 import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed } from './ui/live';
 import { LooperSection } from './ui/looper';
+import { preloadAssets } from './ui/preload';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -756,14 +757,29 @@ async function loadBundledIr(index: number) {
 
 /* ────────────────────────── boot ────────────────────────── */
 
+/* Warm every face render / sprite / chip before the rig opens — module
+ * switches then paint instantly. Starts at page load so the bar runs while
+ * the player reads the gateway; PLUG IN waits for it to finish. */
+const assetsWarm = preloadAssets((done, total) => {
+  const pct = Math.round((done / total) * 100);
+  const bar = document.getElementById('assetBar');
+  const pctEl = document.getElementById('assetPct');
+  if (bar) bar.style.width = `${pct}%`;
+  if (pctEl) pctEl.textContent = String(pct);
+  if (done === total) document.getElementById('assetLoad')?.classList.add('done');
+});
+
 async function boot() {
   const status = document.getElementById('bootStatus')!;
   const startBtn = document.getElementById('startBtn') as HTMLButtonElement;
   startBtn.disabled = true;
   engine.onStateChange = (s, detail) => { status.textContent = detail ?? s; };
   try {
-    await engine.start('/assets/captures/camden_clean.nam',
+    const engineUp = engine.start('/assets/captures/camden_clean.nam',
       { name: 'camden clean', source: 'bundled' });
+    status.textContent = 'warming ui assets';
+    await assetsWarm;
+    await engineUp;
     lastCaptureJson = await (await fetch('/assets/captures/camden_clean.nam')).text();
   } catch (err) {
     status.textContent = `failed: ${(err as Error).message}`;

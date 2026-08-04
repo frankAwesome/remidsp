@@ -17,6 +17,13 @@
   <div class="gateway" id="gateway">
     <img class="gateway__logo" src="/assets/ui/brand_logo.png" alt="REMI DSP" />
     <h1>Over the Edge<small>REMI DSP · MAINE · WEB SUITE</small></h1>
+    <div class="gateway__load" id="assetLoad">
+      <div class="gateway__load-head">
+        <span>INITIALIZING UI ASSETS</span>
+        <span class="led-text" id="assetPct">0</span><span class="gateway__load-unit">%</span>
+      </div>
+      <div class="gateway__bar"><i id="assetBar"></i></div>
+    </div>
     <button class="gateway__cta" id="startBtn">Plug In</button>
     <p class="gateway__note">Plug your interface in, pick it as the browser's microphone when asked,
       and kill echo cancellation dreams — we already did. Runs the NAM capture engine in WASM inside

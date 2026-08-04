@@ -10,6 +10,18 @@
           { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
           { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
         ]
+      },
+      {
+        "source": "/assets/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        ]
+      },
+      {
+        "source": "/t3k-wasm-module.*",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        ]
       }
     ]
   }

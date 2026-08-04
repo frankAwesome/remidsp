@@ -274,6 +274,18 @@ select{font:inherit}
 .gateway h1{font-family:var(--font-display);font-weight:700;font-size:clamp(2.4rem,6vw,4.4rem);
   letter-spacing:.02em;text-transform:uppercase;line-height:.88;text-align:center}
 .gateway h1 small{display:block;font-size:.28em;letter-spacing:.55em;color:var(--muted);font-weight:600}
+.gateway__load{width:min(380px,80vw);display:flex;flex-direction:column;gap:.45rem}
+.gateway__load-head{display:flex;align-items:baseline;gap:.3rem;
+  font-size:.56rem;font-weight:600;letter-spacing:.34em;color:var(--muted-2);text-transform:uppercase}
+.gateway__load-head .led-text{margin-left:auto;font-size:.85rem;color:var(--light-hi);
+  text-shadow:0 0 10px rgba(180,212,230,.6)}
+.gateway__load-unit{font-family:var(--font-mono);font-size:.6rem;color:var(--muted-2)}
+.gateway__bar{height:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.gateway__bar i{display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,var(--gold-deep,#8fb4c6),var(--light),var(--light-hi));
+  box-shadow:0 0 12px rgba(180,212,230,.7);transition:width .18s var(--ease)}
+.gateway__load.done .gateway__load-head span:first-child{color:var(--ice)}
+
 .gateway__cta{font-family:var(--font-ui);font-weight:700;letter-spacing:.22em;font-size:.9rem;
   text-transform:uppercase;padding:1.05rem 2.6rem;background:var(--light-hi);color:#0a0d12;
   transition:.25s;border:1px solid transparent}
