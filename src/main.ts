@@ -673,7 +673,7 @@ function delayPanel(): HTMLElement {
   const pp = paramToggle(p + 'pingpong', 'PING-PONG', 'tab tab--mini');
   seatFill(pp, [0.762, 0.1137, 0.105, 0.048]);
   // Live ECHO SYNC lamp — flashes the routing's ACTUAL echo rhythm.
-  ov.appendChild(delayLamp());
+  ov.appendChild(delayLamp(delayEngineShown));
 
   // foot: stomps the ACTIVE engine (and revives the master).
   const hit = el('button', '');

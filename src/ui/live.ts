@@ -260,20 +260,27 @@ export function pilotLed(onParam: string, nx: number, ny: number, nr: number): H
  *   B in PARALLEL hears only the dry note → m·tB.
  *   B in SERIES hears the dry note AND A's whole train → m·tB, tA+m·tB,
  *   2tA+m·tB… — the compound rhythm the routing really produces. */
-export function delayLamp(): HTMLElement {
-  // Lamp window measured off the prints (both A and B bake it identically).
-  const geo = { x: 0.509, y: 0.134, w: 0.175, h: 0.062 };
+export function delayLamp(engineIdx: 0 | 1 = 0): HTMLElement {
+  // The baked jewels' exact centres, pixel-scanned per print (they differ
+  // slightly between the A and B faces — even their heights).
+  const dots = engineIdx === 0
+    ? { A: { x: 0.4577, y: 0.1357 }, B: { x: 0.5384, y: 0.1271 } }
+    : { A: { x: 0.4573, y: 0.1264 }, B: { x: 0.5378, y: 0.1302 } };
   const wrap = document.createElement('div');
-  wrap.style.cssText = `position:absolute;left:${geo.x * 100}%;top:${geo.y * 100}%;width:${geo.w * 100}%;height:${geo.h * 100}%;transform:translate(-50%,-50%);pointer-events:none`;
-  const mk = (color: string, at: number) => {
+  wrap.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+  const mk = (color: string, at: { x: number; y: number }, wPct: number) => {
     const d = document.createElement('div');
-    d.style.cssText = `position:absolute;left:${at * 100}%;top:50%;width:13%;aspect-ratio:1;max-width:15px;
+    d.style.cssText = `position:absolute;left:${at.x * 100}%;top:${at.y * 100}%;width:${wPct}%;aspect-ratio:1;
       transform:translate(-50%,-50%);border-radius:50%;background:${color};opacity:.12;transition:none`;
     wrap.appendChild(d);
     return d;
   };
-  const dotA = mk('#5ec9c0', 0.28);
-  const dotB = mk('#e2a35c', 0.72);
+  // Live jewels sit exactly over their baked twins, a hair larger to cover.
+  const dotA = mk('#5ec9c0', dots.A, 2.2);
+  const dotB = mk('#e2a35c', dots.B, 2.2);
+  // A small white pip at the window's left edge marks the virtual note strike
+  // that the echo pattern answers.
+  const pip = mk('#eef1f6', { x: 0.4315, y: 0.133 }, 1.1);
 
   interface Ev { t: number; a: number }
   let evA: Ev[] = [], evB: Ev[] = [], period = 4000, sig = '', epoch = performance.now();
@@ -288,7 +295,7 @@ export function delayLamp(): HTMLElement {
     const tB = Math.max(40, store.get('dlyB_time'));
     const fbA = clamp01(store.get('dlyA_fb'), 0.92);
     const fbB = clamp01(store.get('dlyB_fb'), 0.92);
-    const HORIZON = 6500, FLOOR = 0.09;
+    const HORIZON = 4500, FLOOR = 0.09;
     evA = [];
     if (aOn) for (let k = 1, a = 1; k < 40; k++) {
       const t = k * tA; a = Math.pow(fbA, k - 1);
@@ -331,6 +338,10 @@ export function delayLamp(): HTMLElement {
     const phase = (performance.now() - epoch) % period;
     shine(dotA, evA, phase, 'rgba(94,201,192,.85)');
     shine(dotB, evB, phase, 'rgba(226,163,92,.85)');
+    // the note itself: one white blink at the top of every strike cycle
+    const pb = phase < 300 ? Math.exp(-phase / 90) : 0;
+    pip.style.opacity = String(0.1 + pb * 0.85);
+    pip.style.boxShadow = pb > 0.05 ? `0 0 ${2 + pb * 10}px rgba(238,241,246,.8)` : 'none';
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
