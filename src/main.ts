@@ -6,6 +6,8 @@ import { makeKnob, placeKnob } from './ui/knob';
 import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
 import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, Preset } from './presets';
+import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, CaptureRef } from './captures';
+import { t3k } from './tone3000';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -356,6 +358,43 @@ function ampPanel(): HTMLElement {
   vcap.append(voices, el('div', 'drawer__caption', 'VOICE'));
   drawer.appendChild(vcap);
 
+  // capture menu: every bundled capture + recent TONE3000 loads, with LOAD.
+  const capGroup = el('div', 'hdr__group');
+  const capRow = el('div', '');
+  capRow.style.cssText = 'display:flex;gap:.35rem;align-items:center';
+  const capSel = document.createElement('select');
+  const addGroup = (label: string, refs: CaptureRef[], prefix: string) => {
+    if (!refs.length) return;
+    const g = document.createElement('optgroup');
+    g.label = label;
+    for (const r of refs) {
+      const o = document.createElement('option');
+      o.value = `${prefix}:${r.id}`;
+      o.textContent = r.label;
+      if (engine.capture &&
+          ((r.kind === 'bundled' && engine.capture.source === 'bundled' && r.stem === currentVoice) ||
+           (r.kind === 'tone3000' && engine.capture.source === 'tone3000' && engine.capture.name === r.label)))
+        o.selected = true;
+      g.appendChild(o);
+    }
+    capSel.appendChild(g);
+  };
+  const recents = loadRecents();
+  addGroup('AMPS — BUNDLED', BUNDLED_AMP_CAPTURES, 'b');
+  addGroup('PEDALS — BUNDLED', BUNDLED_PEDAL_CAPTURES, 'b');
+  addGroup('TONE3000 — RECENT', recents, 'r');
+  const loadBtn = el('button', 'hdr__btn', 'LOAD');
+  loadBtn.addEventListener('click', () => {
+    const [kind, id] = (capSel.value ?? '').split(/:(.*)/s);
+    const ref = kind === 'b'
+      ? [...BUNDLED_AMP_CAPTURES, ...BUNDLED_PEDAL_CAPTURES].find((r) => r.id === id)
+      : recents.find((r) => r.id === id);
+    if (ref) void loadCaptureRef(ref);
+  });
+  capRow.append(capSel, loadBtn);
+  capGroup.append(capRow, el('div', 'drawer__caption', 'CAPTURE'));
+  drawer.appendChild(capGroup);
+
   drawer.appendChild(el('div', 'drawer__spacer'));
 
   // capture status
@@ -402,6 +441,30 @@ async function loadBundledVoice(stem: string) {
     if (selectedSlot === 'amp') renderStage();
   } catch (err) {
     toast(`Capture load failed — ${(err as Error).message}`);
+  }
+}
+
+/** Load any capture menu entry — bundled (face/voice follow) or a TONE3000
+ *  recent (fetched from its model_url, Bearer applied when connected). */
+async function loadCaptureRef(ref: CaptureRef) {
+  if (ref.kind === 'bundled') {
+    if (ref.ampKey && ref.ampKey !== currentAmp) currentAmp = ref.ampKey;
+    await loadBundledVoice(ref.stem!);
+    return;
+  }
+  try {
+    toast(`Loading <b>${ref.label}</b>…`);
+    const json = await (await t3k.fetchModelFile(ref.url!)).text();
+    lastCaptureJson = json;
+    await engine.loadCapture(json, {
+      name: ref.label, source: 'tone3000',
+      creator: ref.creator, license: ref.license, url: ref.toneUrl,
+    }, quality === 'eco');
+    store.set('amp_on', 1);
+    toast(`<b>${ref.label}</b> on the amp${ref.creator ? ` · by ${ref.creator}` : ''}`);
+    if (selectedSlot === 'amp') renderStage();
+  } catch (err) {
+    toast(`Load failed — ${(err as Error).message}${t3k.connected ? '' : ' (connect TONE3000 in the CAPTURES drawer)'}`);
   }
 }
 
@@ -677,3 +740,7 @@ function build() {
 
 build();
 document.getElementById('startBtn')!.addEventListener('click', () => void boot());
+// A TONE3000 load lands in the CAPTURE menu's recents — refresh the drawer.
+window.addEventListener('remi:capture-loaded', () => {
+  if (selectedSlot === 'amp') renderStage();
+});

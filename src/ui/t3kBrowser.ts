@@ -7,6 +7,7 @@ import { t3k, Tone, T3kModel } from '../tone3000';
 import { engine, CaptureInfo } from '../audio/engine';
 import { store } from '../params';
 import { toast } from './toast';
+import { addRecent } from '../captures';
 
 type LoadIr = (buf: AudioBuffer, name: string) => void;
 
@@ -236,6 +237,12 @@ export class T3kBrowser {
           };
           await engine.loadCapture(json, info);
           store.set('amp_on', 1);
+          // Remember it — the amp drawer's CAPTURE menu lists recent loads.
+          addRecent({
+            kind: 'tone3000', id: String(m.id), label: m.name || t.title,
+            url: m.model_url, creator: t.user?.username, license: t.license, toneUrl: t.url,
+          });
+          window.dispatchEvent(new CustomEvent('remi:capture-loaded'));
           toast(`<b>${escapeHtml(info.name)}</b> on the amp · by ${escapeHtml(info.creator ?? '')}`);
         }
       } catch (err) {
