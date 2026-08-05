@@ -26,30 +26,16 @@ export const FACTORY_PRESETS: Preset[] = [
   P('Pushed Crunch', 'FACTORY', 'portland', 'portland_pushed', {
     tempo: 120, comp_on: 0, dlyA_mix: 0.13,
   }),
-  P('Init — Bloom Clean', 'FACTORY', 'camden', 'camden_clean', {
+  P('Bloom Clean', 'FACTORY', 'camden', 'camden_clean', {
     tempo: 120,
   }),
   P('Pedal Platform', 'FACTORY', 'camden', 'camden_clean', {
     dly_on: 0, rvb_mix: 0.14, rvb_machine: 0, rvb_decay: 1.4, comp_on: 1, comp_sustain: 0.25,
   }),
-  P('Slap + Crunch', 'FACTORY', 'camden', 'camden_driven', {
-    tempo: 106, dlyA_div: 7, dlyA_fb: 0.18, dlyA_mix: 0.3, dlyA_mode: 2,
-    rvb_machine: 0, rvb_decay: 1.1, rvb_mix: 0.16,
-  }),
-  P('Stadium Chime', 'SIGNATURE', 'camden', 'camden_driven', {
-    tempo: 126, dlyA_div: 2, dlyA_fb: 0.55, dlyA_mix: 0.52, dlyA_mode: 1, dlyA_grit: 0.3,
-    dlyB_on: 1, dlyB_div: 6, dlyB_fb: 0.35, dlyB_mix: 0.35, dlyB_mode: 1, dly_routing: 1,
-    dlyB_pingpong: 1, rvb_machine: 1, rvb_decay: 2.6, rvb_mix: 0.22, comp_sustain: 0.45,
-  }),
   P('Worship Wash', 'SIGNATURE', 'camden', 'camden_clean', {
     tempo: 72, dlyA_div: 2, dlyA_fb: 0.68, dlyA_mix: 0.55, dlyA_mode: 1, dlyA_grit: 0.42,
     dlyA_duck: 0.45, rvb_machine: 1, rvb_decay: 7, rvb_mix: 0.42, rvb_shimmer: 0.4,
     rvb_mod: 0.5, rvb_duck: 1, cho_on: 0,
-  }),
-  P('Dream-Pop Haze', 'SIGNATURE', 'camden', 'camden_driven', {
-    tempo: 98, cho_on: 1, cho_depth: 0.55, cho_mix: 0.6, dlyA_mode: 3, dlyA_div: 3,
-    dlyA_fb: 0.5, dlyA_mix: 0.45, dlyA_grit: 0.6, rvb_machine: 2, rvb_decay: 4.5,
-    rvb_mix: 0.35, sauce_on: 1, sauce_air: 0.5, sauce_body: 0.3,
   }),
   P('80s Widescreen', 'SIGNATURE', 'portland', 'portland_bloom', {
     tempo: 118, cho_on: 1, cho_rate: 0.3, cho_depth: 0.65, cho_mix: 0.55,
