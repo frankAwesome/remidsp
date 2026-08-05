@@ -29,13 +29,16 @@ const app = initializeApp({
   appId: '1:5196542133:web:830fc79f654c91bf22cefc',
 });
 
-// Persistence as a FALLBACK CHAIN, not a single bet. The default is
-// IndexedDB alone, and a browser that has the database closing/blocked (a
-// reload mid-flight, private-mode quirks, an evicted origin) fails the whole
-// sign-in with "Database is closing" — after the account was already created
-// server-side. localStorage catches that, memory catches the rest.
+// localStorage FIRST, then IndexedDB, then memory. Firebase defaults to
+// IndexedDB, which fails the whole sign-in with "Database is closing" if the
+// connection dies mid-write (a reload in flight, private-mode quirks, an
+// evicted origin) — and it fails AFTER the account was created server-side,
+// the worst possible moment. Listing IDB as a fallback isn't enough: the
+// chain only picks a store at init, so a database that is healthy then and
+// broken later still takes sign-in down. A session token is a few hundred
+// bytes; synchronous localStorage carries it without that failure mode.
 export const auth = initializeAuth(app, {
-  persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence],
+  persistence: [browserLocalPersistence, indexedDBLocalPersistence, inMemoryPersistence],
 });
 export const db = getFirestore(app);
 export type { User };

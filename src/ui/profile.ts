@@ -72,7 +72,8 @@ export class ProfileView {
         <div class="profile__id">
           <div class="profile__name">${escape(p.username)}</div>
           ${p.bio ? `<p class="profile__bio">${escape(p.bio)}</p>` : '<p class="profile__bio profile__bio--empty">no bio yet — tell the feed who you are</p>'}
-          <div class="profile__mail mono">${escape(user.email ?? '')}</div>
+          <div class="profile__mail mono">${escape(user.email ?? '')}
+            <span class="profile__private">PRIVATE · ONLY YOU SEE THIS</span></div>
         </div>
         <div class="profile__actions">
           <button class="hdr__btn" data-a="edit">EDIT PROFILE</button>
@@ -152,7 +153,11 @@ export class ProfileView {
     for (const cm of comments) cbox.appendChild(renderCommentRow(cm, cm.presetName || 'a sound'));
   }
 
-  /* ── someone else's profile: bio, stats, FOLLOW, and their public tones ── */
+  /* ── someone else's profile ──────────────────────────────────────────
+   * PUBLIC SURFACE. Everything here comes from the profiles/{uid} document,
+   * which by rule can only ever hold username · usernameLower · bio ·
+   * avatarUrl · counters — the email is not merely unrendered, it is not
+   * storable. Never add a field here that reads from an auth record. */
   private async refreshPublic(uid: string) {
     this.root.innerHTML = `<div class="t3k__note" style="padding:2rem 0">Loading profile…</div>`;
     const [p, tones] = await Promise.all([

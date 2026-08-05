@@ -75,7 +75,12 @@ export async function ensureProfile(user: User): Promise<Profile> {
   const ref = doc(db, 'profiles', user.uid);
   const snap = await getDoc(ref);
   if (snap.exists()) return snap.data() as Profile;
-  const username = user.displayName || user.email?.split('@')[0] || 'player';
+  // The username is PUBLIC — it rides every post, comment and search result.
+  // Never derive it from the email: 'john.smith@work.com' would publish
+  // 'john.smith' to the whole feed for anyone who never edited it. Fall back
+  // to a neutral handle instead and let the player choose.
+  const username = user.displayName
+    || `player-${user.uid.slice(0, 4).toLowerCase()}`;
   const fresh: Profile = {
     username, bio: '', avatarUrl: user.photoURL ?? '',
     followersCount: 0, followingCount: 0,

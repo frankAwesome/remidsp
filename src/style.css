@@ -571,7 +571,9 @@ button.feed-card__mini:hover{color:var(--text)}
   font-size:clamp(1.8rem,5vw,3rem);letter-spacing:.03em;line-height:.9}
 .profile__bio{font-size:.88rem;color:var(--text);opacity:.85;line-height:1.6;max-width:560px;margin-top:.35rem}
 .profile__bio--empty{color:var(--muted-2);font-style:italic}
-.profile__mail{margin-top:.3rem;font-size:.6rem}
+.profile__mail{margin-top:.3rem;font-size:.6rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.profile__private{font-size:.5rem;letter-spacing:.2em;color:var(--muted-2);
+  border:1px solid var(--line);padding:.12rem .4rem}
 .profile__actions{display:flex;gap:.5rem;align-items:center}
 .profile__follow{font-size:.72rem;padding:.6rem 1.1rem}
 .profile__stats{display:flex;gap:.5rem;flex-wrap:wrap}
