@@ -93,6 +93,9 @@ class OnePoleHP {
 }
 
 // Schroeder allpass on a fixed delay (diffusion building block).
+// Canonical form y = v[n-N] - g·v[n] with v[n] = x + g·v[n-N] — this is
+// truly unity-magnitude at every frequency, which matters the moment an
+// allpass sits inside a feedback loop (the reverb tank).
 class Allpass {
   constructor(samples, g = 0.55) {
     this.buf = new Float32Array(Math.max(1, samples | 0));
@@ -100,10 +103,10 @@ class Allpass {
   }
   tick(x) {
     const d = this.buf[this.i];
-    const y = d - this.g * x;
-    this.buf[this.i] = x + this.g * d;
+    const v = x + this.g * d;
+    this.buf[this.i] = v;
     if (++this.i >= this.buf.length) this.i = 0;
-    return y;
+    return d - this.g * v;
   }
   reset() { this.buf.fill(0); }
 }
@@ -544,28 +547,53 @@ class DelayBlock {
   }
 }
 
-/* ---------- Vast Sky reverb: modulated 8-line FDN + shimmer ---------- */
+/* ---------- VAST SKY II — the reverb ----------------------------------
+ * A nested-allpass feedback-delay-network in the lineage of the great
+ * hardware units, tuned for one thing: a tail you want to live inside.
+ *
+ *   in → HP/LP conditioning → pre-delay
+ *      → input diffusion (4 golden-spread allpasses; Spring adds a
+ *        6-stage dispersion chirp)
+ *      → early reflections (sparse stereo tap fan, per-machine pattern)
+ *      → THE TANK: 8 modulated delay lines, each loop pass running
+ *          read → two-band decay (low band decays on its own clock —
+ *          Hall blooms warm, Plate stays tight) → HF damping →
+ *          nested allpass (the density multiplier) → Hadamard-8 mix
+ *        with ensemble modulation: 8 incommensurate LFOs + slow random
+ *        drift on every read head, Hermite-interpolated.
+ *      → shimmer: 4-grain Hann pitch shifter (+oct, or +oct & +5th)
+ *        band-limited and fed BACK into the tank, so octaves cascade.
+ *      → decorrelated stereo taps + early reflections → tone tilt →
+ *        wet HP/LP trims → ducking → mix.
+ *
+ * Machines share the topology; their souls differ by size, diffusion,
+ * damping, low-band multiplier, modulation figure and ER pattern:
+ *   ROOM   small, ER-forward, quick density, neutral lows
+ *   HALL   vast, slow bloom, warm long lows, deep ensemble chorus
+ *   PLATE  instant density, bright, fast shallow shimmer of the sheet
+ *   SPRING dispersive chirp, band-limited, fast flutter
+ */
 
-// Simple granular octave-up shifter for the shimmer feed (2 grains, 90 ms).
-class OctaveShifter {
-  constructor(sr, ratio = 2) {
-    this.sr = sr; this.ratio = ratio;
-    this.buf = new FracDelay(0.25 * sr);
-    this.grain = 0.090 * sr;
+// 4-grain Hann-windowed granular shifter — smooth enough to regenerate.
+class GrainShifter {
+  constructor(sr, ratio) {
+    this.sr = sr;
+    this.ratio = ratio;
+    this.buf = new FracDelay(0.3 * sr);
+    this.grain = Math.round(0.118 * sr);
     this.ph = 0;
   }
   tick(x) {
     this.buf.write(x);
     this.ph += (this.ratio - 1);
     if (this.ph >= this.grain) this.ph -= this.grain;
-    // Two half-offset grains, sine windows — each grain's delay shrinks from
-    // `grain` to 0 as its phase runs, giving a constant pitch-up read.
-    const p2 = (this.ph + this.grain * 0.5) % this.grain;
-    const d1 = this.grain - this.ph;
-    const d2 = this.grain - p2;
-    const w1 = Math.sin(Math.PI * this.ph / this.grain);
-    const w2 = Math.sin(Math.PI * p2 / this.grain);
-    return this.buf.read(Math.max(2, d1)) * w1 + this.buf.read(Math.max(2, d2)) * w2;
+    let out = 0;
+    for (let k = 0; k < 4; k++) {
+      const p = (this.ph + k * this.grain * 0.25) % this.grain;
+      const w = Math.sin(Math.PI * p / this.grain);
+      out += this.buf.read(Math.max(2, this.grain - p)) * w * w;
+    }
+    return out * 0.5; // four sin² windows sum to 2
   }
   reset() { this.buf.reset(); }
 }
@@ -574,136 +602,256 @@ class VastSkyReverb {
   constructor(sr) {
     this.sr = sr;
     this.on = true;
-    this.machine = 1; // Room / Hall / Plate / Spring
+    this.machine = 1;
     this.decay = new Smooth(3.5, 60, sr);
     this.predelayMs = 20;
     this.mix = new Smooth(0.3, 40, sr);
-    this.tone = new Smooth(0, 60, sr);   // -1..1
+    this.tone = new Smooth(0, 60, sr);
     this.mod = new Smooth(0.35, 60, sr);
     this.shimmer = new Smooth(0, 60, sr);
-    this.shimmerMode = 0; // 0: +oct, 1: +oct&5th
+    this.shimmerMode = 0;
     this.duckOn = false;
-    this.hpHz = 20; this.lpHz = 20000;
+
     this.pre = new FracDelay(0.52 * sr);
-    // Input diffusion — Dattorro's cascade.
-    this.inDiff = [
-      new Allpass(0.0047 * sr, 0.75), new Allpass(0.0036 * sr, 0.75),
-      new Allpass(0.0127 * sr, 0.625), new Allpass(0.0093 * sr, 0.625),
-    ];
-    // 8 FDN lines (base times in ms — scaled per machine).
-    this.baseMs = [29.7, 37.1, 41.1, 43.7, 53.3, 61.9, 73.7, 79.3];
-    this.lines = this.baseMs.map(ms => new FracDelay(ms * 4.2 * 0.001 * sr + 64));
+
+    // Input conditioning — keep rumble and fizz out of the tank.
+    this.inHp = new OnePoleHP(); this.inHp.setFc(38, sr);
+    this.inLp = new OnePoleLP(); this.inLp.setFc(15500, sr);
+
+    // Diffusion + dispersion stages (times set in configure()).
+    this.diff = [];
+    this.chirp = [];
+
+    // The tank.
+    this.N = 8;
+    this.baseMs = [23.7, 31.1, 41.9, 47.3, 59.9, 67.7, 79.3, 89.9];
+    this.lines = this.baseMs.map(() => new FracDelay(0.16 * sr));
+    this.loopAp = [];
+    this.lens = new Float32Array(8);
+    this.gHi = new Float32Array(8);
+    this.gLo = new Float32Array(8);
     this.damp = this.baseMs.map(() => new OnePoleLP());
+    this.xover = this.baseMs.map(() => new OnePoleLP()); // two-band split
     this.lineOut = new Float32Array(8);
     this.fbVec = new Float32Array(8);
-    this.lens = new Float32Array(8);
-    this.gains = new Float32Array(8);
-    this.modPhase = [0.0, 0.13, 0.27, 0.4, 0.53, 0.67, 0.8, 0.93];
-    this.modRateHz = [0.31, 0.43, 0.57, 0.71, 0.37, 0.49, 0.63, 0.79];
-    this.shifter = new OctaveShifter(sr, 2);
-    this.shifter5 = new OctaveShifter(sr, 3);
+    this.injectSign = [1, -1, 1, -1, -1, 1, -1, 1];
+
+    // Ensemble modulation: 8 incommensurate LFOs + slow random drift.
+    this.modPhase = [0.03, 0.16, 0.29, 0.41, 0.54, 0.67, 0.79, 0.92];
+    this.modRate = [0.311, 0.427, 0.523, 0.617, 0.719, 0.827, 0.929, 1.031];
+    this.drift = new Float32Array(8);
+
+    // Early reflections.
+    this.erBuf = new FracDelay(0.16 * sr);
+    this.erTaps = [];      // [samples, gain, isLeft]
+    this.erAmt = 0;
+
+    // Shimmer.
+    this.shiftOct = new GrainShifter(sr, 2);
+    this.shift5th = new GrainShifter(sr, 3);
+    this.shimLp = new OnePoleLP(); this.shimLp.setFc(6800, sr);
+    this.shimHp = new OnePoleHP(); this.shimHp.setFc(430, sr);
+
+    // Wet voicing.
+    this.tiltLoL = new Biquad(); this.tiltLoR = new Biquad();
+    this.tiltHiL = new Biquad(); this.tiltHiR = new Biquad();
     this.wetHpL = new OnePoleHP(); this.wetHpR = new OnePoleHP();
     this.wetLpL = new OnePoleLP(); this.wetLpR = new OnePoleLP();
     this.wetHpL.setFc(20, sr); this.wetHpR.setFc(20, sr);
     this.wetLpL.setFc(20000, sr); this.wetLpR.setFc(20000, sr);
-    this.springChirp = [new Allpass(0.0011 * sr, 0.6), new Allpass(0.0013 * sr, 0.6),
-                        new Allpass(0.0017 * sr, 0.6), new Allpass(0.0019 * sr, 0.6)];
+
     this.duckEnv = 0;
-    this.dirty = true;
+    this.wetRamp = 0;      // fade-in after a machine reconfigure
+    this.blockCtr = 0;
+    this.configure();
   }
+
+  /* Per-machine soul. */
+  configure() {
+    const sr = this.sr;
+    const M = this.machine;
+    // size · loop-AP gain · low-band decay mult · damp fc · mod depth ·
+    // mod rate mult · ER amount · output trim
+    const P = [
+      { size: 0.55, apG: 0.52, loMul: 1.10, dampFc: 6200, modAmp: 5.0, modMul: 1.0, er: 0.55, out: 1.00 }, // Room
+      { size: 1.35, apG: 0.56, loMul: 1.38, dampFc: 5200, modAmp: 14.0, modMul: 0.8, er: 0.30, out: 0.95 }, // Hall
+      { size: 0.62, apG: 0.64, loMul: 0.72, dampFc: 9500, modAmp: 7.0, modMul: 1.7, er: 0.00, out: 0.80 }, // Plate
+      { size: 0.38, apG: 0.58, loMul: 0.80, dampFc: 3600, modAmp: 2.5, modMul: 4.2, er: 0.00, out: 1.10 }, // Spring
+    ][M];
+    this.p = P;
+
+    for (let k = 0; k < 8; k++) this.lens[k] = this.baseMs[k] * P.size * 0.001 * sr;
+
+    // Input diffusion, sized with the room.
+    const dMs = [4.7, 6.9, 9.8, 13.6];
+    const dG = [0.71, 0.71, 0.63, 0.63];
+    const dScale = 0.7 + 0.6 * P.size;
+    this.diff = dMs.map((ms, i) => new Allpass(ms * dScale * 0.001 * sr, dG[i]));
+    // Spring dispersion: a chirp of tight allpasses smears the transient
+    // into the characteristic "doioinng".
+    this.chirp = M === 3
+      ? [1.13, 1.41, 1.71, 1.93, 2.17, 2.41].map((ms) => new Allpass(ms * 0.001 * sr, 0.68))
+      : [];
+
+    // Nested in-loop allpasses — the echo-density multiplier.
+    const apMs = [7.1, 9.3, 11.7, 13.1, 15.9, 17.3, 19.7, 21.3];
+    this.loopAp = apMs.map((ms) => new Allpass(ms * P.size * 0.001 * sr, P.apG));
+
+    // Early reflections: Room walls close and busy, Hall far and sparse.
+    const pattern = M === 0
+      ? [[5.3, 0.62], [8.1, 0.54], [11.7, 0.48], [14.9, 0.41], [19.3, 0.33], [24.1, 0.27], [28.7, 0.21], [33.1, 0.16]]
+      : [[13.1, 0.58], [19.7, 0.47], [29.3, 0.38], [41.9, 0.30], [53.3, 0.24], [67.1, 0.18], [83.3, 0.13], [97.9, 0.09]];
+    this.erTaps = pattern.map(([ms, g], i) => [ms * (0.6 + 0.55 * P.size) * 0.001 * sr, g, i % 2 === 0]);
+    this.erAmt = P.er;
+
+    this.retone();
+    this.reset();
+    this.wetRamp = 0; // swell the new space in
+  }
+
+  retone() {
+    const sr = this.sr;
+    const t = this.tone.get();
+    const fc = this.p.dampFc * Math.pow(2, t * 1.25);
+    for (const d of this.damp) d.setFc(fc, sr);
+    for (const x of this.xover) x.setFc(320, sr);
+    // Gentle wet tilt rides the same knob: dark pulls highs down and
+    // hugs the lows, bright opens the top.
+    this.tiltLoL.lowshelf(300, -t * 2.5, sr); this.tiltLoR.lowshelf(300, -t * 2.5, sr);
+    this.tiltHiL.highshelf(2800, t * 3.0, sr); this.tiltHiR.highshelf(2800, t * 3.0, sr);
+  }
+
   set(id, v) {
     if (id === 'on') this.on = v > 0.5;
-    else if (id === 'machine') { this.machine = v | 0; this.dirty = true; }
+    else if (id === 'machine') { const m = v | 0; if (m !== this.machine) { this.machine = m; this.configure(); } }
     else if (id === 'decay') this.decay.set(v);
     else if (id === 'predelay') this.predelayMs = v;
     else if (id === 'mix') this.mix.set(v);
-    else if (id === 'tone') { this.tone.set(v); this.dirty = true; }
+    else if (id === 'tone') { this.tone.set(v); this.tone.jump(v); this.retone(); }
     else if (id === 'mod') this.mod.set(v);
     else if (id === 'shimmer') this.shimmer.set(v);
     else if (id === 'shimmer_mode') this.shimmerMode = v | 0;
     else if (id === 'duck') this.duckOn = v > 0.5;
-    else if (id === 'hp') { this.hpHz = v; this.wetHpL.setFc(v, this.sr); this.wetHpR.setFc(v, this.sr); }
-    else if (id === 'lp') { this.lpHz = v; this.wetLpL.setFc(v, this.sr); this.wetLpR.setFc(v, this.sr); }
+    else if (id === 'hp') { this.wetHpL.setFc(v, this.sr); this.wetHpR.setFc(v, this.sr); }
+    else if (id === 'lp') { this.wetLpL.setFc(v, this.sr); this.wetLpR.setFc(v, this.sr); }
   }
-  update() {
-    const sr = this.sr;
-    const scale = [0.62, 1.35, 0.5, 0.42][this.machine];
-    for (let k = 0; k < 8; k++) this.lens[k] = this.baseMs[k] * scale * 0.001 * sr;
-    // Damping follows TONE: -1 dark (2.2k) .. +1 open (14k); plate brighter.
-    const t = this.tone.get();
-    const base = this.machine === 2 ? 9000 : 5500;
-    const fc = base * Math.pow(2, t * 1.35);
-    for (const d of this.damp) d.setFc(fc, sr);
-    this.dirty = false;
+
+  /* T60 → per-line, per-band feedback gains. Recomputed once per block. */
+  updateGains() {
+    const decay = this.decay.get();
+    const loMul = this.p.loMul;
+    for (let k = 0; k < 8; k++) {
+      const T = this.lens[k] / this.sr;
+      this.gHi[k] = Math.min(0.9995, Math.pow(10, (-3 * T) / Math.max(0.05, decay)));
+      this.gLo[k] = Math.min(0.9997, Math.pow(10, (-3 * T) / Math.max(0.05, decay * loMul)));
+    }
   }
+
   process(L, R, n, dryRefL, dryRefR) {
     if (!this.on) return;
-    if (this.dirty) this.update();
     const sr = this.sr;
-    const isSpring = this.machine === 3;
+    this.updateGains();
     const duckA = Math.exp(-1 / (0.004 * sr)), duckR = Math.exp(-1 / (0.42 * sr));
+    const isSpring = this.machine === 3;
+    const preSamp = Math.max(2, this.predelayMs * 0.001 * sr);
+    const rampUp = 1 - Math.exp(-1 / (0.035 * sr));
+
     for (let i = 0; i < n; i++) {
-      const decay = this.decay.next();
+      this.decay.next();
       const mix = this.mix.next();
       const modAmt = this.mod.next();
       const shim = this.shimmer.next();
-      // Per-line feedback gain for T60 = decay.
-      for (let k = 0; k < 8; k++) {
-        const T = this.lens[k] / sr;
-        this.gains[k] = Math.pow(10, (-3 * T) / Math.max(0.05, decay));
-      }
-      let x = 0.5 * (L[i] + R[i]);
-      if (isSpring) { // dispersive chirp on the way in
-        for (const a of this.springChirp) x = a.tick(x);
-      }
+      this.wetRamp += (1 - this.wetRamp) * rampUp;
+
+      let x = this.inLp.tick(this.inHp.tick(0.5 * (L[i] + R[i])));
+      if (isSpring) for (const a of this.chirp) x = a.tick(x);
+
       this.pre.write(x);
-      let d = this.pre.read(Math.max(2, this.predelayMs * 0.001 * sr));
-      for (const a of this.inDiff) d = a.tick(d);
-      // Shimmer feed: pitch-shifted tail regenerating into the tank.
-      if (shim > 0.005) {
-        const tail = 0.25 * (this.lineOut[0] + this.lineOut[3] + this.lineOut[5] + this.lineOut[6]);
-        let s = this.shifter.tick(tail);
-        if (this.shimmerMode === 1) s = 0.7 * s + 0.5 * this.shifter5.tick(tail);
-        d += s * shim * 0.6;
+      let d = this.pre.read(preSamp);
+
+      // Early reflections read the pre-delayed feed.
+      this.erBuf.write(d);
+      let erL = 0, erR = 0;
+      if (this.erAmt > 0.01) {
+        for (const [t, g, left] of this.erTaps) {
+          const e = this.erBuf.read(t) * g;
+          if (left) erL += e; else erR += e;
+        }
+        erL *= this.erAmt; erR *= this.erAmt;
       }
-      // Read all lines (modulated, Hermite-interpolated).
+
+      for (const a of this.diff) d = a.tick(d);
+
+      // Shimmer regenerates the tail an octave (and a twelfth) up.
+      if (shim > 0.005) {
+        const tail = 0.35 * (this.lineOut[1] + this.lineOut[4]) + 0.3 * this.lineOut[6];
+        let s = this.shiftOct.tick(tail);
+        if (this.shimmerMode === 1) s = 0.72 * s + 0.55 * this.shift5th.tick(tail);
+        d += this.shimHp.tick(this.shimLp.tick(s)) * shim * 0.58;
+      }
+
+      // Read all 8 lines — ensemble-modulated, Hermite-interpolated.
+      const depth = modAmt * this.p.modAmp;
       for (let k = 0; k < 8; k++) {
-        let ph = this.modPhase[k] + this.modRateHz[k] / sr;
+        let ph = this.modPhase[k] + (this.modRate[k] * this.p.modMul) / sr;
         if (ph >= 1) ph -= 1;
         this.modPhase[k] = ph;
-        const wob = Math.sin(TWO_PI * ph) * modAmt * (0.0007 * sr) * (k % 2 ? 0.7 : 1);
-        this.lineOut[k] = this.lines[k].read(clamp(this.lens[k] + wob, 4, this.lines[k].buf.length - 8));
+        this.drift[k] += 0.00002 * ((Math.random() - 0.5) - this.drift[k] * 0.01);
+        const wob = Math.sin(TWO_PI * ph) * depth * (k % 2 ? 0.75 : 1)
+                  + clamp(this.drift[k] * 900, -4, 4) * (0.3 + modAmt);
+        const at = clamp(this.lens[k] + wob, 4, this.lines[k].buf.length - 8);
+        let y = this.lines[k].read(at);
+        // Two-band decay: the low bed on its own clock.
+        const lo = this.xover[k].tick(y);
+        y = lo * this.gLo[k] + (y - lo) * this.gHi[k];
+        y = this.damp[k].tick(y);
+        this.lineOut[k] = this.loopAp[k].tick(y);
       }
-      // Hadamard 8x8 butterfly (energy-preserving mix).
+
+      // Hadamard-8 butterfly (energy-preserving rotation of the tank).
       const o = this.lineOut, f = this.fbVec;
-      let a0 = o[0] + o[1], a1 = o[0] - o[1], a2 = o[2] + o[3], a3 = o[2] - o[3];
-      let a4 = o[4] + o[5], a5 = o[4] - o[5], a6 = o[6] + o[7], a7 = o[6] - o[7];
-      let b0 = a0 + a2, b1 = a1 + a3, b2 = a0 - a2, b3 = a1 - a3;
-      let b4 = a4 + a6, b5 = a5 + a7, b6 = a4 - a6, b7 = a5 - a7;
-      const inv = 1 / Math.SQRT2 / 2; // 1/sqrt(8)
+      const a0 = o[0] + o[1], a1 = o[0] - o[1], a2 = o[2] + o[3], a3 = o[2] - o[3];
+      const a4 = o[4] + o[5], a5 = o[4] - o[5], a6 = o[6] + o[7], a7 = o[6] - o[7];
+      const b0 = a0 + a2, b1 = a1 + a3, b2 = a0 - a2, b3 = a1 - a3;
+      const b4 = a4 + a6, b5 = a5 + a7, b6 = a4 - a6, b7 = a5 - a7;
+      const inv = 0.353553390593; // 1/sqrt(8)
       f[0] = (b0 + b4) * inv; f[1] = (b1 + b5) * inv; f[2] = (b2 + b6) * inv; f[3] = (b3 + b7) * inv;
       f[4] = (b0 - b4) * inv; f[5] = (b1 - b5) * inv; f[6] = (b2 - b6) * inv; f[7] = (b3 - b7) * inv;
       for (let k = 0; k < 8; k++)
-        this.lines[k].write(this.damp[k].tick(f[k] * this.gains[k]) + d * (k < 4 ? 0.25 : 0.2));
-      // Decorrelated stereo taps.
-      let wl = o[0] - o[2] + o[4] - o[6];
-      let wr = o[1] - o[3] + o[5] - o[7];
+        this.lines[k].write(f[k] + d * this.injectSign[k] * 0.32);
+
+      // Decorrelated stereo draw + early reflections.
+      let wl = (o[0] - o[2] + o[4] - o[6]) * 0.42 + erL;
+      let wr = (o[1] - o[3] + o[5] - o[7]) * 0.42 + erR;
+      wl = this.tiltHiL.tick(this.tiltLoL.tick(wl));
+      wr = this.tiltHiR.tick(this.tiltLoR.tick(wr));
       wl = this.wetLpL.tick(this.wetHpL.tick(wl));
       wr = this.wetLpR.tick(this.wetHpR.tick(wr));
-      let wetG = 1;
+
+      let wetG = this.p.out * this.wetRamp;
       if (this.duckOn) {
         const dx = Math.max(Math.abs(dryRefL[i]), Math.abs(dryRefR[i]));
         this.duckEnv = dx > this.duckEnv ? dx + duckA * (this.duckEnv - dx) : dx + duckR * (this.duckEnv - dx);
-        wetG = 1 - clamp(this.duckEnv * 2.4, 0, 1) * 0.7;
+        wetG *= 1 - clamp(this.duckEnv * 2.4, 0, 1) * 0.7;
       }
       L[i] += wl * mix * wetG;
       R[i] += wr * mix * wetG;
     }
   }
+
   reset() {
-    this.lines.forEach(l => l.reset());
+    for (const l of this.lines) l.reset();
+    for (const a of this.loopAp) a.reset();
+    for (const a of this.diff) a.reset();
+    for (const a of this.chirp) a.reset();
+    for (const d of this.damp) d.reset();
+    for (const x of this.xover) x.reset();
     this.pre.reset();
-    this.inDiff.forEach(a => a.reset());
+    this.erBuf.reset();
+    this.shiftOct.reset();
+    this.shift5th.reset();
+    this.lineOut.fill(0);
+    this.drift.fill(0);
   }
 }
 
