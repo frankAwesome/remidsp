@@ -280,11 +280,14 @@ export function powerLed(onParam: string, nx: number, ny: number, nr: number): H
  *   B in SERIES hears the dry note AND A's whole train → m·tB, tA+m·tB,
  *   2tA+m·tB… — the compound rhythm the routing really produces. */
 export function delayLamp(engineIdx: 0 | 1 = 0): HTMLElement {
-  // The baked jewels' exact centres, pixel-scanned per print (they differ
-  // slightly between the A and B faces — even their heights).
+  // The baked jewels' exact centres, measured off each print with a drawn
+  // circle — NOT from brightness. Both jewels carry a hard specular glint in
+  // their upper left; every colour/luminance scan I tried chased that glint
+  // instead of the disc, which is what left the amber jewel visibly off. The
+  // print draws both dots on one horizontal line, so they share a y.
   const dots = engineIdx === 0
-    ? { A: { x: 0.4577, y: 0.1357 }, B: { x: 0.5384, y: 0.1271 } }
-    : { A: { x: 0.4573, y: 0.1264 }, B: { x: 0.5378, y: 0.1302 } };
+    ? { A: { x: 0.4634, y: 0.137 }, B: { x: 0.5377, y: 0.137 }, pipY: 0.137 }
+    : { A: { x: 0.4633, y: 0.1326 }, B: { x: 0.5375, y: 0.1326 }, pipY: 0.1326 };
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:absolute;inset:0;pointer-events:none';
   const mk = (color: string, deep: string, at: { x: number; y: number }, wPct: number) => {
@@ -304,7 +307,7 @@ export function delayLamp(engineIdx: 0 | 1 = 0): HTMLElement {
   const dotB = mk('#e2a35c', '#5a3a1a', dots.B, 2.2);
   // A small white pip at the window's left edge marks the virtual note strike
   // that the echo pattern answers.
-  const pip = mk('#eef1f6', '#5a6470', { x: 0.4315, y: 0.133 }, 1.1);
+  const pip = mk('#eef1f6', '#5a6470', { x: 0.4315, y: dots.pipY }, 1.1);
 
   interface Ev { t: number; a: number }
   let evA: Ev[] = [], evB: Ev[] = [], period = 4000, sig = '', epoch = performance.now();
