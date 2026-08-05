@@ -344,10 +344,10 @@ function pedalPanel(key: SlotKey): HTMLElement {
   // top strip) — the earlier redness scan lied on the chorus, whose whole
   // enclosure is orange. Each was confirmed against the artwork.
   const pilots: Partial<Record<SlotKey, [number, number, number]>> = {
-    gate: [0.4902, 0.1089, 0.0145],
+    gate: [0.4971, 0.0982, 0.0109],
     comp: [0.4983, 0.0878, 0.0115],
     drive: [0.4978, 0.0818, 0.0125],
-    chorus: [0.4985, 0.0867, 0.011],
+    chorus: [0.5019, 0.0926, 0.0118],
     sauce: [0.5, 0.075, 0.009],
   };
   const pg = pilots[key];
@@ -720,12 +720,8 @@ function studioPanel(): HTMLElement {
   // light when the unit is in and toggle on click (desktop rc geometry).
   ov.appendChild(powerLed('eq_on', 0.0441, 0.105, 0.0114));
   ov.appendChild(powerLed('fet_on', 0.9355, 0.65, 0.0114));
-  // Labelled toggles live in clear metal, away from the domes: EQ IN beside
-  // the VOICE box; COMP IN centred directly above the VU window.
-  ov.appendChild(seat(paramToggle('eq_on', 'EQ IN', 'tab tab--mini tab--lightlit'), 0.655, 0.072));
-  const compIn = paramToggle('fet_on', 'COMP IN', 'tab tab--mini tab--lightlit');
-  compIn.style.cssText += ';width:100%;height:100%;padding:0;display:grid;place-items:center';
-  ov.appendChild(seat(compIn, 0.8672, 0.687, 0.078, 0.038));
+  // No text toggles here — the jewels above ARE the switches, which is how
+  // the hardware reads.
   // RATIO keys — one button per baked cap, each seated on its pixel-scanned
   // rectangle so the lit key lands exactly on its printed twin.
   const d = paramById.get('fet_ratio')!;
