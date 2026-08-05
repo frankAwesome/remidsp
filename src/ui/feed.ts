@@ -14,8 +14,11 @@ import {
 import { session } from './account';
 import { toast } from './toast';
 import { DIVISIONS } from '../params';
+import { t3k } from '../tone3000';
 
-type ApplyCloudPreset = (p: CloudPreset) => Promise<void>;
+/** Resolves false when the preset's own capture could not be fetched and the
+ *  rig fell back to a bundled voice — the caller must not claim success. */
+type ApplyCloudPreset = (p: CloudPreset) => Promise<boolean>;
 
 const CHAIN: [string, string][] = [
   ['gate', 'gate_on'], ['comp', 'comp_on'], ['drive', 'drive_on'], ['amp', 'amp_on'],
@@ -203,6 +206,8 @@ export class FeedView {
     c.style.setProperty('--tone', accent);
     const when = p.createdAt ? timeAgo(p.createdAt.toMillis()) : '';
     const g = (id: string, dflt = 0) => p.params?.[id] ?? dflt;
+    // Flag the sign-in up front — better than finding out after the click.
+    const needsT3k = p.capture?.source === 'tone3000' && !t3k.connected;
 
     const chips = CHAIN.map(([key, param]) =>
       `<img class="feed-chip ${g(param, key === 'amp' ? 1 : 0) > 0.5 ? 'on' : ''}"
@@ -234,9 +239,13 @@ export class FeedView {
       <div class="feed-card__rig">
         <div class="feed-card__chain">${chips}</div>
         <div class="feed-card__stats">${stats.join('')}
-          ${p.capture ? `<div class="feed-stat feed-stat--capture" title="${escape(p.capture.creator ? `by ${p.capture.creator} · ${p.capture.license ?? ''}` : '')}">
+          ${p.capture ? `<div class="feed-stat feed-stat--capture${needsT3k ? ' feed-stat--locked' : ''}"
+            title="${escape(p.capture.creator ? `by ${p.capture.creator} · ${p.capture.license ?? ''}` : '')}">
             <span class="feed-stat__label">${p.capture.source === 'tone3000' ? 'TONE3000' : 'CAPTURE'}</span>
             <span class="feed-stat__cap">${escape(p.capture.label)}</span></div>` : ''}
+          ${needsT3k ? `<div class="feed-stat feed-stat--needs" title="LOAD THIS RIG will walk you through it">
+            <span class="feed-stat__label">NEEDS</span>
+            <span class="feed-stat__cap">TONE3000 SIGN-IN</span></div>` : ''}
         </div>
       </div>
       <footer class="feed-card__foot">
@@ -263,9 +272,11 @@ export class FeedView {
     c.querySelector('[data-a=user]')!.addEventListener('click', () => this.openUser(p.uid, p.username));
 
     c.querySelector('[data-a=load]')!.addEventListener('click', async () => {
-      await this.applyPreset(p);
+      const whole = await this.applyPreset(p);
       void countDownload(p.id);
-      toast(`<b>${escape(p.name)}</b> loaded — by ${escape(p.username)}`);
+      // When the capture did not come down, applyPreset has already said so
+      // in plain terms — do not paper over it with a cheerful "loaded".
+      if (whole) toast(`<b>${escape(p.name)}</b> loaded — by ${escape(p.username)}`);
     });
 
     const box = c.querySelector<HTMLElement>('.feed-card__comments')!;

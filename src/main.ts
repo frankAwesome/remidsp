@@ -6,8 +6,9 @@ import { makeKnob, placeKnob } from './ui/knob';
 import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
 import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, Preset } from './presets';
-import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, CaptureRef } from './captures';
-import { t3k } from './tone3000';
+import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
+import { t3k, T3kError, type T3kFailure } from './tone3000';
+import { openCaptureGate } from './ui/captureGate';
 import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed, powerLed } from './ui/live';
 import { LooperSection } from './ui/looper';
 import { preloadAssets } from './ui/preload';
@@ -170,7 +171,10 @@ function buildHeader(): HTMLElement {
   save.addEventListener('click', () => {
     openSaveDialog(
       () => ({ amp: currentAmp, voice: currentVoice, params: store.snapshot(), capture: currentCaptureRef }),
-      (n) => saveUserPreset({ name: n, group: 'USER', amp: currentAmp, voice: currentVoice, params: store.snapshot() }),
+      (n) => saveUserPreset({
+        name: n, group: 'USER', amp: currentAmp, voice: currentVoice,
+        params: store.snapshot(), capture: currentCaptureRef,
+      }),
     );
   });
 
@@ -493,11 +497,14 @@ function ampPanel(): HTMLElement {
   });
   drawer.appendChild(sel);
 
-  // voice tabs
+  // Voice tabs. None of them is lit while a TONE3000 capture is on the amp —
+  // currentVoice is only the bundled voice sitting underneath it, and lighting
+  // it would claim the rig is playing something it isn't.
   const voices = el('div', '');
   voices.style.cssText = 'display:flex;gap:.25rem';
+  const onBundled = engine.capture?.source !== 'tone3000';
   for (const v of amp.voices) {
-    const b = el('button', 'tab' + (currentVoice === v.stem ? ' on' : ''), v.label);
+    const b = el('button', 'tab' + (onBundled && currentVoice === v.stem ? ' on' : ''), v.label);
     b.addEventListener('click', () => loadBundledVoice(v.stem));
     voices.appendChild(b);
   }
@@ -576,8 +583,10 @@ function ampPanel(): HTMLElement {
 }
 
 let lastCaptureJson: string | null = null;
+// Why the last TONE3000 capture load failed, so the gate can explain itself.
+let lastCaptureError: T3kFailure | null = null;
 
-async function loadBundledVoice(stem: string) {
+async function loadBundledVoice(stem: string): Promise<boolean> {
   try {
     toast(`Loading <b>${stem.replace('_', ' ')}</b>…`);
     const json = await (await fetch(`/assets/captures/${stem}.nam`)).text();
@@ -587,19 +596,24 @@ async function loadBundledVoice(stem: string) {
     currentVoice = stem;
     currentCaptureRef = { source: 'bundled', stem, label: stem.replace('_', ' ') };
     if (selectedSlot === 'amp') renderStage();
+    return true;
   } catch (err) {
     toast(`Capture load failed — ${(err as Error).message}`);
+    return false;
   }
 }
 
 /** Load any capture menu entry — bundled (face/voice follow) or a TONE3000
- *  recent (fetched from its model_url, Bearer applied when connected). */
-async function loadCaptureRef(ref: CaptureRef) {
+ *  recent (fetched from its model_url, Bearer applied when connected).
+ *  Returns false if the capture never made it onto the amp, so a preset
+ *  recall can fall back to its bundled voice instead of leaving whatever
+ *  capture happened to be loaded before. */
+async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> {
   if (ref.kind === 'bundled') {
     if (ref.ampKey && ref.ampKey !== currentAmp) currentAmp = ref.ampKey;
-    await loadBundledVoice(ref.stem!);
-    return;
+    return loadBundledVoice(ref.stem!);
   }
+  lastCaptureError = null;
   try {
     toast(`Loading <b>${ref.label}</b>…`);
     const json = await (await t3k.fetchModelFile(ref.url!)).text();
@@ -612,11 +626,19 @@ async function loadCaptureRef(ref: CaptureRef) {
       source: 'tone3000', label: ref.label, modelId: ref.id, modelUrl: ref.url,
       creator: ref.creator, license: ref.license, toneUrl: ref.toneUrl,
     };
+    addRecent(ref);
     store.set('amp_on', 1);
     toast(`<b>${ref.label}</b> on the amp${ref.creator ? ` · by ${ref.creator}` : ''}`);
     if (selectedSlot === 'amp') renderStage();
+    return true;
   } catch (err) {
-    toast(`Load failed — ${(err as Error).message}${t3k.connected ? '' : ' (connect TONE3000 in the CAPTURES drawer)'}`);
+    lastCaptureError = err instanceof T3kError ? err.reason
+      : t3k.connected ? 'unknown' : 'not-connected';
+    if (!quiet) {
+      toast(`<b>${ref.label}</b> didn't load — ${(err as Error).message}`
+            + `${lastCaptureError === 'not-connected' ? '. Hit CONNECT below to sign in to TONE3000.' : '.'}`, 5000);
+    }
+    return false;
   }
 }
 
@@ -759,7 +781,9 @@ function studioPanel(): HTMLElement {
 
 function allPresets(): Preset[] { return [...FACTORY_PRESETS, ...loadUserPresets()]; }
 
-async function applyPreset(p: Preset) {
+/** Applies a preset; resolves false when its own TONE3000 capture could not
+ *  be fetched and the rig landed on the bundled fallback instead. */
+async function applyPreset(p: Preset): Promise<boolean> {
   const snap: Record<string, number> = { ...Object.fromEntries(
     [...store.values.keys()].map((k) => [k, paramById.get(k)?.def ?? 0])), ...p.params };
   // GLOBAL is the player's switch, never the preset's; with it on, the
@@ -770,10 +794,48 @@ async function applyPreset(p: Preset) {
   }
   store.load(snap);
   currentAmp = p.amp;
-  await loadBundledVoice(p.voice);
+  // The face is the preset's (p.amp), so the rig looks the way it did when
+  // it was saved. The capture is whatever was actually on the amp: a
+  // TONE3000 model gets re-fetched and installed directly — going through
+  // the bundled voice first would swap the wasm DSP twice and stall the
+  // graph for no reason. If that fetch fails (offline, not connected, model
+  // pulled), the bundled voice underneath it is the fallback, so the preset
+  // always lands on something.
+  let captureOk = true;
+  const cap = p.capture;
+  if (cap?.source === 'tone3000' && cap.modelUrl) {
+    currentVoice = p.voice;
+    const ref: CaptureRef = {
+      kind: 'tone3000', id: cap.modelId ?? cap.modelUrl, label: cap.label,
+      url: cap.modelUrl, creator: cap.creator, license: cap.license, toneUrl: cap.toneUrl,
+    };
+    lastCaptureError = null;
+    if (!await loadCaptureRef(ref, true)) {
+      // Never leave the player guessing why the amp sounds wrong: name the
+      // capture, say what is missing, and offer to fix it right here.
+      const fallback = p.voice.replace('_', ' ');
+      const ok = await openCaptureGate({
+        presetName: p.name,
+        captureLabel: cap.label,
+        creator: cap.creator,
+        fallbackLabel: fallback,
+        reason: lastCaptureError ?? 'unknown',
+        retry: () => loadCaptureRef(ref, true),
+      });
+      if (!ok) {
+        captureOk = false;
+        await loadBundledVoice(p.voice);
+        toast(`<b>${p.name}</b> loaded on <b>${fallback}</b> — every setting applied, but `
+              + `its own capture (<b>${cap.label}</b>) is still missing.`, 5000);
+      }
+    }
+  } else {
+    await loadBundledVoice(p.voice);
+  }
   const nameEl = document.getElementById('presetName');
   if (nameEl) nameEl.textContent = p.name;
   renderStage();
+  return captureOk;
 }
 
 function stepPreset(dir: number) {
@@ -985,15 +1047,13 @@ function setView(v: View) {
 
 function setFeedMode(on: boolean) { setView(on ? 'feed' : 'rig'); }
 
-async function applyCloudPreset(p: CloudPreset) {
-  await applyPreset({ name: p.name, group: 'USER', amp: p.amp, voice: p.voice, params: p.params });
-  // A TONE3000 capture ref rides the preset — swap it in over the bundled voice.
-  if (p.capture?.source === 'tone3000' && p.capture.modelUrl) {
-    await loadCaptureRef({
-      kind: 'tone3000', id: p.capture.modelId ?? p.capture.modelUrl, label: p.capture.label,
-      url: p.capture.modelUrl, creator: p.capture.creator, license: p.capture.license,
-      toneUrl: p.capture.toneUrl,
-    });
-  }
+async function applyCloudPreset(p: CloudPreset): Promise<boolean> {
+  // The capture ref rides the preset; applyPreset installs it directly and
+  // reports whether the rig ended up as its author heard it.
+  const whole = await applyPreset({
+    name: p.name, group: 'USER', amp: p.amp, voice: p.voice,
+    params: p.params, capture: p.capture,
+  });
   setFeedMode(false);
+  return whole;
 }

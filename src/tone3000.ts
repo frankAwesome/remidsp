@@ -48,6 +48,23 @@ export interface T3kModel {
 }
 interface Tokens { access_token: string; refresh_token: string; expires_at: number }
 
+/** Why a TONE3000 call failed, in terms a player can act on. */
+export type T3kFailure =
+  | 'not-connected'   // never signed in, or the capture is not public
+  | 'auth'            // signed in once, token is dead — reconnect
+  | 'network'         // offline, DNS, CORS, TONE3000 down
+  | 'missing'         // the creator took the capture down
+  | 'unknown';
+
+export class T3kError extends Error {
+  readonly reason: T3kFailure;
+  constructor(message: string, reason: T3kFailure) {
+    super(message);
+    this.name = 'T3kError';
+    this.reason = reason;
+  }
+}
+
 export class Tone3000 {
   get pubKey(): string { return localStorage.getItem(LS_KEY) ?? DEFAULT_PUB_KEY; }
   set pubKey(k: string) { localStorage.setItem(LS_KEY, k.trim()); }
@@ -73,8 +90,13 @@ export class Tone3000 {
   /* ---- anonymous ---- */
   async trending(gear?: Gear): Promise<Tone[]> {
     const url = `${API}/tones/trending${gear ? `?gear=${gear}` : ''}`;
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`trending ${r.status}`);
+    let r: Response;
+    try {
+      r = await fetch(url);
+    } catch (err) {
+      throw new T3kError((err as Error).message, 'network');
+    }
+    if (!r.ok) throw new T3kError(`TONE3000 returned ${r.status}`, 'unknown');
     return (await r.json()).data as Tone[];
   }
 
@@ -131,7 +153,7 @@ export class Tone3000 {
 
   private async accessToken(): Promise<string> {
     let t = this.tokens;
-    if (!t) throw new Error('not connected');
+    if (!t) throw new T3kError('not connected to TONE3000', 'not-connected');
     if (Date.now() > t.expires_at && t.refresh_token) {
       const body = new URLSearchParams({
         grant_type: 'refresh_token',
@@ -143,7 +165,7 @@ export class Tone3000 {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body,
       });
-      if (!r.ok) { this.tokens = null; throw new Error('session expired — reconnect'); }
+      if (!r.ok) { this.tokens = null; throw new T3kError('session expired — reconnect', 'auth'); }
       const j = await r.json();
       t = {
         access_token: j.access_token,
@@ -157,9 +179,14 @@ export class Tone3000 {
 
   private async authed(path: string): Promise<Response> {
     const tok = await this.accessToken();
-    const r = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${tok}` } });
-    if (r.status === 401) { this.tokens = null; throw new Error('session expired — reconnect'); }
-    if (!r.ok) throw new Error(`TONE3000 ${r.status}`);
+    let r: Response;
+    try {
+      r = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${tok}` } });
+    } catch (err) {
+      throw new T3kError((err as Error).message, 'network');
+    }
+    if (r.status === 401) { this.tokens = null; throw new T3kError('session expired — reconnect', 'auth'); }
+    if (!r.ok) throw new T3kError(`TONE3000 returned ${r.status}`, 'unknown');
     return r;
   }
 
@@ -185,11 +212,29 @@ export class Tone3000 {
     if (architecture) u.set('architecture', String(architecture));
     return ((await (await this.authed(`/models?${u}`)).json()).data ?? []) as T3kModel[];
   }
-  /** Fetch a model file (NAM json text, or binary for IR wavs). */
+  /** Fetch a model file (NAM json text, or binary for IR wavs). Throws a
+   *  T3kError so callers can tell "you need to sign in" apart from "TONE3000
+   *  is down" apart from "the creator deleted it" — three very different
+   *  things to tell a player whose preset just failed to load. */
   async fetchModelFile(modelUrl: string): Promise<Response> {
     const tok = await this.accessToken().catch(() => null);
-    const r = await fetch(modelUrl, tok ? { headers: { Authorization: `Bearer ${tok}` } } : undefined);
-    if (!r.ok) throw new Error(`model download ${r.status}`);
+    let r: Response;
+    try {
+      r = await fetch(modelUrl, tok ? { headers: { Authorization: `Bearer ${tok}` } } : undefined);
+    } catch (err) {
+      // A blocked cross-origin fetch and a dead network look identical from
+      // here; if we never had a token, the sign-in is the likelier fix.
+      throw new T3kError((err as Error).message, tok ? 'network' : 'not-connected');
+    }
+    if (r.status === 401 || r.status === 403) {
+      if (!tok) throw new T3kError('this capture is not public', 'not-connected');
+      this.tokens = null;
+      throw new T3kError('TONE3000 session expired', 'auth');
+    }
+    if (r.status === 404 || r.status === 410) {
+      throw new T3kError('the capture is no longer on TONE3000', 'missing');
+    }
+    if (!r.ok) throw new T3kError(`TONE3000 returned ${r.status}`, 'unknown');
     return r;
   }
 

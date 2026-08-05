@@ -13,8 +13,10 @@ import {
 import { session } from './account';
 import { renderCommentRow, timeAgo } from './feed';
 import { toast } from './toast';
+import { encodeAvatar, AVATAR_ACCEPT, AVATAR_MAX_B64 } from './avatar';
 
-type ApplyCloudPreset = (p: CloudPreset) => Promise<void>;
+/** Resolves false when the preset's own capture could not be fetched. */
+type ApplyCloudPreset = (p: CloudPreset) => Promise<boolean>;
 type RenderToneCard = (p: CloudPreset) => HTMLElement;
 
 const AMP_ACCENT: Record<string, string> = {
@@ -81,9 +83,37 @@ export class ProfileView {
         </div>
       </header>
       <form class="account-form profile__edit" hidden>
+        <div class="avatar-edit">
+          <div class="avatar-edit__preview" data-el="avaPreview">
+            ${p.avatarUrl
+              ? `<img crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
+              : `<span>${escape((p.username || '?')[0].toUpperCase())}</span>`}
+          </div>
+          <div class="avatar-edit__body">
+            <div class="avatar-edit__row">
+              <button type="button" class="hdr__btn" data-a="pick-ava">UPLOAD PICTURE</button>
+              <button type="button" class="hdr__btn" data-a="clear-ava"
+                ${p.avatarUrl ? '' : 'hidden'}>REMOVE</button>
+              <input type="file" accept="${AVATAR_ACCEPT}" hidden data-el="avaFile" />
+            </div>
+            <div class="avatar-edit__note" data-el="avaNote">
+              Square works best — it is cropped to a circle and shrunk to 128 px.
+            </div>
+            <input name="avatarUrl" maxlength="${AVATAR_MAX_B64}"
+              value="${escape(p.avatarUrl)}" placeholder="…or paste an image url" />
+          </div>
+        </div>
         <input name="username" maxlength="40" value="${escape(p.username)}" placeholder="username" />
-        <input name="avatarUrl" maxlength="500" value="${escape(p.avatarUrl)}" placeholder="avatar image url" />
         <textarea name="bio" maxlength="400" rows="3" placeholder="bio — amps, bands, worship team, whatever">${escape(p.bio)}</textarea>
+        <label class="profile__vis">
+          <span class="profile__vis__head">PROFILE PAGE</span>
+          <select name="isPublic">
+            <option value="1"${p.isPublic === false ? '' : ' selected'}>Public — anyone can open it</option>
+            <option value="0"${p.isPublic === false ? ' selected' : ''}>Private — only you can open it</option>
+          </select>
+          <span class="profile__vis__note">Private hides this page and keeps you out of player search.
+            Tones you have already shared stay on the feed — sharing a tone is its own choice.</span>
+        </label>
         <div class="account-form__row">
           <button type="submit" class="hdr__btn hdr__btn--lit">SAVE</button>
           <button type="button" class="hdr__btn" data-a="cancel">CANCEL</button>
@@ -105,10 +135,55 @@ export class ProfileView {
     const form = this.root.querySelector<HTMLFormElement>('.profile__edit')!;
     this.root.querySelector('[data-a=edit]')!.addEventListener('click', () => { form.hidden = !form.hidden; });
     this.root.querySelector('[data-a=cancel]')!.addEventListener('click', () => { form.hidden = true; });
+
+    // Picture upload. The encoded image goes straight into the avatarUrl
+    // field, so one code path saves it whether it was uploaded or pasted.
+    const avaField = form.elements.namedItem('avatarUrl') as HTMLInputElement;
+    const avaFile = form.querySelector<HTMLInputElement>('[data-el=avaFile]')!;
+    const avaPreview = form.querySelector<HTMLElement>('[data-el=avaPreview]')!;
+    const avaNote = form.querySelector<HTMLElement>('[data-el=avaNote]')!;
+    const avaClear = form.querySelector<HTMLButtonElement>('[data-a=clear-ava]')!;
+    const paintAva = (src: string) => {
+      avaPreview.innerHTML = src
+        ? `<img crossorigin="anonymous" src="${escape(src)}" alt="">`
+        : `<span>${escape(((form.elements.namedItem('username') as HTMLInputElement).value.trim() || '?')[0].toUpperCase())}</span>`;
+      avaClear.hidden = !src;
+    };
+    form.querySelector('[data-a=pick-ava]')!.addEventListener('click', () => avaFile.click());
+    avaFile.addEventListener('change', async () => {
+      const file = avaFile.files?.[0];
+      avaFile.value = ''; // so re-picking the same file fires change again
+      if (!file) return;
+      avaNote.textContent = 'Resizing…';
+      avaNote.classList.remove('avatar-edit__note--bad');
+      try {
+        const data = await encodeAvatar(file);
+        avaField.value = data;
+        paintAva(data);
+        avaNote.textContent = `Ready — ${(data.length / 1024).toFixed(1)} kB. Hit SAVE to keep it.`;
+      } catch (err) {
+        avaNote.textContent = (err as Error).message;
+        avaNote.classList.add('avatar-edit__note--bad');
+      }
+    });
+    avaClear.addEventListener('click', () => {
+      avaField.value = '';
+      paintAva('');
+      avaNote.textContent = 'Picture cleared. Hit SAVE to confirm.';
+      avaNote.classList.remove('avatar-edit__note--bad');
+    });
+    avaField.addEventListener('input', () => paintAva(avaField.value.trim()));
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const v = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | HTMLTextAreaElement).value.trim();
-      const next: Profile = { username: v('username') || 'player', bio: v('bio'), avatarUrl: v('avatarUrl') };
+      const isPublic = (form.elements.namedItem('isPublic') as HTMLSelectElement).value === '1';
+      const avatarUrl = v('avatarUrl');
+      if (avatarUrl.length > AVATAR_MAX_B64) {
+        toast('That picture is too large to store — upload it again and it will be resized.', 4500);
+        return;
+      }
+      const next: Profile = { username: v('username') || 'player', bio: v('bio'), avatarUrl, isPublic };
       try {
         await saveProfile(user.uid, next);
         session.profile = { ...session.profile, ...next };
@@ -164,8 +239,18 @@ export class ProfileView {
       getProfile(uid).catch(() => null),
       publicTones(uid).catch(() => [] as CloudPreset[]),
     ]);
+    // A private profile reads as "not there" through the rules, so a null
+    // here covers both cases; say so without guessing which.
     if (!p) {
-      this.root.innerHTML = `<div class="t3k__note" style="padding:2rem 0">This player's profile is gone.</div>`;
+      this.root.innerHTML = `<div class="t3k__note" style="padding:2rem 0">
+        This profile is private, or the player has deleted it. Any tones they
+        shared are still on the feed.</div>`;
+      return;
+    }
+    if (p.isPublic === false) {
+      this.root.innerHTML = `<div class="t3k__note" style="padding:2rem 0">
+        <b>${escape(p.username)}</b> keeps their profile page private. Any tones
+        they shared are still on the feed.</div>`;
       return;
     }
     const likes = tones.reduce((a, s) => a + (s.likesCount ?? 0), 0);

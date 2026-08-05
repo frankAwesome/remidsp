@@ -128,6 +128,9 @@ export class T3kBrowser {
       toast('Back on the built-in key.');
     });
 
+    // The capture gate can connect or re-key without this drawer ever opening.
+    window.addEventListener('remi:t3k-changed', () => { syncKeyBtn(); this.syncConnected(); });
+
     this.syncConnected();
   }
 

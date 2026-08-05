@@ -277,6 +277,30 @@ select{font:inherit}
   border:1px solid var(--line-2);padding:.45rem .7rem;font-family:var(--font-mono);font-size:.72rem}
 .t3k__keyrow input:focus{outline:none;border-color:rgba(159,216,232,.6)}
 .t3k__foot .mono{font-size:.56rem}
+/* capture gate — the "this preset needs TONE3000" screen. It outranks even
+   the boot gateway: whatever else is on screen, this is the thing to answer. */
+#captureGate{z-index:500}
+.gate__body{font-size:.82rem;line-height:1.65;color:var(--text)}
+.gate__body b{color:var(--ice);font-weight:600}
+.gate__by{font-size:.66rem;letter-spacing:.06em;color:var(--muted);margin-top:.5rem}
+.gate__by b{color:var(--light)}
+.gate__steps{margin:.9rem 0 0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.45rem;
+  font-size:.75rem;line-height:1.55;color:var(--muted)}
+.gate__steps b{color:var(--light)}
+.gate__steps a{color:var(--ice);text-decoration:underline}
+.gate__steps code,.gate__status code{font-family:var(--font-mono);font-size:.68rem;color:var(--light)}
+.gate__keyrow{display:flex;gap:.4rem;margin-top:.9rem}
+.gate__keyrow input{flex:1;min-width:120px;background:#050507;color:var(--text);
+  border:1px solid var(--line-2);padding:.45rem .7rem;font-family:var(--font-mono);font-size:.72rem}
+.gate__keyrow input:focus{outline:none;border-color:rgba(159,216,232,.6)}
+.gate__keynote{font-size:.64rem;color:var(--muted-2);margin-top:.45rem;line-height:1.5}
+.gate__keynote b{color:var(--light)}
+.gate__status:not(:empty){font-size:.72rem;line-height:1.6;color:var(--muted);margin-top:.9rem;
+  padding:.55rem .7rem;border-left:2px solid var(--line-2);background:rgba(255,255,255,.03)}
+.gate__status b{color:var(--ice)}
+.gate__status--bad{border-left-color:#c8563c}
+.gate__status--bad b{color:#e8a08c}
+.t3k__foot button:disabled{opacity:.45;cursor:default}
 .t3k__models{border-top:1px dashed var(--line);margin-top:.6rem;padding-top:.5rem;
   display:flex;flex-direction:column;gap:.3rem}
 .t3k__model{display:flex;align-items:center;gap:.6rem;font-size:.7rem;color:var(--muted)}
@@ -544,6 +568,12 @@ select{font:inherit}
 .feed-stat__unit{font-size:.5rem;letter-spacing:.14em;color:var(--muted-2)}
 .feed-stat--capture .feed-stat__cap{font-size:.68rem;font-weight:600;color:var(--ice);
   max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The capture is behind a TONE3000 sign-in — say so on the card, not after
+   the player has already clicked LOAD THIS RIG. */
+.feed-stat--locked{border-style:dashed}
+.feed-stat--needs{border-color:rgba(232,160,140,.45);background:rgba(200,86,60,.08)}
+.feed-stat--needs .feed-stat__label{color:#e8a08c}
+.feed-stat--needs .feed-stat__cap{font-size:.6rem;font-weight:600;letter-spacing:.12em;color:#e8a08c}
 .feed-card__foot{display:flex;align-items:center;gap:.6rem}
 .feed-card__like{font-size:.8rem;color:var(--muted);border:1px solid var(--line);
   padding:.35rem .65rem;transition:.15s}
@@ -567,6 +597,22 @@ button.feed-card__mini:hover{color:var(--text)}
   padding:clamp(1rem,3vw,2rem);display:flex;flex-direction:column;gap:1.1rem;min-height:420px}
 .profile__head{display:flex;align-items:center;gap:1.4rem;flex-wrap:wrap;
   border-bottom:1px solid var(--line-2);padding-bottom:1.1rem}
+/* avatar upload + profile visibility, inside the edit form */
+.avatar-edit{display:flex;gap:.9rem;align-items:flex-start}
+.avatar-edit__preview{width:72px;height:72px;border-radius:50%;flex:none;overflow:hidden;
+  border:1px solid var(--line-2);background:#14161c;display:grid;place-items:center}
+.avatar-edit__preview img{width:100%;height:100%;object-fit:cover}
+.avatar-edit__preview span{font-family:var(--font-display);font-size:1.6rem;color:var(--muted)}
+.avatar-edit__body{flex:1;min-width:0;display:flex;flex-direction:column;gap:.4rem}
+.avatar-edit__row{display:flex;gap:.4rem;flex-wrap:wrap}
+.avatar-edit__note{font-size:.64rem;line-height:1.5;color:var(--muted-2)}
+.avatar-edit__note--bad{color:#e8a08c}
+.profile__vis{display:flex;flex-direction:column;gap:.3rem}
+.profile__vis__head{font-size:.5rem;font-weight:600;letter-spacing:.22em;color:var(--muted-2)}
+.profile__vis select{background:#050507;color:var(--text);border:1px solid var(--line-2);
+  padding:.45rem .7rem;font-size:.78rem}
+.profile__vis select:focus{outline:none;border-color:rgba(159,216,232,.6)}
+.profile__vis__note{font-size:.64rem;line-height:1.5;color:var(--muted-2)}
 .profile__ava{width:92px;height:92px;border-radius:50%;object-fit:cover;
   border:1px solid var(--line-2);box-shadow:0 8px 30px rgba(0,0,0,.5)}
 .profile__ava--blank{display:grid;place-items:center;background:#14161c;

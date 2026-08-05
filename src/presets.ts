@@ -1,12 +1,18 @@
 /* Factory presets — style-evoking starting points, delay times from the
  * documented BPM maths (dotted 8th = 45000/BPM ms via the sync engine). */
 
+import type { CaptureRefDoc } from './cloud/store';
+
 export interface Preset {
   name: string;
   group: 'FACTORY' | 'SIGNATURE' | 'USER';
   amp: string;          // amp key in AMP_FACES
-  voice: string;        // bundled capture stem
+  voice: string;        // bundled capture stem — also the fallback if the
+                        // capture below is a TONE3000 model that won't load
   params: Record<string, number>;
+  /** What was actually on the amp when this was saved. A TONE3000 model is
+   *  re-fetched on recall; absent (older presets) means the bundled voice. */
+  capture?: CaptureRefDoc | null;
 }
 
 const P = (name: string, group: Preset['group'], amp: string, voice: string,

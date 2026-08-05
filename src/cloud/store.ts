@@ -20,6 +20,11 @@ export interface Profile {
   username: string;
   bio: string;
   avatarUrl: string;
+  /** Is the profile PAGE browsable by other players? Default true. Turning it
+   *  off hides the page (bio, sounds list, comment history) and drops the
+   *  player out of user search. Tones already shared to the feed stay on the
+   *  feed with their byline — sharing a tone is its own, separate choice. */
+  isPublic?: boolean;
   followersCount?: number;
   followingCount?: number;
 }
@@ -74,7 +79,17 @@ const presetsCol = () => collection(db, 'presets');
 export async function ensureProfile(user: User): Promise<Profile> {
   const ref = doc(db, 'profiles', user.uid);
   const snap = await getDoc(ref);
-  if (snap.exists()) return snap.data() as Profile;
+  if (snap.exists()) {
+    const p = snap.data() as Profile;
+    // Profiles written before visibility existed have no isPublic field, and
+    // user search now filters on it — without this backfill they would
+    // silently drop out of search the day the rule ships.
+    if (typeof p.isPublic !== 'boolean') {
+      await setDoc(ref, { isPublic: true, updatedAt: serverTimestamp() }, { merge: true });
+      p.isPublic = true;
+    }
+    return p;
+  }
   // The username is PUBLIC — it rides every post, comment and search result.
   // Never derive it from the email: 'john.smith@work.com' would publish
   // 'john.smith' to the whole feed for anyone who never edited it. Fall back
@@ -82,7 +97,7 @@ export async function ensureProfile(user: User): Promise<Profile> {
   const username = user.displayName
     || `player-${user.uid.slice(0, 4).toLowerCase()}`;
   const fresh: Profile = {
-    username, bio: '', avatarUrl: user.photoURL ?? '',
+    username, bio: '', avatarUrl: user.photoURL ?? '', isPublic: true,
     followersCount: 0, followingCount: 0,
   };
   await setDoc(ref, {
@@ -100,6 +115,7 @@ export async function getProfile(uid: string): Promise<Profile | null> {
 export async function saveProfile(uid: string, p: Profile): Promise<void> {
   await setDoc(doc(db, 'profiles', uid),
     { username: p.username, bio: p.bio, avatarUrl: p.avatarUrl,
+      isPublic: p.isPublic !== false,
       usernameLower: p.username.toLowerCase(), updatedAt: serverTimestamp() },
     { merge: true });
 }
@@ -109,7 +125,10 @@ export async function saveProfile(uid: string, p: Profile): Promise<void> {
 export async function searchUsers(q: string): Promise<ProfileHit[]> {
   const needle = q.trim().toLowerCase();
   if (!needle) return [];
+  // isPublic is not decoration: the rules gate profile reads on it, and
+  // Firestore rejects any query it cannot prove returns only readable docs.
   const qq = query(collection(db, 'profiles'),
+    where('isPublic', '==', true),
     where('usernameLower', '>=', needle),
     where('usernameLower', '<=', needle + ''),
     orderBy('usernameLower'), limit(20));

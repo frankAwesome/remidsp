@@ -201,16 +201,26 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // The avatar is stored inline on the document as a downscaled JPEG data
+    // URI (src/ui/avatar.ts caps the encoder at 12000 chars). This ceiling is
+    // the thing actually holding that line — the byline is denormalised onto
+    // every preset and comment, so an unbounded string here would be copied
+    // hundreds of times over.
+    function avatarOk(v) {
+      return v == null || (v is string && v.size() <= 12000);
+    }
+
     function profileShapeOk() {
       let d = request.resource.data;
       return d.keys().hasOnly(
-               ['username', 'usernameLower', 'bio', 'avatarUrl',
+               ['username', 'usernameLower', 'bio', 'avatarUrl', 'isPublic',
                 'followersCount', 'followingCount', 'createdAt', 'updatedAt'])
         && d.username is string
         && d.username.size() >= 1 && d.username.size() <= 40
         && sOrNull(d.get('usernameLower', null), 40)
         && sOrNull(d.get('bio', null), 400)
-        && sOrNull(d.get('avatarUrl', null), 500);
+        && (d.get('isPublic', true) is bool)
+        && avatarOk(d.get('avatarUrl', null));
     }
     // Follow/unfollow rides a batched write that also creates/deletes the
     // follower's edge doc — the counter may move by exactly one.
@@ -222,7 +232,15 @@ service cloud.firestore {
         && (request.resource.data.followersCount - resource.data.get('followersCount', 0)) >= -1;
     }
     match /profiles/{uid} {
-      allow read: if true; // public byline for feed cards + user search
+      // Public by default; a player can hide the page. Docs written before
+      // isPublic existed have no field, so absent reads as public — and
+      // ensureProfile() backfills them on next sign-in, because searchUsers
+      // filters on isPublic == true and an absent field matches nothing.
+      // Feed bylines do NOT come through here: username and avatar are
+      // denormalised onto each preset, so going private never blanks a
+      // tone you chose to share.
+      allow read: if resource.data.get('isPublic', true) == true
+        || (signedIn() && request.auth.uid == uid);
       allow create: if signedIn() && request.auth.uid == uid && profileShapeOk();
       allow update: if (signedIn() && request.auth.uid == uid && profileShapeOk())
         || followerBump();
@@ -244,6 +262,7 @@ service cloud.firestore {
                 'downloadsCount', 'createdAt', 'updatedAt'])
         && d.uid == request.auth.uid
         && d.username is string && d.username.size() <= 40
+        && avatarOk(d.get('avatarUrl', null))
         && d.name is string && d.name.size() >= 1 && d.name.size() <= 60
         && d.amp is string && d.amp.size() <= 30
         && d.voice is string && d.voice.size() <= 40
@@ -306,7 +325,7 @@ service cloud.firestore {
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.username is string
           && request.resource.data.username.size() <= 40
-          && sOrNull(request.resource.data.get('avatarUrl', null), 500)
+          && avatarOk(request.resource.data.get('avatarUrl', null))
           && sOrNull(request.resource.data.get('presetName', null), 60)
           && request.resource.data.text is string
           && request.resource.data.text.size() >= 1
