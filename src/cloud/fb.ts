@@ -10,7 +10,8 @@
 
 import { initializeApp } from 'firebase/app';
 import {
-  getAuth, onAuthStateChanged, signOut as fbSignOut,
+  initializeAuth, onAuthStateChanged, signOut as fbSignOut,
+  indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence,
   GoogleAuthProvider, OAuthProvider, GithubAuthProvider, FacebookAuthProvider,
   signInWithRedirect, getRedirectResult,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -28,7 +29,14 @@ const app = initializeApp({
   appId: '1:5196542133:web:830fc79f654c91bf22cefc',
 });
 
-export const auth = getAuth(app);
+// Persistence as a FALLBACK CHAIN, not a single bet. The default is
+// IndexedDB alone, and a browser that has the database closing/blocked (a
+// reload mid-flight, private-mode quirks, an evicted origin) fails the whole
+// sign-in with "Database is closing" — after the account was already created
+// server-side. localStorage catches that, memory catches the rest.
+export const auth = initializeAuth(app, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence],
+});
 export const db = getFirestore(app);
 export type { User };
 
@@ -51,6 +59,10 @@ export async function emailSignIn(email: string, password: string): Promise<User
 
 export async function emailSignUp(email: string, password: string, username: string): Promise<User> {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
+  // The auth-state listener fires the instant the account exists — before
+  // this update lands — so ensureProfile would otherwise stamp the profile
+  // with the email prefix and the name the player typed would be lost. The
+  // caller re-saves the profile with `username` after this resolves.
   if (username) await updateAuthProfile(cred.user, { displayName: username });
   return cred.user;
 }

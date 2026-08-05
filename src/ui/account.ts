@@ -7,7 +7,7 @@ import {
   onUser, consumeRedirect, signInWithProvider, emailSignIn, emailSignUp,
   resetPassword, signOut, authErrorText, type User,
 } from '../cloud/fb';
-import { ensureProfile, type Profile } from '../cloud/store';
+import { ensureProfile, saveProfile, type Profile } from '../cloud/store';
 import { toast } from './toast';
 
 export const session: { user: User | null; profile: Profile | null } = { user: null, profile: null };
@@ -117,7 +117,16 @@ export class AccountUI {
     wrap.querySelector('[data-a=up]')!.addEventListener('click', async () => {
       try {
         if (!val('email') || !val('password')) { toast('Email and password first.'); return; }
-        await emailSignUp(val('email'), val('password'), val('username'));
+        const wanted = val('username');
+        const user = await emailSignUp(val('email'), val('password'), wanted);
+        // Claim the typed name: ensureProfile already ran off the auth-state
+        // event (with the email prefix), so write the real one over it.
+        if (wanted) {
+          const prof: Profile = { username: wanted, bio: '', avatarUrl: '' };
+          await saveProfile(user.uid, prof).catch(() => undefined);
+          session.profile = { ...session.profile, ...prof };
+          this.syncChip();
+        }
         toast('<b>Account created.</b> Welcome.');
         this.render();
       } catch (err) { toast(`Sign-up failed — ${authErrorText(err)}`, 5000); }
