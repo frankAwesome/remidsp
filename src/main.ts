@@ -267,15 +267,26 @@ function wireTempo(tval: HTMLElement, tap: HTMLElement) {
 
 /* ────────────────────────── ribbon ────────────────────────── */
 
+/** Per-slot art refresher, so selecting a module can repaint the two it affects. */
+const chipArt = new Map<SlotKey, () => void>();
+
 function buildRibbon(): HTMLElement {
   const r = el('nav', 'ribbon');
+  chipArt.clear();
   for (const s of SLOTS) {
     const b = el('button', 'chip');
     b.dataset.slot = s.key;
     b.title = s.title;
     const img = document.createElement('img');
-    const setImg = () => (img.src = `/assets/ui/chip_${s.key === 'chorus' ? 'chorus' : s.key}_${store.get(s.onParam) > 0.5 ? 'on' : 'off'}.png`);
+    // Two arts per module, and which one shows is a question of SELECTION, not
+    // power: _off is the plain black-and-white icon, _on is the full-colour
+    // one, and only the module you are looking at wears its colour. This
+    // matches the desktop suite (PluginEditor.cpp keys the same filenames off
+    // isSelected). Whether the module is engaged is the LED's job below.
+    img.alt = s.title;
+    const setImg = () => (img.src = `/assets/ui/chip_${s.key}_${s.key === selectedSlot ? 'on' : 'off'}.png`);
     setImg();
+    chipArt.set(s.key, setImg);
     b.appendChild(img);
     // The corner jewel is the module's POWER switch. It used to be an 8px
     // dot — the visible glow is box-shadow, which captures no clicks, so
@@ -287,10 +298,7 @@ function buildRibbon(): HTMLElement {
     const dot = el('span', 'led');
     led.appendChild(dot);
     b.appendChild(led);
-    const syncLed = () => {
-      dot.classList.toggle('on', store.get(s.onParam) > 0.5);
-      setImg();
-    };
+    const syncLed = () => dot.classList.toggle('on', store.get(s.onParam) > 0.5);
     syncLed();
     store.subscribe((id) => { if (id === s.onParam || id === '*') syncLed(); });
     b.addEventListener('click', () => selectSlot(s.key));
@@ -314,6 +322,8 @@ function selectSlot(k: SlotKey) {
   selectedSlot = k;
   document.querySelectorAll<HTMLElement>('.chip').forEach(
     (c) => c.classList.toggle('sel', c.dataset.slot === k));
+  // Repaint every icon: the one gaining colour and the one giving it up.
+  for (const repaint of chipArt.values()) repaint();
   renderStage();
 }
 

@@ -127,7 +127,11 @@ export const PARAMS: ParamDef[] = [
 
   { id: 'rvb_on', label: 'REVERB', min: 0, max: 1, def: 1 },
   { id: 'rvb_machine', label: 'MACHINE', min: 0, max: 3, def: 1, choices: ['Room', 'Hall', 'Plate', 'Spring'] },
-  { id: 'rvb_decay', label: 'DECAY', min: 0.2, max: 60, def: 3.5, skew: 0.3, unit: 's', format: (v) => v.toFixed(1) },
+  // 30 s is already a cathedral you can get lost in. The old 60 s top end was
+  // a drone machine, not a reverb — nothing musical lives up there, and it is
+  // what made long settings feel like the tail had stopped obeying the knob.
+  // (The tank is stable across the whole range either way; this is voicing.)
+  { id: 'rvb_decay', label: 'DECAY', min: 0.2, max: 30, def: 3.5, skew: 0.3, unit: 's', format: (v) => v.toFixed(1) },
   { id: 'rvb_predelay', label: 'PRE-DELAY', min: 0, max: 500, def: 20, skew: 0.5, unit: 'ms', format: ms0 },
   { id: 'rvb_mix', label: 'MIX', min: 0, max: 1, def: 0.3, unit: '%', format: pct },
   { id: 'rvb_tone', label: 'TONE', min: -1, max: 1, def: 0, format: (v) => v.toFixed(2) },

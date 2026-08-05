@@ -24,7 +24,7 @@ export const FACTORY_PRESETS: Preset[] = [
   // The compressor is OFF here — the capture is already pushed, and a comp in
   // front of it is the player's choice, not the opening statement.
   P('Pushed Crunch', 'FACTORY', 'portland', 'portland_pushed', {
-    tempo: 120, comp_on: 0,
+    tempo: 120, comp_on: 0, dlyA_mix: 0.13,
   }),
   P('Init — Bloom Clean', 'FACTORY', 'camden', 'camden_clean', {
     tempo: 120,
@@ -43,7 +43,7 @@ export const FACTORY_PRESETS: Preset[] = [
   }),
   P('Worship Wash', 'SIGNATURE', 'camden', 'camden_clean', {
     tempo: 72, dlyA_div: 2, dlyA_fb: 0.68, dlyA_mix: 0.55, dlyA_mode: 1, dlyA_grit: 0.42,
-    dlyA_duck: 0.45, rvb_machine: 1, rvb_decay: 12, rvb_mix: 0.42, rvb_shimmer: 0.45,
+    dlyA_duck: 0.45, rvb_machine: 1, rvb_decay: 7, rvb_mix: 0.42, rvb_shimmer: 0.4,
     rvb_mod: 0.5, rvb_duck: 1, cho_on: 0,
   }),
   P('Dream-Pop Haze', 'SIGNATURE', 'camden', 'camden_driven', {
@@ -80,7 +80,7 @@ export const FACTORY_PRESETS: Preset[] = [
   P('Ambient Swell Bed', 'SIGNATURE', 'camden', 'camden_clean', {
     tempo: 66, dlyA_div: 0, dlyA_fb: 0.75, dlyA_mix: 0.6, dlyA_mode: 1, dlyA_grit: 0.5,
     dlyB_on: 1, dlyB_div: 2, dlyB_fb: 0.6, dlyB_mix: 0.5, dlyB_mode: 3, dly_routing: 0,
-    rvb_machine: 1, rvb_decay: 26, rvb_mix: 0.55, rvb_shimmer: 0.6, rvb_shimmer_mode: 1,
+    rvb_machine: 1, rvb_decay: 9, rvb_mix: 0.5, rvb_shimmer: 0.5, rvb_shimmer_mode: 1,
     rvb_mod: 0.6, cho_on: 1, cho_mix: 0.35,
   }),
 ];

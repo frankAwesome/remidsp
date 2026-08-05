@@ -497,7 +497,16 @@ class DelayEngine {
     const gBlock = this.grit.get();
     if (Math.abs(gBlock - this.lastGrit) > 0.005) this.applyMode();
     const drive = 1 + gBlock * 5 + (isTape ? 0.8 : 0) + (isAnalog ? 0.5 : 0);
-    const norm = 1 / Math.pow(drive, 0.55);
+    // Unity small-signal compensation, and it has to be exact. AdaaTanh has a
+    // slope of 1 at the origin, so the loop's quiet-signal gain is
+    // fb x drive x norm — with norm = drive^-0.55 that left drive^0.45 of raw
+    // gain inside the feedback path, and GRIT silently became a sustain
+    // control: at the default 0.25 the loop ran at fb x 1.44, so FEEDBACK
+    // self-oscillated from 0.69 upward on a knob that goes to 1.1. Repeats
+    // grew after the player stopped playing and parked against the limiter.
+    // norm = 1/drive makes the loop gain exactly fb: GRIT is texture, and
+    // only past 1.0 does a repeat bloom — which is the documented intent.
+    const norm = 1 / drive;
     const dAmt = this.diffAmt * (0.5 + gBlock * 0.5);
     const diffuse = !isDigital && dAmt > 0.01;
     const hissAmt = (isTape && gBlock > 0.05) ? 0.00035 * gBlock : 0;
