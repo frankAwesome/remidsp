@@ -10,7 +10,7 @@
  */
 
 import {
-  collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
+  collection, collectionGroup, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, serverTimestamp, increment, writeBatch,
   type Timestamp,
 } from 'firebase/firestore';
@@ -58,6 +58,9 @@ export interface CommentDoc {
   id: string;
   uid: string;
   username: string;
+  avatarUrl?: string;
+  presetName?: string;   // denormalized for the profile's comment history
+  presetId?: string;     // derived from the doc path on read
   text: string;
   createdAt?: Timestamp;
 }
@@ -106,6 +109,17 @@ export async function searchUsers(q: string): Promise<ProfileHit[]> {
     where('usernameLower', '<=', needle + ''),
     orderBy('usernameLower'), limit(20));
   return (await getDocs(qq)).docs.map((d) => ({ uid: d.id, ...d.data() } as ProfileHit));
+}
+
+export async function isFollowing(me: string, target: string): Promise<boolean> {
+  return (await getDoc(doc(db, 'profiles', me, 'following', target))).exists();
+}
+
+/** A player's public (shared) tones, newest first — the public profile. */
+export async function publicTones(uid: string): Promise<CloudPreset[]> {
+  const q = query(presetsCol(), where('uid', '==', uid), where('shared', '==', true),
+    orderBy('createdAt', 'desc'), limit(30));
+  return (await getDocs(q)).docs.map((d) => ({ id: d.id, ...d.data() } as CloudPreset));
 }
 
 export async function myFollowingIds(uid: string): Promise<string[]> {
@@ -199,10 +213,15 @@ export async function setLiked(uid: string, presetId: string, like: boolean): Pr
   await batch.commit();
 }
 
-export async function addComment(user: User, profile: Profile, presetId: string, text: string): Promise<void> {
+export async function addComment(
+  user: User, profile: Profile, presetId: string, text: string, presetName = '',
+): Promise<void> {
   const batch = writeBatch(db);
   const cRef = doc(collection(db, 'presets', presetId, 'comments'));
-  batch.set(cRef, { uid: user.uid, username: profile.username, text, createdAt: serverTimestamp() });
+  batch.set(cRef, {
+    uid: user.uid, username: profile.username, avatarUrl: profile.avatarUrl ?? '',
+    presetName: presetName.slice(0, 60), text, createdAt: serverTimestamp(),
+  });
   batch.update(doc(db, 'presets', presetId), { commentsCount: increment(1) });
   await batch.commit();
 }
@@ -210,6 +229,15 @@ export async function addComment(user: User, profile: Profile, presetId: string,
 export async function comments(presetId: string): Promise<CommentDoc[]> {
   const q = query(collection(db, 'presets', presetId, 'comments'), orderBy('createdAt', 'asc'), limit(80));
   return (await getDocs(q)).docs.map((d) => ({ id: d.id, ...d.data() } as CommentDoc));
+}
+
+/** Everything a player has said, newest first — for the profile page. */
+export async function myComments(uid: string): Promise<CommentDoc[]> {
+  const q = query(collectionGroup(db, 'comments'),
+    where('uid', '==', uid), orderBy('createdAt', 'desc'), limit(50));
+  return (await getDocs(q)).docs.map((d) => ({
+    id: d.id, presetId: d.ref.parent.parent?.id, ...d.data(),
+  } as CommentDoc));
 }
 
 /** Anyone loading a shared sound bumps its counter — signed in or not. */

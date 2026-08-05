@@ -38,10 +38,13 @@ export class FeedView {
   private followingSet = new Set<string>();
   private applyPreset: ApplyCloudPreset;
   private openAccount: () => void;
+  private openUser: (uid: string, username?: string) => void;
 
-  constructor(applyPreset: ApplyCloudPreset, openAccount: () => void) {
+  constructor(applyPreset: ApplyCloudPreset, openAccount: () => void,
+              openUser: (uid: string, username?: string) => void = () => {}) {
     this.applyPreset = applyPreset;
     this.openAccount = openAccount;
+    this.openUser = openUser;
     this.root = document.createElement('section');
     this.root.className = 'feed';
     this.root.hidden = true;
@@ -154,7 +157,7 @@ export class FeedView {
     }
   }
 
-  private personCard(h: ProfileHit): HTMLElement {
+  personCard(h: ProfileHit): HTMLElement {
     const me = session.user?.uid;
     const card = document.createElement('div');
     card.className = 'person-card';
@@ -167,6 +170,12 @@ export class FeedView {
       </div>
       ${h.uid === me ? '<span class="person-card__you">YOU</span>'
         : `<button class="t3k__pill ${following ? 'on' : ''}">${following ? 'FOLLOWING' : 'FOLLOW'}</button>`}`;
+    // the card body opens their profile; the pill stays the follow control
+    card.classList.add('person-card--link');
+    card.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('button')) return;
+      this.openUser(h.uid, h.username);
+    });
     const btn = card.querySelector('button');
     btn?.addEventListener('click', async () => {
       if (!session.user) { toast('Sign in to follow players.'); this.openAccount(); return; }
@@ -184,6 +193,8 @@ export class FeedView {
   }
 
   /* ── the tone post ── */
+
+  toneCard(p: CloudPreset): HTMLElement { return this.card(p); }
 
   private card(p: CloudPreset): HTMLElement {
     const c = document.createElement('article');
@@ -211,9 +222,11 @@ export class FeedView {
 
     c.innerHTML = `
       <header class="feed-card__head">
-        ${p.avatarUrl ? `<img class="feed-card__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
-          : `<div class="feed-card__ava feed-card__ava--blank">${escape((p.username || '?')[0].toUpperCase())}</div>`}
-        <div class="feed-card__who"><b>${escape(p.username)}</b><span>${when}</span></div>
+        <button class="feed-card__byline" data-a="user" title="open profile">
+          ${p.avatarUrl ? `<img class="feed-card__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
+            : `<div class="feed-card__ava feed-card__ava--blank">${escape((p.username || '?')[0].toUpperCase())}</div>`}
+          <span class="feed-card__who"><b>${escape(p.username)}</b><span>${when}</span></span>
+        </button>
         <span class="feed-card__ampbadge">${escape(p.amp.toUpperCase())}</span>
       </header>
       <div class="feed-card__title">${escape(p.name)}</div>
@@ -247,6 +260,8 @@ export class FeedView {
       } catch (err) { toast(`Like failed — ${(err as Error).message}`); }
     });
 
+    c.querySelector('[data-a=user]')!.addEventListener('click', () => this.openUser(p.uid, p.username));
+
     c.querySelector('[data-a=load]')!.addEventListener('click', async () => {
       await this.applyPreset(p);
       void countDownload(p.id);
@@ -266,13 +281,8 @@ export class FeedView {
     box.innerHTML = `<div class="t3k__note">Loading comments…</div>`;
     try {
       const list = await comments(p.id);
-      box.innerHTML = '';
-      for (const cm of list) {
-        const row = document.createElement('div');
-        row.className = 'feed-comment';
-        row.innerHTML = `<b>${escape(cm.username)}</b> ${escape(cm.text)}`;
-        box.appendChild(row);
-      }
+      box.innerHTML = list.length ? '' : `<div class="t3k__note">No comments yet — say the first thing.</div>`;
+      for (const cm of list) box.appendChild(renderCommentRow(cm));
       const form = document.createElement('form');
       form.className = 'feed-comment__form';
       form.innerHTML = `<input maxlength="500" placeholder="${session.user ? 'say something…' : 'sign in to comment'}"
@@ -283,8 +293,10 @@ export class FeedView {
         const text = input.value.trim();
         if (!text || !session.user || !session.profile) return;
         try {
-          await addComment(session.user, session.profile, p.id, text);
+          await addComment(session.user, session.profile, p.id, text, p.name);
           input.value = '';
+          const n = box.closest('.feed-card')?.querySelector('[data-a=comments] span');
+          if (n) n.textContent = String(Number(n.textContent) + 1);
           await this.renderComments(box, p);
         } catch (err) { toast(`Comment failed — ${(err as Error).message}`); }
       });
@@ -300,7 +312,26 @@ function stat(label: string, value: string, unit: string): string {
     <span class="feed-stat__val led-text">${value}</span>
     <span class="feed-stat__unit">${unit}</span></div>`;
 }
-function timeAgo(ms: number): string {
+/** One spoken line: avatar disc · name · time · the words. Shared with the
+ *  profile page so comments speak the same language everywhere. */
+export function renderCommentRow(cm: { username: string; avatarUrl?: string; text: string;
+  createdAt?: { toMillis(): number } }, context?: string): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'feed-comment';
+  const when = cm.createdAt ? timeAgo(cm.createdAt.toMillis()) : '';
+  row.innerHTML = `
+    ${cm.avatarUrl
+      ? `<img class="feed-comment__ava" crossorigin="anonymous" src="${escape(cm.avatarUrl)}" alt="">`
+      : `<span class="feed-comment__ava feed-comment__ava--blank">${escape((cm.username || '?')[0].toUpperCase())}</span>`}
+    <div class="feed-comment__body">
+      <div class="feed-comment__meta"><b>${escape(cm.username)}</b>
+        ${context ? `<i>on ${escape(context)}</i>` : ''}<span>${when}</span></div>
+      <div class="feed-comment__text">${escape(cm.text)}</div>
+    </div>`;
+  return row;
+}
+
+export function timeAgo(ms: number): string {
   const s = (Date.now() - ms) / 1000;
   if (s < 90) return 'just now';
   if (s < 3600) return `${Math.round(s / 60)}m ago`;

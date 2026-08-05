@@ -13,6 +13,7 @@ import { LooperSection } from './ui/looper';
 import { preloadAssets } from './ui/preload';
 import { AccountUI } from './ui/account';
 import { FeedView } from './ui/feed';
+import { ProfileView } from './ui/profile';
 import { openSaveDialog } from './ui/saveDialog';
 import type { CloudPreset, CaptureRefDoc } from './cloud/store';
 
@@ -39,10 +40,10 @@ let delayEngineShown: 0 | 1 = 0;
 let quality: 'full' | 'eco' = 'full';
 let customIrName: string | null = null;
 let presetIdx = 0;
-let feedMode = false;
 let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: 'camden_clean', label: 'camden clean' };
 let account: AccountUI;
 let feedView: FeedView;
+let profileView: ProfileView;
 
 const BUNDLED_IRS = [
   'uk_2x12_blue_onaxis', 'uk_2x12_blue_offaxis',
@@ -888,15 +889,23 @@ function levelPct(v: number): number {
 /* ────────────────────────── assemble ────────────────────────── */
 
 function build() {
-  account = new AccountUI(applyCloudPreset);
-  feedView = new FeedView(applyCloudPreset, () => account.open());
-  account.onSessionChange = () => { if (feedMode) void feedView.refresh(); };
+  const openUserProfile = (uid: string) => { profileView.show(uid); setView('profile'); };
+  account = new AccountUI(() => { profileView.show(null); setView('profile'); });
+  feedView = new FeedView(applyCloudPreset, () => account.open(), openUserProfile);
+  profileView = new ProfileView(applyCloudPreset, () => account.open(), (p) => feedView.toneCard(p));
+  profileView.onSignedOut = () => setView('rig');
+  profileView.onProfileSaved = () => account.refreshChip();
+  account.onSessionChange = () => {
+    if (currentView === 'feed') void feedView.refresh();
+    if (currentView === 'profile') void profileView.refresh();
+  };
   app.appendChild(buildHeader());
   app.appendChild(buildRibbon());
   stage.className = 'stage';
   app.appendChild(stage);
   app.appendChild(new LooperSection().root);
   app.appendChild(feedView.root);
+  app.appendChild(profileView.root);
   const foot = el('footer', 'foot');
   foot.innerHTML = `<span class="foot__brand">Remi</span>
     <span class="mono">MAINE · WEB SUITE · v0.1</span>
@@ -928,20 +937,28 @@ window.addEventListener('remi:capture-loaded', () => {
   if (selectedSlot === 'amp') renderStage();
 });
 
-/* ── the feed / rig view switch + cloud preset apply ── */
+/* ── rig / feed / profile view switch + cloud preset apply ── */
 
-function setFeedMode(on: boolean) {
-  feedMode = on;
-  document.querySelector<HTMLElement>('.ribbon')!.hidden = on;
-  stage.hidden = on;
-  document.querySelector<HTMLElement>('.looper')!.hidden = on;
-  feedView.root.hidden = !on;
-  // the lit side of the RIG | FEED switch is the view you're on
+type View = 'rig' | 'feed' | 'profile';
+let currentView: View = 'rig';
+
+function setView(v: View) {
+  currentView = v;
+  const rig = v === 'rig';
+  document.querySelector<HTMLElement>('.ribbon')!.hidden = !rig;
+  stage.hidden = !rig;
+  document.querySelector<HTMLElement>('.looper')!.hidden = !rig;
+  feedView.root.hidden = v !== 'feed';
+  profileView.root.hidden = v !== 'profile';
   document.querySelectorAll<HTMLElement>('.viewswitch [data-view]').forEach((b) =>
-    b.classList.toggle('hdr__btn--lit', (b.dataset.view === 'feed') === on));
+    b.classList.toggle('hdr__btn--lit', b.dataset.view === v));
+  account.chip.classList.toggle('account-chip--here', v === 'profile');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (on) void feedView.refresh();
+  if (v === 'feed') void feedView.refresh();
+  if (v === 'profile') void profileView.refresh();
 }
+
+function setFeedMode(on: boolean) { setView(on ? 'feed' : 'rig'); }
 
 async function applyCloudPreset(p: CloudPreset) {
   await applyPreset({ name: p.name, group: 'USER', amp: p.amp, voice: p.voice, params: p.params });

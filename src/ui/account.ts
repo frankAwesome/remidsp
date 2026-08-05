@@ -7,29 +7,25 @@ import {
   onUser, consumeRedirect, signInWithProvider, emailSignIn, emailSignUp,
   resetPassword, signOut, authErrorText, type User,
 } from '../cloud/fb';
-import {
-  ensureProfile, saveProfile, myPresets, setShared, deletePreset,
-  type Profile, type CloudPreset,
-} from '../cloud/store';
+import { ensureProfile, type Profile } from '../cloud/store';
 import { toast } from './toast';
 
 export const session: { user: User | null; profile: Profile | null } = { user: null, profile: null };
-
-type ApplyCloudPreset = (p: CloudPreset) => Promise<void>;
 
 export class AccountUI {
   root: HTMLElement;
   chip: HTMLButtonElement;
   private body: HTMLElement;
-  private applyPreset: ApplyCloudPreset;
+  private openProfile: () => void;
   onSessionChange: (() => void) | null = null;
 
-  constructor(applyPreset: ApplyCloudPreset) {
-    this.applyPreset = applyPreset;
+  constructor(openProfile: () => void) {
+    this.openProfile = openProfile;
     this.chip = document.createElement('button');
     this.chip.className = 'hdr__btn account-chip';
     this.chip.textContent = 'SIGN IN';
-    this.chip.addEventListener('click', () => this.open());
+    // signed out the chip opens the auth drawer; signed in it IS your profile
+    this.chip.addEventListener('click', () => (session.user ? this.openProfile() : this.open()));
 
     this.root = document.createElement('div');
     this.root.className = 't3k';
@@ -60,6 +56,7 @@ export class AccountUI {
 
   open() { this.root.classList.add('open'); this.render(); }
   close() { this.root.classList.remove('open'); }
+  refreshChip() { this.syncChip(); }
 
   private syncChip() {
     const p = session.profile;
@@ -133,13 +130,12 @@ export class AccountUI {
     this.body.appendChild(wrap);
   }
 
-  /* ── signed in ── */
+  /* ── signed in: a compact hand-off to the profile page ── */
   private renderSignedIn() {
     const user = session.user!;
     const p = session.profile ?? { username: 'player', bio: '', avatarUrl: '' };
-
-    const prof = el('div', 'account-profile');
-    prof.innerHTML = `
+    const wrap = el('div', 'account-profile');
+    wrap.innerHTML = `
       <div class="account-profile__head">
         ${p.avatarUrl ? `<img crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">` : '<div class="account-profile__blank"></div>'}
         <div>
@@ -147,76 +143,19 @@ export class AccountUI {
           <div class="account-profile__mail">${escape(user.email ?? '')}</div>
           <div class="account-profile__mail">${p.followersCount ?? 0} followers · following ${p.followingCount ?? 0}</div>
         </div>
+      </div>
+      <div class="account-form__row">
+        <button class="hdr__btn hdr__btn--lit" data-a="profile">OPEN PROFILE PAGE</button>
         <button class="hdr__btn" data-a="signout">SIGN OUT</button>
       </div>
-      <form class="account-form">
-        <input name="username" maxlength="40" value="${escape(p.username)}" placeholder="username" />
-        <input name="avatarUrl" maxlength="500" value="${escape(p.avatarUrl)}" placeholder="avatar image url" />
-        <textarea name="bio" maxlength="400" rows="3" placeholder="bio — amps, bands, worship team, whatever">${escape(p.bio)}</textarea>
-        <div class="account-form__row"><button type="submit" class="hdr__btn hdr__btn--lit">SAVE PROFILE</button></div>
-      </form>
-      <div class="account-rule"><span>MY SOUNDS</span></div>
-      <div class="account-sounds"><div class="t3k__note">Loading…</div></div>`;
-    prof.querySelector('[data-a=signout]')!.addEventListener('click', async () => {
+      <div class="account-note">Your sounds, comment history and profile editing live on the profile page.</div>`;
+    wrap.querySelector('[data-a=profile]')!.addEventListener('click', () => { this.close(); this.openProfile(); });
+    wrap.querySelector('[data-a=signout]')!.addEventListener('click', async () => {
       await signOut();
       toast('Signed out.');
       this.render();
     });
-    const form = prof.querySelector('form')!;
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const v = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | HTMLTextAreaElement).value.trim();
-      const next: Profile = { username: v('username') || 'player', bio: v('bio'), avatarUrl: v('avatarUrl') };
-      try {
-        await saveProfile(user.uid, next);
-        session.profile = next;
-        this.syncChip();
-        toast('<b>Profile saved.</b>');
-      } catch (err) { toast(`Profile save failed — ${(err as Error).message}`, 4500); }
-    });
-    this.body.appendChild(prof);
-    void this.renderSounds(prof.querySelector('.account-sounds')!);
-  }
-
-  private async renderSounds(box: HTMLElement) {
-    try {
-      const list = await myPresets(session.user!.uid);
-      box.innerHTML = list.length ? '' : '<div class="t3k__note">Nothing saved yet — dial a sound and hit SAVE.</div>';
-      for (const pr of list) {
-        const row = el('div', 'sound-row');
-        row.innerHTML = `
-          <div class="sound-row__body">
-            <b>${escape(pr.name)}</b>
-            <span>${escape(pr.amp)} · ${escape(pr.capture?.label ?? pr.voice)}${pr.shared ? ' · <i class="sound-row__shared">ON FEED</i>' : ''}</span>
-          </div>
-          <button data-a="load">LOAD</button>
-          <button data-a="share">${pr.shared ? 'UNSHARE' : 'SHARE'}</button>
-          <button data-a="del">✕</button>`;
-        row.querySelector('[data-a=load]')!.addEventListener('click', async () => {
-          await this.applyPreset(pr);
-          this.close();
-        });
-        row.querySelector('[data-a=share]')!.addEventListener('click', async () => {
-          try {
-            if (pr.shared) { await setShared(pr.id, false); toast('Taken off the feed.'); }
-            else {
-              const desc = prompt('Say something about this sound (shows on the feed):', pr.description || '') ?? '';
-              await setShared(pr.id, true, desc.slice(0, 500));
-              toast('<b>Shared to the feed.</b>');
-            }
-            this.render();
-          } catch (err) { toast(`Share failed — ${(err as Error).message}`, 4500); }
-        });
-        row.querySelector('[data-a=del]')!.addEventListener('click', async () => {
-          if (!confirm(`Delete "${pr.name}" from your cloud library?`)) return;
-          await deletePreset(pr.id);
-          this.render();
-        });
-        box.appendChild(row);
-      }
-    } catch (err) {
-      box.innerHTML = `<div class="t3k__note">Library unavailable — ${(err as Error).message}</div>`;
-    }
+    this.body.appendChild(wrap);
   }
 }
 

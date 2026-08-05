@@ -302,16 +302,25 @@ service cloud.firestore {
         allow read: if true;
         allow create: if signedIn()
           && request.resource.data.keys().hasOnly(
-               ['uid', 'username', 'text', 'createdAt'])
+               ['uid', 'username', 'avatarUrl', 'presetName', 'text', 'createdAt'])
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.username is string
           && request.resource.data.username.size() <= 40
+          && sOrNull(request.resource.data.get('avatarUrl', null), 500)
+          && sOrNull(request.resource.data.get('presetName', null), 60)
           && request.resource.data.text is string
           && request.resource.data.text.size() >= 1
           && request.resource.data.text.size() <= 500;
         allow update: if false;
         allow delete: if signedIn() && request.auth.uid == resource.data.uid;
       }
+    }
+
+    // Collection-group reads for a player's comment history (comments are
+    // public under their presets already; this lets the profile page query
+    // them across presets in one go).
+    match /{path=**}/comments/{commentId} {
+      allow read: if true;
     }
 
     // Everything else is closed. (This is already the default; stated so the
