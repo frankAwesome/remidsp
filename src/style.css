@@ -276,9 +276,13 @@ select{font:inherit}
   justify-content:center;gap:1.6rem;background:var(--ink);transition:opacity .6s,visibility .6s}
 .gateway.hidden{opacity:0;visibility:hidden}
 .gateway__logo{height:110px;filter:drop-shadow(0 6px 30px rgba(159,216,232,.25))}
-.gateway h1{font-family:var(--font-display);font-weight:700;font-size:clamp(2.4rem,6vw,4.4rem);
-  letter-spacing:.02em;text-transform:uppercase;line-height:.88;text-align:center}
-.gateway h1 small{display:block;font-size:.28em;letter-spacing:.55em;color:var(--muted);font-weight:600}
+.gateway h1{font-family:var(--font-display);font-weight:700;font-size:clamp(3rem,8vw,5.6rem);
+  letter-spacing:.06em;text-transform:uppercase;line-height:.88;text-align:center;
+  background:linear-gradient(180deg,#ffffff 30%,#9fb4c4 90%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 18px rgba(159,216,232,.18))}
+.gateway h1 small{display:block;font-size:.16em;letter-spacing:.58em;color:var(--muted);
+  font-weight:600;-webkit-text-fill-color:var(--muted);margin-top:.55em}
 .gateway__load{width:min(380px,80vw);display:flex;flex-direction:column;gap:.45rem}
 .gateway__load-head{display:flex;align-items:baseline;gap:.3rem;
   font-size:.56rem;font-weight:600;letter-spacing:.34em;color:var(--muted-2);text-transform:uppercase}
@@ -312,6 +316,25 @@ select{font:inherit}
 .pilot.on i{background:radial-gradient(circle at 35% 30%,#ffd9cf,#ff5340 55%,#8f1d12);
   box-shadow:0 0 12px rgba(255,83,64,.85), 0 0 26px rgba(255,83,64,.4),
     inset 0 0 3px rgba(255,255,255,.55), 0 0 0 1px rgba(60,10,6,.8)}
+
+/* RIG | FEED view switch — one segmented control, the lit side is current */
+.viewswitch{display:flex;border:1px solid var(--line-2)}
+.viewswitch .hdr__btn{border:0;border-radius:0}
+.viewswitch .hdr__btn:not(.hdr__btn--lit):hover{background:rgba(255,255,255,.06)}
+
+/* studio power jewels — green when the unit is in, clickable */
+.pilot--power{aspect-ratio:1/1;display:grid;place-items:center;cursor:pointer;border:0;
+  background:radial-gradient(circle,rgba(6,7,6,.9) 0%,rgba(6,7,6,.7) 42%,transparent 68%);
+  pointer-events:auto;padding:0}
+.pilot--power i{display:block;width:52%;aspect-ratio:1/1;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#2f3d33,#17211a 55%,#0d130f);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.6);
+  transition:background .15s, box-shadow .15s}
+.pilot--power:hover i{box-shadow:inset 0 1px 2px rgba(0,0,0,.8), 0 0 0 1px rgba(95,224,138,.4)}
+.pilot--power.on{background:radial-gradient(circle,rgba(95,224,138,.28) 0%,rgba(95,224,138,.1) 40%,transparent 68%)}
+.pilot--power.on i{background:radial-gradient(circle at 35% 30%,#d6ffe2,#5fe08a 55%,#1d7a44);
+  box-shadow:0 0 12px rgba(95,224,138,.85), 0 0 24px rgba(95,224,138,.4),
+    inset 0 0 3px rgba(255,255,255,.55), 0 0 0 1px rgba(10,40,22,.8)}
 
 /* gate AUTO / GLOBAL keys — live twins fully covering the baked prints */
 .gate-key{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;

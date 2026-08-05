@@ -253,6 +253,24 @@ export function pilotLed(onParam: string, nx: number, ny: number, nr: number): H
   return wrap;
 }
 
+/* ── Studio power jewel — the baked LED dome made live AND clickable ── */
+export function powerLed(onParam: string, nx: number, ny: number, nr: number): HTMLElement {
+  const wrap = document.createElement('button');
+  wrap.className = 'pilot pilot--power';
+  wrap.title = 'power';
+  wrap.style.cssText = `position:absolute;left:${nx * 100}%;top:${ny * 100}%;
+    width:${nr * 2 * 2.4 * 100}%;transform:translate(-50%,-50%)`;
+  wrap.appendChild(document.createElement('i'));
+  const sync = () => wrap.classList.toggle('on', store.get(onParam) > 0.5);
+  sync();
+  const un = store.subscribe((id) => {
+    if (!wrap.isConnected) { un(); return; }
+    if (id === onParam || id === '*') sync();
+  });
+  wrap.addEventListener('click', () => store.set(onParam, store.get(onParam) > 0.5 ? 0 : 1));
+  return wrap;
+}
+
 /* ── Delay: the ECHO SYNC lamp — the ACTUAL echo rhythm, routing-aware ──
  * A virtual note strikes on a repeating cycle and the jewels flash exactly
  * when each engine's echoes would land, amplitude and all:

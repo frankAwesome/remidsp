@@ -8,7 +8,7 @@ import { toast } from './ui/toast';
 import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, Preset } from './presets';
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, CaptureRef } from './captures';
 import { t3k } from './tone3000';
-import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed } from './ui/live';
+import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed, powerLed } from './ui/live';
 import { LooperSection } from './ui/looper';
 import { preloadAssets } from './ui/preload';
 import { AccountUI } from './ui/account';
@@ -191,13 +191,18 @@ function buildHeader(): HTMLElement {
   h.appendChild(cap);
   capBtn.addEventListener('click', () => t3kBrowser.open());
 
-  // the feed
+  // view switch: RIG | FEED — the lit side is where you are.
   const fg = el('div', 'hdr__group');
+  const sw = el('div', 'viewswitch');
+  const rigBtn = el('button', 'hdr__btn hdr__btn--lit', 'RIG');
+  rigBtn.dataset.view = 'rig';
   const feedBtn = el('button', 'hdr__btn', 'FEED');
-  feedBtn.id = 'feedBtn';
-  fg.append(feedBtn, el('div', 'hdr__caption', 'COMMUNITY'));
+  feedBtn.dataset.view = 'feed';
+  sw.append(rigBtn, feedBtn);
+  fg.append(sw, el('div', 'hdr__caption', 'VIEW'));
   h.appendChild(fg);
-  feedBtn.addEventListener('click', () => setFeedMode(!feedMode));
+  rigBtn.addEventListener('click', () => setFeedMode(false));
+  feedBtn.addEventListener('click', () => setFeedMode(true));
 
   // account
   const ag = el('div', 'hdr__group');
@@ -698,31 +703,34 @@ function studioPanel(): HTMLElement {
   f.appendChild(art);
   const ov = el('div', 'face__overlay');
   for (const k of STUDIO_FACE.knobs) ov.appendChild(placeKnob(k.param, k.sprite, k.nx, k.ny, k.nr));
-  // EQ + comp power jewels over their baked LED domes.
-  ov.appendChild(seat(paramToggle('eq_on', 'EQ', 'tab tab--lightlit'), 0.055, 0.082));
-  ov.appendChild(seat(paramToggle('fet_on', 'COMP', 'tab tab--lightlit'), 0.938, 0.627));
-  // RATIO keys over the baked caps (render x 1006-1302, y 699-775 → 1224×600).
-  const ratio = el('div', '');
-  ratio.style.cssText = 'display:flex;gap:2.5%;width:100%;height:100%';
+  // The baked LED domes are now the live power controls: green jewels that
+  // light when the unit is in and toggle on click (desktop rc geometry).
+  ov.appendChild(powerLed('eq_on', 0.0441, 0.105, 0.0135));
+  ov.appendChild(powerLed('fet_on', 0.9355, 0.65, 0.0135));
+  // Labelled toggles live in clear metal, away from the domes: EQ IN beside
+  // the VOICE box, COMP IN after the FET nameplate.
+  ov.appendChild(seat(paramToggle('eq_on', 'EQ IN', 'tab tab--mini tab--lightlit'), 0.655, 0.072));
+  ov.appendChild(seat(paramToggle('fet_on', 'COMP IN', 'tab tab--mini tab--lightlit'), 0.385, 0.638));
+  // RATIO keys — one button per baked cap, each seated on its pixel-scanned
+  // rectangle so the lit key lands exactly on its printed twin.
   const d = paramById.get('fet_ratio')!;
+  const capX = [0.5909, 0.6342, 0.6778, 0.7217];
   const btns: HTMLButtonElement[] = [];
   for (const [i, c] of (d.choices ?? []).entries()) {
     const b = document.createElement('button');
     b.className = 'tab';
     b.textContent = c;
-    b.style.flex = '1';
-    b.style.padding = '0';
+    b.style.cssText = 'width:100%;height:100%;padding:0;display:grid;place-items:center';
     b.addEventListener('click', () => store.set('fet_ratio', i));
     btns.push(b);
-    ratio.appendChild(b);
+    ov.appendChild(seat(b, capX[i], 0.812, 0.0425, 0.095));
   }
   const syncRatio = () => btns.forEach((b, i) => b.classList.toggle('on', (store.get('fet_ratio') | 0) === i));
   syncRatio();
   const unR = store.subscribe((id) => {
-    if (!ratio.isConnected) { unR(); return; }
+    if (!btns[0]?.isConnected) { unR(); return; }
     if (id === 'fet_ratio' || id === '*') syncRatio();
   });
-  ov.appendChild(seat(ratio, 0.6574, 0.8226, 0.169, 0.085));
   // Live VU needle over the baked GAIN REDUCTION dial window.
   ov.appendChild(vuNeedle());
   f.appendChild(ov);
@@ -925,11 +933,10 @@ function setFeedMode(on: boolean) {
   stage.hidden = on;
   document.querySelector<HTMLElement>('.looper')!.hidden = on;
   feedView.root.hidden = !on;
-  const btn = document.getElementById('feedBtn');
-  if (btn) {
-    btn.textContent = on ? 'BACK TO RIG' : 'FEED';
-    btn.classList.toggle('hdr__btn--lit', on);
-  }
+  // the lit side of the RIG | FEED switch is the view you're on
+  document.querySelectorAll<HTMLElement>('.viewswitch [data-view]').forEach((b) =>
+    b.classList.toggle('hdr__btn--lit', (b.dataset.view === 'feed') === on));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   if (on) void feedView.refresh();
 }
 
