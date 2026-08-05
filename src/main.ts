@@ -674,10 +674,10 @@ function delayPanel(): HTMLElement {
   const routSel = paramSelect('dly_routing');
   routSel.style.height = '100%';
   ov.appendChild(seat(routSel, 0.6903, 0.827, 0.155, 0.052));
-  // PING-PONG chip: no baked twin — it joins the top mode row, in the clear
-  // starfield right of SYNC, sized like its neighbours.
+  // PING-PONG chip: no baked twin — it anchors the bottom control row with
+  // DIVISION and ROUTING, clear of the enclosure edge, screws and captions.
   const pp = paramToggle(p + 'pingpong', 'PING-PONG', 'tab tab--mini');
-  seatFill(pp, [0.762, 0.1137, 0.105, 0.048]);
+  seatFill(pp, [0.18, 0.827, 0.082, 0.052]);
   // Live ECHO SYNC lamp — flashes the routing's ACTUAL echo rhythm.
   ov.appendChild(delayLamp(delayEngineShown));
 
@@ -709,9 +709,11 @@ function studioPanel(): HTMLElement {
   ov.appendChild(powerLed('eq_on', 0.0441, 0.105, 0.0114));
   ov.appendChild(powerLed('fet_on', 0.9355, 0.65, 0.0114));
   // Labelled toggles live in clear metal, away from the domes: EQ IN beside
-  // the VOICE box, COMP IN after the FET nameplate.
+  // the VOICE box; COMP IN centred directly above the VU window.
   ov.appendChild(seat(paramToggle('eq_on', 'EQ IN', 'tab tab--mini tab--lightlit'), 0.655, 0.072));
-  ov.appendChild(seat(paramToggle('fet_on', 'COMP IN', 'tab tab--mini tab--lightlit'), 0.385, 0.638));
+  const compIn = paramToggle('fet_on', 'COMP IN', 'tab tab--mini tab--lightlit');
+  compIn.style.cssText += ';width:100%;height:100%;padding:0;display:grid;place-items:center';
+  ov.appendChild(seat(compIn, 0.8672, 0.687, 0.078, 0.038));
   // RATIO keys — one button per baked cap, each seated on its pixel-scanned
   // rectangle so the lit key lands exactly on its printed twin.
   const d = paramById.get('fet_ratio')!;
