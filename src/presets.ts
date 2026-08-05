@@ -13,6 +13,13 @@ const P = (name: string, group: Preset['group'], amp: string, voice: string,
            params: Record<string, number>): Preset => ({ name, group, amp, voice, params });
 
 export const FACTORY_PRESETS: Preset[] = [
+  // The boot patch: the app opens on Portland's Pushed voice (a '66 JTM45
+  // through a Bluesbreaker). Index 0 is what boot() applies, so it stays first.
+  // The compressor is OFF here — the capture is already pushed, and a comp in
+  // front of it is the player's choice, not the opening statement.
+  P('Pushed Crunch', 'FACTORY', 'portland', 'portland_pushed', {
+    tempo: 120, comp_on: 0,
+  }),
   P('Init — Bloom Clean', 'FACTORY', 'camden', 'camden_clean', {
     tempo: 120,
   }),
@@ -47,7 +54,7 @@ export const FACTORY_PRESETS: Preset[] = [
     tempo: 84, drive_on: 1, drive_gain: 0.28, comp_sustain: 0.4, dlyA_div: 1,
     dlyA_fb: 0.22, dlyA_mix: 0.24, dlyA_mode: 2, rvb_machine: 0, rvb_decay: 1.8, rvb_mix: 0.2,
   }),
-  P('Classic Rock Crunch', 'SIGNATURE', 'portland', 'portland_lead', {
+  P('Classic Rock Crunch', 'SIGNATURE', 'portland', 'portland_pushed', {
     tempo: 132, dly_on: 0, rvb_machine: 0, rvb_decay: 1.3, rvb_mix: 0.15,
     gate_thresh: -52, sauce_on: 1, sauce_tame: 0.3, sauce_pres: 0.35,
   }),
@@ -60,7 +67,7 @@ export const FACTORY_PRESETS: Preset[] = [
     sauce_on: 1, sauce_tight: 0.6, sauce_punch: 0.5, sauce_tame: 0.4, sauce_smooth: 0.3,
     rvb_machine: 0, rvb_decay: 0.9, rvb_mix: 0.1, fet_input: 0.55, fet_ratio: 1,
   }),
-  P('Katahdin Blue Lead', 'SIGNATURE', 'katahdin', 'katahdin_blue', {
+  P('Katahdin Lead', 'SIGNATURE', 'katahdin', 'katahdin_red', {
     tempo: 96, dlyA_div: 1, dlyA_fb: 0.35, dlyA_mix: 0.3, dlyA_mode: 2,
     rvb_machine: 1, rvb_decay: 3.8, rvb_mix: 0.3, cho_on: 0, comp_on: 0,
   }),

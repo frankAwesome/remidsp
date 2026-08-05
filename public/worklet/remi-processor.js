@@ -261,79 +261,60 @@ class StompComp {
   }
 }
 
-// Op-amp diode-feedback drive: gain-dependent knee, tilt tone, ADAA clip.
+// Op-amp diode-feedback drive: gain-dependent knee, ADAA clip, and a two-band
+// output tone stack. One pedal — a Bluesbreaker-lineage transparent overdrive
+// voiced from the drive capture the desktop suite ships: symmetric soft
+// clipping, full-range low end, plenty of gain on tap, the amp's own voice
+// still audible underneath. TREBLE/BASS mirror the desktop Drive exactly:
+// ±8 dB shelves at 2.5 kHz / 150 Hz, identity at noon.
 class DrivePedal {
   constructor(sr) {
     this.sr = sr;
     this.on = false;
     this.gain = new Smooth(0.35, 20, sr);
-    this.tone = new Smooth(0.5, 20, sr);
     this.level = new Smooth(0.5, 20, sr);
     this.clipL = new AdaaTanh(); this.clipR = new AdaaTanh();
     this.hpL = new OnePoleHP(); this.hpR = new OnePoleHP();
     this.lpL = new OnePoleLP(); this.lpR = new OnePoleLP();
-    this.toneZ = -1;
-    // Two pedals in one enclosure, voiced from the drive captures the desktop
-    // suite ships:
-    //   0 — TRANSPARENT OD: a Bluesbreaker-lineage overdrive. Symmetric soft
-    //       clipping, full-range low end, plenty of gain on tap, the amp's
-    //       own voice still audible underneath.
-    //   1 — CLEAN BOOST: the famous mid-forward transparent booster. Its
-    //       character is the CLEAN BLEND — a dry path summed with a lightly,
-    //       ASYMMETRICALLY clipped one (even harmonics), tighter lows and a
-    //       push around 900 Hz. It pushes an amp rather than distorting.
-    this.model = 0;
-    this.midL = new Biquad(); this.midR = new Biquad();
-    this.applyModel();
+    this.hpL.setFc(35, sr); this.hpR.setFc(35, sr);
+    // Fixed post-clip top: the circuit's own voice, where the old TONE knob's
+    // noon position sat. The player's EQ is the tone stack below.
+    this.lpL.setFc(4150, sr); this.lpR.setFc(4150, sr);
+    this.driveScale = 55;
+    this.trebL = new Biquad(); this.trebR = new Biquad();
+    this.bassL = new Biquad(); this.bassR = new Biquad();
+    this.set('treble', 0.5);
+    this.set('bass', 0.5);
   }
 
-  applyModel() {
-    const sr = this.sr, boost = this.model === 1;
-    this.hpL.setFc(boost ? 80 : 35, sr); this.hpR.setFc(boost ? 80 : 35, sr);
-    this.midL.peak(900, 0.7, boost ? 4.5 : 0, sr);
-    this.midR.peak(900, 0.7, boost ? 4.5 : 0, sr);
-    this.driveScale = boost ? 16 : 55;   // boost stays cleaner for the same knob
-    this.cleanBlend = boost ? 0.45 : 0;  // the blend IS the boost's signature
-    this.bias = boost ? 0.18 : 0;        // asymmetry → even harmonics
-    this.midOn = boost;
-  }
   set(id, v) {
     if (id === 'on') this.on = v > 0.5;
     else if (id === 'gain') this.gain.set(v);
-    else if (id === 'tone') this.tone.set(v);
     else if (id === 'level') this.level.set(v);
-    else if (id === 'model') { this.model = v | 0; this.applyModel(); }
-    else if (id === 'air') {
-      if (!this.airL) { this.airL = new Biquad(); this.airR = new Biquad(); }
-      this.airL.highshelf(7500, (v - 0.5) * 12, this.sr);
-      this.airR.highshelf(7500, (v - 0.5) * 12, this.sr);
-      this.airOn = Math.abs(v - 0.5) > 0.01;
+    else if (id === 'treble') {
+      const db = (v - 0.5) * 16;
+      this.trebL.highshelf(2500, db, this.sr, 0.7);
+      this.trebR.highshelf(2500, db, this.sr, 0.7);
+      this.trebOn = Math.abs(db) > 0.05;
+    } else if (id === 'bass') {
+      const db = (v - 0.5) * 16;
+      this.bassL.lowshelf(150, db, this.sr, 0.7);
+      this.bassR.lowshelf(150, db, this.sr, 0.7);
+      this.bassOn = Math.abs(db) > 0.05;
     }
   }
   process(L, R, n) {
     if (!this.on) return;
     for (let i = 0; i < n; i++) {
       const d = this.gain.next();
-      const t = this.tone.next();
-      if (Math.abs(t - this.toneZ) > 1e-3) {
-        const fc = 750 * Math.pow(2, t * 4.2); // 750 Hz .. 13.8 kHz
-        this.lpL.setFc(fc, this.sr); this.lpR.setFc(fc, this.sr);
-        this.toneZ = t;
-      }
       const pre = 1 + d * d * this.driveScale;  // square-law feel on the knob
       const comp = 1 / Math.pow(pre, 0.62);     // knee moves, level stays put
       const lv = dbToGain(-6) * (0.25 + this.level.next() * 1.5);
-      let dl = this.hpL.tick(L[i]), dr = this.hpR.tick(R[i]);
-      if (this.midOn) { dl = this.midL.tick(dl); dr = this.midR.tick(dr); }
-      // Bias the clipper for the boost's asymmetry, then remove the DC it adds.
-      let l = this.lpL.tick(this.clipL.tick(dl * pre + this.bias) - this.bias) * comp;
-      let r = this.lpR.tick(this.clipR.tick(dr * pre + this.bias) - this.bias) * comp;
-      if (this.cleanBlend > 0) {   // the boost's clean path, summed alongside
-        l = l * (1 - this.cleanBlend) + dl * this.cleanBlend;
-        r = r * (1 - this.cleanBlend) + dr * this.cleanBlend;
-      }
-      l *= lv; r *= lv;
-      if (this.airOn) { l = this.airL.tick(l); r = this.airR.tick(r); }
+      const dl = this.hpL.tick(L[i]), dr = this.hpR.tick(R[i]);
+      let l = this.lpL.tick(this.clipL.tick(dl * pre)) * comp * lv;
+      let r = this.lpR.tick(this.clipR.tick(dr * pre)) * comp * lv;
+      if (this.trebOn) { l = this.trebL.tick(l); r = this.trebR.tick(r); }
+      if (this.bassOn) { l = this.bassL.tick(l); r = this.bassR.tick(r); }
       L[i] = l; R[i] = r;
     }
   }

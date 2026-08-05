@@ -23,14 +23,12 @@ export const BUNDLED_AMP_CAPTURES: CaptureRef[] = [
   B('camden', 'camden_driven', 'Camden — Driven'),
   B('camden', 'camden_max', 'Camden — Max'),
   B('portland', 'portland_bloom', 'Portland — Bloom'),
-  B('portland', 'portland_lead', 'Portland — Lead'),
-  B('katahdin', 'katahdin_blue', 'Katahdin — Blue'),
+  B('portland', 'portland_pushed', 'Portland — Pushed'),
   B('katahdin', 'katahdin_red', 'Katahdin — Red'),
 ];
 
 export const BUNDLED_PEDAL_CAPTURES: CaptureRef[] = [
-  B(undefined, 'drive1', 'Drive 1 — Morning Glory'),
-  B(undefined, 'drive2', 'Drive 2 — Klon KTR'),
+  B(undefined, 'drive1', 'Drive — Morning Glory'),
 ];
 
 const LS_RECENTS = 'remi_recent_captures';

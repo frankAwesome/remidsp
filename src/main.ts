@@ -33,14 +33,14 @@ const SLOTS = [
 ] as const;
 type SlotKey = typeof SLOTS[number]['key'];
 
-let currentAmp = 'camden';
-let currentVoice = 'camden_clean';
+let currentAmp = 'portland';
+let currentVoice = 'portland_pushed';
 let selectedSlot: SlotKey = 'amp';
 let delayEngineShown: 0 | 1 = 0;
 let quality: 'full' | 'eco' = 'full';
 let customIrName: string | null = null;
 let presetIdx = 0;
-let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: 'camden_clean', label: 'camden clean' };
+let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: 'portland_pushed', label: 'portland pushed' };
 let account: AccountUI;
 let feedView: FeedView;
 let profileView: ProfileView;
@@ -346,30 +346,18 @@ function pedalPanel(key: SlotKey): HTMLElement {
   const pilots: Partial<Record<SlotKey, [number, number, number]>> = {
     gate: [0.4971, 0.0982, 0.0109],
     comp: [0.4996, 0.089, 0.0107],
-    drive: [0.4997, 0.0873, 0.0119],
+    drive: [0.5, 0.113, 0.0119],
     chorus: [0.5019, 0.0926, 0.0118],
     sauce: [0.5002, 0.0729, 0.0104],
   };
   const pg = pilots[key];
   if (pg) ov.appendChild(pilotLed(m.on, pg[0], pg[1], pg[2]));
   if (key === 'drive') {
-    // MODEL selector over the print's baked "Drive 1" box, and a live status
-    // bar covering the baked one under the name plate (desktop geometry).
-    const sel = paramSelect('drive_model');
-    sel.style.height = '100%';
-    ov.appendChild(seat(sel, 0.495, 0.555, 0.235, 0.046));
+    // Live status bar covering the print's baked one under the name plate
+    // (desktop resizedExtras geometry).
     const status = el('div', 'drive-status');
-    const syncStatus = () => {
-      status.textContent = store.get('drive_model') < 0.5
-        ? 'TRANSPARENT · SYMMETRIC SOFT CLIP'
-        : 'CLEAN BLEND · ASYMMETRIC · MID PUSH';
-    };
-    syncStatus();
-    const unS = store.subscribe((id) => {
-      if (!status.isConnected) { unS(); return; }
-      if (id === 'drive_model' || id === '*') syncStatus();
-    });
-    ov.appendChild(seat(status, 0.5, 0.74, 0.268, 0.074));
+    status.textContent = 'CAPTURE LOADED';
+    ov.appendChild(seat(status, 0.5014, 0.7489, 0.272, 0.08));
   }
   if (key === 'gate') {
     ov.appendChild(gateMeter());
@@ -856,12 +844,14 @@ async function boot() {
   startBtn.disabled = true;
   engine.onStateChange = (s, detail) => { status.textContent = detail ?? s; };
   try {
-    const engineUp = engine.start('/assets/captures/camden_clean.nam',
-      { name: 'camden clean', source: 'bundled' });
+    // Boot straight into the Pushed Crunch patch (FACTORY_PRESETS[0]): the
+    // Portland Pushed voice, every other param already at its default.
+    const engineUp = engine.start('/assets/captures/portland_pushed.nam',
+      { name: 'portland pushed', source: 'bundled' });
     status.textContent = 'warming ui assets';
     await assetsWarm;
     await engineUp;
-    lastCaptureJson = await (await fetch('/assets/captures/camden_clean.nam')).text();
+    lastCaptureJson = await (await fetch('/assets/captures/portland_pushed.nam')).text();
   } catch (err) {
     status.textContent = `failed: ${(err as Error).message}`;
     startBtn.disabled = false;
@@ -945,9 +935,18 @@ function build() {
     store.set('cab_on', 1, true);
     if (selectedSlot === 'cab') renderStage();
   });
+  // Land on the boot patch for real. engine.start already loaded its voice, so
+  // only the params are applied here — loading it through applyPreset would
+  // re-fetch the same capture. Anything the preset doesn't name falls back to
+  // that param's default, exactly as applyPreset does.
+  const boot0 = FACTORY_PRESETS[0];
+  store.load({
+    ...Object.fromEntries([...store.values.keys()].map((k) => [k, paramById.get(k)?.def ?? 0])),
+    ...boot0.params,
+  });
   renderStage();
   const nameEl = document.getElementById('presetName');
-  if (nameEl) nameEl.textContent = FACTORY_PRESETS[0].name;
+  if (nameEl) nameEl.textContent = boot0.name;
 }
 
 build();

@@ -42,7 +42,7 @@ export const AMP_FACES: Record<string, FaceDef & { voices: { label: string; stem
     ],
     voices: [
       { label: 'BLOOM', stem: 'portland_bloom' },
-      { label: 'LEAD', stem: 'portland_lead' },
+      { label: 'PUSHED', stem: 'portland_pushed' },
     ],
   },
   katahdin: {
@@ -56,8 +56,7 @@ export const AMP_FACES: Record<string, FaceDef & { voices: { label: string; stem
       A('amp_output', 0.8935, 0.7989, 0.029),
     ],
     voices: [
-      { label: 'BLUE', stem: 'katahdin_blue' },
-      { label: 'RED', stem: 'katahdin_red' },
+      { label: 'RED', stem: 'katahdin_red' }, // one modern high-gain voice
     ],
   },
 };
@@ -82,17 +81,15 @@ export const PEDAL_FACES: Record<string, FaceDef> = {
     ],
   },
   drive: {
-    img: '/assets/ui/pedal_drive.png', aspect: 1774 / 887,
+    img: '/assets/ui/pedal_drive.png', aspect: 1808 / 870,
     sprite: '/assets/ui/knob_fx_drive.png',
     knobs: [
-      // The print bakes FOUR captions — DRIVE / TONE / TONE / LEVEL — with a
-      // duplicated TONE. The second TONE well hosts AIR and the far-right one
-      // is LEVEL; swapping those two parks LEVEL under a TONE label and leaves
-      // the knob captioned LEVEL doing something else.
-      A('drive_gain', 0.3405, 0.2943, 0.0383),
-      A('drive_tone', 0.4465, 0.2943, 0.0383),
-      A('drive_air', 0.5581, 0.2943, 0.0383),
-      A('drive_level', 0.6646, 0.2943, 0.0383),
+      // The print bakes FOUR captions — DRIVE / TREBLE / BASS / LEVEL — and
+      // every well is live. TREBLE and BASS are the two-band output tone stack.
+      A('drive_gain', 0.3426, 0.3128, 0.0382),
+      A('drive_treble', 0.4473, 0.3128, 0.0382),
+      A('drive_bass', 0.5584, 0.3128, 0.0382),
+      A('drive_level', 0.6645, 0.3128, 0.0382),
     ],
   },
   chorus: {
