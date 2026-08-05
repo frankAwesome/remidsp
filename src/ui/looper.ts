@@ -9,6 +9,7 @@
 import { engine, LooperMsg, Meters } from '../audio/engine';
 import { store } from '../params';
 import { meterBus } from './live';
+import { makeMiniKnob, type MiniKnob } from './miniKnob';
 
 interface TrackLane {
   id: number;
@@ -16,6 +17,8 @@ interface TrackLane {
   peaks: Float32Array | null;
   row: HTMLElement;
   canvas: HTMLCanvasElement;
+  level: MiniKnob;
+  pan: MiniKnob;
 }
 
 export class LooperSection {
@@ -132,7 +135,7 @@ export class LooperSection {
   }
 
   /** Reconcile the lane list with the worklet's authoritative track list. */
-  private syncTracks(list: { id: number; muted: boolean }[]) {
+  private syncTracks(list: { id: number; muted: boolean; gain?: number; pan?: number }[]) {
     for (const lane of [...this.tracks]) {
       if (!list.some((t) => t.id === lane.id)) {
         lane.row.remove();
@@ -153,6 +156,11 @@ export class LooperSection {
       const mb = lane.row.querySelector<HTMLButtonElement>('[data-a=mute]')!;
       mb.classList.toggle('on', !t.muted);
       lane.row.querySelector('.looper-lane__no')!.textContent = String(i + 1).padStart(2, '0');
+      // The worklet owns the mix; the knobs only echo it back. Skip the
+      // knob the player is turning right now so their drag never fights the
+      // round trip that their own turn just caused.
+      if (t.gain !== undefined && !lane.level.el.classList.contains('mknob--live')) lane.level.set(t.gain);
+      if (t.pan !== undefined && !lane.pan.el.classList.contains('mknob--live')) lane.pan.set(t.pan);
     }
   }
 
@@ -162,8 +170,11 @@ export class LooperSection {
     row.innerHTML = `
       <span class="looper-lane__no led-text">${String(index).padStart(2, '0')}</span>
       <canvas class="looper-lane__wave"></canvas>
-      <button class="looper-lane__btn on" data-a="mute" title="mute / unmute">M</button>
-      <button class="looper-lane__btn looper-lane__btn--del" data-a="del" title="delete this track">✕</button>`;
+      <div class="looper-lane__mix"></div>
+      <div class="looper-lane__keys">
+        <button class="looper-lane__btn on" data-a="mute" title="mute / unmute this layer">M</button>
+        <button class="looper-lane__btn looper-lane__btn--del" data-a="del" title="delete this layer">✕</button>
+      </div>`;
     row.querySelector('[data-a=mute]')!.addEventListener('click', () => {
       const lane = this.tracks.find((t) => t.id === id);
       engine.sendLooper({ cmd: 'mute', id, muted: !lane?.muted });
@@ -171,7 +182,26 @@ export class LooperSection {
     row.querySelector('[data-a=del]')!.addEventListener('click', () => {
       engine.sendLooper({ cmd: 'delete', id });
     });
-    return { id, muted: false, peaks: null, row, canvas: row.querySelector('canvas')! };
+
+    // LEVEL runs to 1.5 (+3.5 dB) so a layer that was played quietly can be
+    // brought up to sit with the rest, not just pulled down.
+    const level = makeMiniKnob({
+      label: 'LEVEL', min: 0, max: 1.5, def: 1, value: 1,
+      format: (v) => (v <= 0.0001 ? '−∞' : `${(20 * Math.log10(v)).toFixed(1)}`),
+      unit: 'dB',
+      onChange: (v) => engine.sendLooper({ cmd: 'mix', id, gain: v }),
+    });
+    const pan = makeMiniKnob({
+      label: 'PAN', min: -1, max: 1, def: 0, value: 0, bipolar: true,
+      format: (v) => (Math.abs(v) < 0.005 ? 'C'
+        : `${v < 0 ? 'L' : 'R'}${Math.round(Math.abs(v) * 100)}`),
+      onChange: (v) => engine.sendLooper({ cmd: 'mix', id, pan: v }),
+    });
+    const mix = row.querySelector('.looper-lane__mix')!;
+    mix.appendChild(level.el);
+    mix.appendChild(pan.el);
+
+    return { id, muted: false, peaks: null, row, canvas: row.querySelector('canvas')!, level, pan };
   }
 
   private onMeters(m: Partial<Meters>) {

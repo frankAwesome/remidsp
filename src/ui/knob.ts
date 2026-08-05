@@ -10,7 +10,9 @@ chip.className = 'value-chip';
 document.body.appendChild(chip);
 let chipTimer = 0;
 
-function showChip(x: number, y: number, text: string, unit: string) {
+/** The rig's one value read-out. Exported so the drawn knobs in the looper
+ *  speak with the same voice instead of inventing a second chip. */
+export function showValueChip(x: number, y: number, text: string, unit: string) {
   chip.innerHTML = `<b>${text}</b>${unit ? `<span>${unit}</span>` : ''}`;
   chip.style.left = `${x}px`;
   chip.style.top = `${y - 44}px`;
@@ -59,7 +61,7 @@ export function makeKnob(param: string, sprite: string, cls = ''): HTMLElement {
     const n = Math.min(1, Math.max(0, startN + (startY - e.clientY) * 0.006 * fine));
     store.set(param, denorm(param, n));
     const v = store.get(param);
-    showChip(e.clientX, e.clientY, d.format ? d.format(v) : v.toFixed(2), d.unit ?? '');
+    showValueChip(e.clientX, e.clientY, d.format ? d.format(v) : v.toFixed(2), d.unit ?? '');
   };
   el.addEventListener('pointerdown', (e) => {
     dragging = true;

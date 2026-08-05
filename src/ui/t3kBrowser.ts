@@ -280,6 +280,9 @@ export class T3kBrowser {
             name: m.name || t.title, source: 'tone3000',
             toneTitle: t.title, creator: t.user?.username,
             license: t.license, url: t.url,
+            // 'amp-cab' means the speaker is already in there, so the cab IR
+            // would be a second one; 'amp' is a DI that actually wants one.
+            hasCab: t.gear === 'amp-cab' ? true : t.gear === 'amp' ? false : undefined,
           };
           await engine.loadCapture(json, info);
           store.set('amp_on', 1);
@@ -287,6 +290,7 @@ export class T3kBrowser {
           addRecent({
             kind: 'tone3000', id: String(m.id), label: m.name || t.title,
             url: m.model_url, creator: t.user?.username, license: t.license, toneUrl: t.url,
+            gear: t.gear,
           });
           window.dispatchEvent(new CustomEvent('remi:capture-loaded'));
           toast(`<b>${escapeHtml(info.name)}</b> on the amp · by ${escapeHtml(info.creator ?? '')}`);

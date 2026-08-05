@@ -1376,6 +1376,9 @@ class Looper {
     this.beatSample = 0;
     this.beatIndex = 0;
     this.fade = Math.min(192, Math.round(sr * 0.004)); // 4 ms seam fade
+    // ~15 ms one-pole toward the LEVEL/PAN targets — fast enough to feel
+    // instant on the knob, slow enough that no step is ever audible.
+    this.mixSm = 1 - Math.exp(-1 / (0.015 * sr));
   }
 
   setOpt(id, v) {
@@ -1429,6 +1432,17 @@ class Looper {
       const t = this.tracks.find((x) => x.id === m.id);
       if (t) t.muted = !!m.muted;
       this.post();
+    } else if (m.cmd === 'mix') {
+      // LEVEL / PAN for one layer. Only the targets move here — the gains the
+      // playback loop actually reads are smoothed toward them, so a knob turn
+      // mid-loop never steps and never clicks.
+      const t = this.tracks.find((x) => x.id === m.id);
+      if (t) {
+        if (m.gain !== undefined) t.gain = clamp(m.gain, 0, 1.5);
+        if (m.pan !== undefined) t.pan = clamp(m.pan, -1, 1);
+        this.retarget(t);
+        this.post();
+      }
     } else if (m.cmd === 'clear') {
       this.tracks = []; this.rec = null; this.len = 0;
       this.playPos = 0; this.state = 'idle'; this.armed = false;
@@ -1438,7 +1452,21 @@ class Looper {
 
   openTrack() {
     this.rec = { id: this.nextId++, bufL: new Float32Array(this.len),
-                 bufR: new Float32Array(this.len), gain: 1, muted: false };
+                 bufR: new Float32Array(this.len), gain: 1, pan: 0, muted: false,
+                 tgtL: 1, tgtR: 1, gL: 1, gR: 1 };
+  }
+
+  /** Fold LEVEL and PAN into the two side gains the mixer reads.
+   *
+   *  The law is a balance, not a constant-power pan: the layers are already
+   *  stereo (the delay and reverb put them there), and every one of them sums
+   *  into the same bus. A constant-power law would push a hard-panned side to
+   *  +3 dB, which is exactly the wrong direction when eight passes are
+   *  stacking into one soft limiter. Centre is unity on both sides; turning
+   *  the knob only ever takes level away from the far side. */
+  retarget(t) {
+    t.tgtL = t.gain * Math.min(1, 1 - t.pan);
+    t.tgtR = t.gain * Math.min(1, 1 + t.pan);
   }
 
   /** Close the take: seam-fade the join, publish its waveform, keep it. */
@@ -1487,7 +1515,7 @@ class Looper {
       beat: this.beatIndex, beatsPerBar: this.beatsPerBar,
       countBeats: this.countBars * this.beatsPerBar,
       bars: this.bars, bpm: this.bpm,
-      tracks: this.tracks.map((t) => ({ id: t.id, muted: t.muted })),
+      tracks: this.tracks.map((t) => ({ id: t.id, muted: t.muted, gain: t.gain, pan: t.pan })),
       ...extra,
     });
   }
@@ -1530,9 +1558,14 @@ class Looper {
         let sl = 0, sr2 = 0;
         for (let k = 0; k < this.tracks.length; k++) {
           const t = this.tracks[k];
-          if (t.muted) continue;
-          sl += t.bufL[this.playPos] * t.gain;
-          sr2 += t.bufR[this.playPos] * t.gain;
+          // Muted layers still smooth toward zero rather than dropping out on
+          // a sample boundary, so M is a fade, not a click.
+          const wantL = t.muted ? 0 : t.tgtL, wantR = t.muted ? 0 : t.tgtR;
+          t.gL += (wantL - t.gL) * this.mixSm;
+          t.gR += (wantR - t.gR) * this.mixSm;
+          if (t.gL < 1e-5 && t.gR < 1e-5) continue;
+          sl += t.bufL[this.playPos] * t.gL;
+          sr2 += t.bufR[this.playPos] * t.gR;
         }
         // Layers sum; ride the stack so eight passes never wreck the mix.
         L[i] += softLimit(sl, 0.85);

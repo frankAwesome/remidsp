@@ -9,6 +9,8 @@ import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, Preset } from './pres
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
 import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
+import { openCabWarning } from './ui/cabWarning';
+import { ICONS, withIcon } from './ui/icons';
 import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed, powerLed } from './ui/live';
 import { LooperSection } from './ui/looper';
 import { preloadAssets } from './ui/preload';
@@ -76,6 +78,41 @@ function seat(child: HTMLElement, nx: number, ny: number, nw?: number, nh?: numb
   return s;
 }
 
+/* ── the double-cab guard ──────────────────────────────────────────────────
+ * Every switch a player can flip goes through toggleParam, so the one switch
+ * that needs to ask a question first — the cabinet, on top of a capture that
+ * already contains one — does not have to be wired into the drawer toggle,
+ * the chain rail and the face footswitch separately.
+ *
+ * Preset recall deliberately does NOT come through here: it goes through
+ * store.load(), so landing on a patch never throws a modal. No factory patch
+ * ships with the cab on, and a saved patch that does is a call its owner
+ * already made. */
+
+/** The capture whose warning the player has already answered. Keyed by name,
+ *  so loading a different capture asks again while reloading the same one
+ *  respects the decision. */
+let cabWarnAnsweredFor: string | null = null;
+
+/** Turn the cabinet on, after a warning if the capture already has one. */
+async function requestCabOn() {
+  const cap = engine.capture;
+  if (cap?.hasCab && cabWarnAnsweredFor !== cap.name) {
+    const proceed = await openCabWarning({ captureName: cap.name, source: cap.source });
+    cabWarnAnsweredFor = cap.name;
+    if (!proceed) return;
+    toast('Cab IR <b>on</b> over a full-rig capture — that is two speakers. '
+          + 'Turn it off if the rig goes muffled.', 5000);
+  }
+  store.set('cab_on', 1);
+}
+
+function toggleParam(id: string) {
+  const on = store.get(id) > 0.5;
+  if (!on && id === 'cab_on') { void requestCabOn(); return; }
+  store.set(id, on ? 0 : 1);
+}
+
 function paramToggle(id: string, label: string, cls = 'tab'): HTMLButtonElement {
   const b = document.createElement('button');
   b.className = cls;
@@ -86,7 +123,7 @@ function paramToggle(id: string, label: string, cls = 'tab'): HTMLButtonElement 
     if (!b.isConnected) { un(); return; }
     if (pid === id || pid === '*') sync();
   });
-  b.addEventListener('click', () => store.set(id, store.get(id) > 0.5 ? 0 : 1));
+  b.addEventListener('click', () => toggleParam(id));
   return b;
 }
 
@@ -124,7 +161,7 @@ function facePanel(def: FaceDef, onParam?: string, foot = true): HTMLElement {
     const hit = el('button', '');
     hit.title = 'stomp';
     hit.style.cssText = 'position:absolute;left:50%;top:83.5%;width:10%;height:20%;transform:translate(-50%,-50%);background:none;border:0;cursor:pointer';
-    hit.addEventListener('click', () => store.set(onParam, store.get(onParam) > 0.5 ? 0 : 1));
+    hit.addEventListener('click', () => toggleParam(onParam));
     ov.appendChild(hit);
   }
   f.appendChild(ov);
@@ -158,10 +195,16 @@ function buildHeader(): HTMLElement {
   const pr = el('div', 'hdr__group');
   const strip = el('div', 'preset');
   const prev = el('button', 'preset__nav', '‹');
-  const name = el('button', 'preset__name', '—');
+  prev.title = 'previous preset';
+  const name = el('button', 'preset__name', '');
   name.id = 'presetName';
+  name.title = 'browse the preset bank';
+  name.innerHTML = `${ICONS.list}<span class="preset__label">—</span>`;
   const next = el('button', 'preset__nav', '›');
-  const save = el('button', 'hdr__btn', 'SAVE');
+  next.title = 'next preset';
+  const save = el('button', 'hdr__btn hdr__btn--ico', '');
+  save.innerHTML = withIcon('save', 'SAVE');
+  save.title = 'save the rig as a preset';
   strip.append(prev, name, next, save);
   pr.append(strip, el('div', 'hdr__caption', 'PRESETS'));
   h.appendChild(pr);
@@ -191,7 +234,9 @@ function buildHeader(): HTMLElement {
 
   // captures
   const cap = el('div', 'hdr__group');
-  const capBtn = el('button', 'hdr__btn hdr__btn--lit', 'CAPTURES');
+  const capBtn = el('button', 'hdr__btn hdr__btn--lit hdr__btn--ico', '');
+  capBtn.innerHTML = withIcon('capture', 'CAPTURES');
+  capBtn.title = 'browse the TONE3000 capture library';
   cap.append(capBtn, el('div', 'hdr__caption', 'TONE3000'));
   h.appendChild(cap);
   capBtn.addEventListener('click', () => t3kBrowser.open());
@@ -199,10 +244,14 @@ function buildHeader(): HTMLElement {
   // view switch: RIG | FEED — the lit side is where you are.
   const fg = el('div', 'hdr__group');
   const sw = el('div', 'viewswitch');
-  const rigBtn = el('button', 'hdr__btn hdr__btn--lit', 'RIG');
+  const rigBtn = el('button', 'hdr__btn hdr__btn--lit hdr__btn--ico', '');
   rigBtn.dataset.view = 'rig';
-  const feedBtn = el('button', 'hdr__btn', 'FEED');
+  rigBtn.innerHTML = withIcon('rig', 'RIG');
+  rigBtn.title = 'the rig — amp, pedals and the looper';
+  const feedBtn = el('button', 'hdr__btn hdr__btn--ico', '');
   feedBtn.dataset.view = 'feed';
+  feedBtn.innerHTML = withIcon('feed', 'FEED');
+  feedBtn.title = 'sounds other players have shared';
   sw.append(rigBtn, feedBtn);
   fg.append(sw, el('div', 'hdr__caption', 'VIEW'));
   h.appendChild(fg);
@@ -305,7 +354,7 @@ function buildRibbon(): HTMLElement {
     const togglePower = (e: Event) => {
       e.stopPropagation();
       e.preventDefault();
-      store.set(s.onParam, store.get(s.onParam) > 0.5 ? 0 : 1);
+      toggleParam(s.onParam);
     };
     led.addEventListener('pointerdown', (e) => e.stopPropagation());
     led.addEventListener('click', togglePower);
@@ -600,7 +649,9 @@ async function loadBundledVoice(stem: string): Promise<boolean> {
   try {
     toast(`Loading <b>${stem.replace('_', ' ')}</b>…`);
     const json = await (await fetch(`/assets/captures/${stem}.nam`)).text();
-    const info: CaptureInfo = { name: stem.replace('_', ' '), source: 'bundled' };
+    // Every bundled voice is a full-rig capture — cab, mic and room included —
+    // which is what arms the double-cab warning if the cabinet gets switched on.
+    const info: CaptureInfo = { name: stem.replace('_', ' '), source: 'bundled', hasCab: true };
     lastCaptureJson = json;
     await engine.loadCapture(json, info, quality === 'eco');
     currentVoice = stem;
@@ -631,6 +682,10 @@ async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> 
     await engine.loadCapture(json, {
       name: ref.label, source: 'tone3000',
       creator: ref.creator, license: ref.license, url: ref.toneUrl,
+      // Only the gear tag can say; a ref that never carried one (an older
+      // recent, or a preset's stored capture) leaves it undefined and the
+      // cab warning stays quiet rather than guessing.
+      hasCab: ref.gear === undefined ? undefined : ref.gear === 'amp-cab',
     }, quality === 'eco');
     currentCaptureRef = {
       source: 'tone3000', label: ref.label, modelId: ref.id, modelUrl: ref.url,
@@ -681,9 +736,10 @@ function cabPanel(): HTMLElement {
   }
   drawer.appendChild(sel);
   drawer.appendChild(el('div', 'drawer__spacer'));
-  drawer.appendChild(el('div', 'drawer__status',
-    'Bundled amps are <b>full-rig</b> captures (cab baked in) — leave the cab OFF for those. ' +
-    'Pair it with amp-only DI captures from TONE3000.'));
+  const note = el('div', 'drawer__status drawer__status--warn');
+  note.innerHTML = `${ICONS.warn}<span>Bundled amps are <b>full-rig</b> captures (cab baked in) — leave the cab
+    OFF for those, or you get two speakers stacked. Pair it with amp-only DI captures from TONE3000.</span>`;
+  drawer.appendChild(note);
   wrap.appendChild(drawer);
   return wrap;
 }
@@ -842,8 +898,7 @@ async function applyPreset(p: Preset): Promise<boolean> {
   } else {
     await loadBundledVoice(p.voice);
   }
-  const nameEl = document.getElementById('presetName');
-  if (nameEl) nameEl.textContent = p.name;
+  setPresetLabel(p.name);
   renderStage();
   return captureOk;
 }
@@ -854,32 +909,79 @@ function stepPreset(dir: number) {
   void applyPreset(list[presetIdx]);
 }
 
+/** Write the preset name into the strip without losing its icon. */
+function setPresetLabel(name: string) {
+  const lbl = document.querySelector<HTMLElement>('#presetName .preset__label');
+  if (lbl) lbl.textContent = name;
+}
+
+/* The preset bank.
+ *
+ * Openable and fully drivable from the keyboard: ↑/↓ walk the list (skipping
+ * the group captions), Home/End jump to the ends, Enter loads, Escape closes
+ * and hands focus back to the strip. The patch you are on is marked and is
+ * where the walk starts, so opening the menu and pressing ↓ always means
+ * "the next one" rather than "the top of the list". */
 function openPresetMenu() {
+  const strip = document.getElementById('presetName')!;
   const existing = document.getElementById('presetMenu');
-  if (existing) { existing.remove(); return; }
+  if (existing) { closePresetMenu(); return; }
+
   const list = allPresets();
-  const menu = el('div', '');
+  const menu = el('div', 'presetmenu');
   menu.id = 'presetMenu';
-  menu.style.cssText = `position:absolute;top:110%;left:50%;transform:translateX(-50%);z-index:250;
-    background:#0a0a0d;border:1px solid var(--line-2);min-width:240px;max-height:340px;overflow-y:auto;
-    box-shadow:0 20px 50px rgba(0,0,0,.7);padding:.3rem 0`;
+  menu.setAttribute('role', 'listbox');
+  const items: HTMLButtonElement[] = [];
   let lastGroup = '';
   list.forEach((p, i) => {
     if (p.group !== lastGroup) {
       lastGroup = p.group;
-      menu.appendChild(el('div', 'hdr__caption', p.group)).setAttribute('style', 'padding:.45rem .9rem .2rem');
+      const cap = el('div', 'presetmenu__group', p.group);
+      menu.appendChild(cap);
     }
-    const item = el('button', '', p.name);
-    item.style.cssText = 'display:block;width:100%;text-align:left;padding:.4rem .9rem;font-size:.8rem';
-    item.addEventListener('mouseenter', () => (item.style.background = 'rgba(255,255,255,.06)'));
-    item.addEventListener('mouseleave', () => (item.style.background = ''));
-    item.addEventListener('click', () => { presetIdx = i; void applyPreset(p); menu.remove(); });
+    const item = el('button', 'presetmenu__item') as HTMLButtonElement;
+    item.setAttribute('role', 'option');
+    item.type = 'button';
+    const current = i === presetIdx;
+    item.classList.toggle('presetmenu__item--on', current);
+    item.setAttribute('aria-selected', String(current));
+    item.innerHTML = `<span class="presetmenu__tick">${current ? ICONS.check : ''}</span>
+      <span class="presetmenu__name">${p.name}</span>
+      <span class="presetmenu__bpm">${p.params.tempo ?? 120}</span>`;
+    item.addEventListener('click', () => { presetIdx = i; void applyPreset(p); closePresetMenu(); });
+    items.push(item);
     menu.appendChild(item);
   });
-  document.getElementById('presetName')!.appendChild(menu);
+  strip.appendChild(menu);
+
+  // Start the walk on the current patch so ↓ means "the next one".
+  let cursor = Math.max(0, Math.min(items.length - 1, presetIdx));
+  const focusAt = (n: number) => {
+    cursor = (n + items.length) % items.length;
+    items[cursor].focus();
+    items[cursor].scrollIntoView({ block: 'nearest' });
+  };
+  menu.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') focusAt(cursor + 1);
+    else if (e.key === 'ArrowUp') focusAt(cursor - 1);
+    else if (e.key === 'Home') focusAt(0);
+    else if (e.key === 'End') focusAt(items.length - 1);
+    else if (e.key === 'Escape') { closePresetMenu(); strip.focus(); }
+    else return;
+    e.preventDefault();
+  });
+  focusAt(cursor);
+
   setTimeout(() => document.addEventListener('click', function off(e) {
-    if (!menu.contains(e.target as Node)) { menu.remove(); document.removeEventListener('click', off); }
+    if (!menu.contains(e.target as Node) && e.target !== strip) {
+      closePresetMenu();
+      document.removeEventListener('click', off);
+    }
   }), 0);
+}
+
+function closePresetMenu() {
+  document.getElementById('presetMenu')?.remove();
 }
 
 /* ────────────────────────── cab IR loading ────────────────────────── */
@@ -919,7 +1021,7 @@ async function boot() {
     // Boot straight into the Pushed Crunch patch (FACTORY_PRESETS[0]): the
     // Portland Pushed voice, every other param already at its default.
     const engineUp = engine.start('/assets/captures/portland_pushed.nam',
-      { name: 'portland pushed', source: 'bundled' });
+      { name: 'portland pushed', source: 'bundled', hasCab: true });
     status.textContent = 'warming ui assets';
     await assetsWarm;
     await engineUp;
@@ -1004,7 +1106,10 @@ function build() {
   t3kBrowser = new T3kBrowser((buf, name) => {
     engine.setCabIr(buf);
     customIrName = name;
-    store.set('cab_on', 1, true);
+    // Loading a cab IR arms the cabinet — through the same guard, because
+    // "I just loaded an IR" is exactly when someone stacks it on a full-rig
+    // capture without realising.
+    void requestCabOn();
     if (selectedSlot === 'cab') renderStage();
   });
   // Land on the boot patch for real. engine.start already loaded its voice, so
@@ -1017,8 +1122,7 @@ function build() {
     ...boot0.params,
   });
   renderStage();
-  const nameEl = document.getElementById('presetName');
-  if (nameEl) nameEl.textContent = boot0.name;
+  setPresetLabel(boot0.name);
 }
 
 build();

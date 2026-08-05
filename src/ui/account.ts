@@ -9,6 +9,8 @@ import {
 } from '../cloud/fb';
 import { ensureProfile, saveProfile, type Profile } from '../cloud/store';
 import { toast } from './toast';
+import { BRAND_MARKS, PROVIDER_LABEL } from './brandMarks';
+import { ICONS } from './icons';
 
 export const session: { user: User | null; profile: Profile | null } = { user: null, profile: null };
 
@@ -65,7 +67,7 @@ export class AccountUI {
         ? `<img class="account-chip__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
         : '<span class="account-chip__dot"></span>'}${escape(p.username)}`;
     } else {
-      this.chip.textContent = 'SIGN IN';
+      this.chip.innerHTML = `${ICONS.user}<span>SIGN IN</span>`;
     }
   }
 
@@ -82,10 +84,11 @@ export class AccountUI {
       <div class="account-note">Keep your sounds against a profile and share them on the feed.
         Sign-up is optional — everything on the rig works without it.</div>
       <div class="account-providers">
-        <button data-p="google">CONTINUE WITH GOOGLE</button>
-        <button data-p="apple">APPLE</button>
-        <button data-p="github">GITHUB</button>
-        <button data-p="facebook">FACEBOOK</button>
+        ${['google', 'apple', 'github', 'facebook'].map((p) => `
+          <button data-p="${p}" type="button">
+            <span class="provider__mark">${BRAND_MARKS[p]}</span>
+            <span class="provider__label">${PROVIDER_LABEL[p]}</span>
+          </button>`).join('')}
       </div>
       <div class="account-rule"><span>OR EMAIL</span></div>
       <form class="account-form">

@@ -3,6 +3,8 @@
  * loaded from TONE3000" list persisted in localStorage, so a capture found
  * in the browser drawer can be re-loaded straight from the amp menu. */
 
+import type { Gear } from './tone3000';
+
 export interface CaptureRef {
   kind: 'bundled' | 'tone3000';
   id: string;            // stem for bundled, model id for tone3000
@@ -13,6 +15,10 @@ export interface CaptureRef {
   creator?: string;
   license?: string;
   toneUrl?: string;
+  /** tone3000: what the creator tagged it as. 'amp-cab' means the speaker is
+   *  already in the capture, 'amp' means it is a DI that still needs one —
+   *  which is exactly what decides whether the cab IR helps or ruins it. */
+  gear?: Gear;
 }
 
 const B = (ampKey: string | undefined, stem: string, label: string): CaptureRef =>

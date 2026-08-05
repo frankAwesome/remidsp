@@ -38,6 +38,12 @@ export interface CaptureInfo {
   creator?: string;
   license?: string;
   url?: string;
+  /** Does the capture already have a speaker cabinet baked into it? Every
+   *  bundled voice does — they are full-rig captures — so the cab IR after
+   *  them is a second speaker on top of the first. TONE3000 models answer
+   *  from their gear tag. `undefined` means nobody knows, and in that case
+   *  nothing warns: a guess that cries wolf is worse than staying quiet. */
+  hasCab?: boolean;
 }
 
 export interface Meters {
@@ -49,7 +55,7 @@ export interface LooperMsg {
   state?: string; armed?: boolean;
   beat?: number; beatsPerBar?: number; countBeats?: number;
   bars?: number; bpm?: number;
-  tracks?: { id: number; muted: boolean }[];
+  tracks?: { id: number; muted: boolean; gain?: number; pan?: number }[];
   trackId?: number; peaks?: Float32Array; bins?: number;
 }
 

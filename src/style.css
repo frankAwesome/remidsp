@@ -102,15 +102,56 @@ select{font:inherit}
 .preset__nav{width:26px;height:30px;display:grid;place-items:center;color:var(--muted);
   border:1px solid transparent;transition:.2s}
 .preset__nav:hover{color:var(--light-hi);border-color:var(--line-2)}
-.preset__name{min-width:190px;text-align:center;font-weight:600;font-size:.82rem;
+.preset__name{min-width:190px;font-weight:600;font-size:.82rem;
   letter-spacing:.06em;padding:.42rem 1rem;background:#050507;
-  border:1px solid var(--line-2);border-radius:999px;cursor:pointer;position:relative}
-.preset__name:hover{border-color:rgba(159,216,232,.5)}
+  border:1px solid var(--line-2);border-radius:999px;cursor:pointer;position:relative;
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  transition:border-color .2s var(--ease),background .2s var(--ease)}
+.preset__name:hover{border-color:rgba(159,216,232,.5);background:#08080b}
+.preset__name .ico{width:13px;height:13px;color:var(--muted-2);flex:none;transition:color .2s var(--ease)}
+.preset__name:hover .ico{color:var(--ice)}
+.preset__label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr__btn{font-weight:600;font-size:.66rem;letter-spacing:.18em;padding:.5rem .8rem;
-  border:1px solid var(--line-2);color:var(--muted);text-transform:uppercase;transition:.2s}
+  border:1px solid var(--line-2);color:var(--muted);text-transform:uppercase;transition:.2s;
+  cursor:pointer}
 .hdr__btn:hover{color:var(--light-hi);border-color:rgba(159,216,232,.55)}
 .hdr__btn--lit{color:#0a0d12;background:var(--light-hi);border-color:transparent}
 .hdr__btn--lit:hover{background:var(--light);color:#0a0d12}
+/* icon buttons: the mark sits ahead of the label and inherits its colour */
+.hdr__btn--ico{display:inline-flex;align-items:center;gap:.45rem}
+.hdr__btn--ico .ico{width:15px;height:15px;flex:none;opacity:.85}
+.hdr__btn--ico:hover .ico{opacity:1}
+.ico{display:block}
+
+/* ── the preset bank ────────────────────────────────────────────────────── */
+#presetMenu{position:absolute;top:calc(100% + .5rem);left:50%;transform:translateX(-50%);
+  z-index:250;background:#0a0a0d;border:1px solid var(--line-2);
+  min-width:290px;max-height:min(420px,60vh);overflow-y:auto;overscroll-behavior:contain;
+  box-shadow:0 24px 60px rgba(0,0,0,.8),0 0 0 1px rgba(0,0,0,.5);padding:.25rem 0;
+  animation:presetmenu-in .16s var(--ease)}
+@keyframes presetmenu-in{from{opacity:0;transform:translateX(-50%) translateY(-5px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.presetmenu__group{position:sticky;top:0;z-index:1;background:#0a0a0d;
+  font-family:var(--font-ui);font-size:.5rem;font-weight:700;letter-spacing:.3em;
+  color:var(--muted-2);padding:.55rem .9rem .3rem;border-bottom:1px solid var(--line)}
+.presetmenu__item{display:flex;align-items:center;gap:.55rem;width:100%;
+  text-align:left;padding:.46rem .9rem;font-size:.8rem;color:var(--text);
+  cursor:pointer;border-left:2px solid transparent;transition:background .12s var(--ease)}
+.presetmenu__item:hover,.presetmenu__item:focus-visible{background:rgba(255,255,255,.06);
+  border-left-color:var(--ice);outline:none}
+.presetmenu__item--on{color:var(--ice)}
+.presetmenu__tick{width:13px;height:13px;flex:none;color:var(--ice)}
+.presetmenu__tick .ico{width:13px;height:13px;stroke-width:2.4}
+.presetmenu__name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.presetmenu__bpm{font-family:var(--font-mono);font-size:.6rem;color:var(--muted-2);flex:none}
+.presetmenu__item:hover .presetmenu__bpm,
+.presetmenu__item:focus-visible .presetmenu__bpm{color:var(--muted)}
+
+/* One focus language for everything you can tab to. Never on mouse clicks —
+   :focus-visible keeps it to keyboard traversal, where it is the only thing
+   telling you where you are. */
+button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{
+  outline:1px solid rgba(159,216,232,.75);outline-offset:2px}
 
 /* tempo LED window */
 .tempo{display:flex;align-items:center;gap:.5rem;background:#030304;
@@ -445,30 +486,99 @@ select{font:inherit}
 .looper__btn:disabled{opacity:.3;cursor:default}
 .looper__wave{width:100%;height:118px;display:block;border:1px solid var(--line)}
 .looper__lanes{display:flex;flex-direction:column;gap:.4rem}
-.looper-lane{display:flex;align-items:center;gap:.5rem}
+.looper-lane{display:flex;align-items:center;gap:.6rem;padding:.3rem .35rem;
+  border:1px solid transparent;transition:border-color .18s var(--ease),background .18s var(--ease)}
+.looper-lane:hover{border-color:var(--line);background:rgba(255,255,255,.015)}
 .looper-lane__no{font-size:.8rem;color:var(--muted);width:26px;text-align:right;flex:none}
 .looper-lane__wave{flex:1;height:62px;display:block;border:1px solid var(--line);min-width:0}
+.looper-lane__mix{display:flex;gap:.35rem;flex:none}
+.looper-lane__keys{display:flex;flex-direction:column;gap:.28rem;flex:none}
 .looper-lane__btn{width:28px;height:28px;flex:none;border:1px solid var(--line-2);color:var(--muted);
-  font-size:.62rem;font-weight:700;display:grid;place-items:center;background:#0a0a0d;transition:.15s}
+  font-size:.62rem;font-weight:700;display:grid;place-items:center;background:#0a0a0d;
+  cursor:pointer;transition:.15s}
 .looper-lane__btn:hover{color:var(--light-hi);border-color:rgba(159,216,232,.6)}
 .looper-lane__btn.on{color:var(--ice);border-color:rgba(159,216,232,.45)}
 .looper-lane__btn--del:hover{color:#ff6a5a;border-color:rgba(255,106,90,.6)}
 .looper-lane--muted .looper-lane__no{color:var(--muted-2)}
+.looper-lane--muted .looper-lane__wave,
+.looper-lane--muted .looper-lane__mix{opacity:.4}
+
+/* ── the drawn knob ─────────────────────────────────────────────────────────
+   A machined cap over an SVG value arc. The cap is three stacked gradients —
+   a cold rim light, the brushed face, and an inner shadow that seats it in
+   the panel — so it reads as a turned metal part rather than a circle. */
+.mknob{display:flex;flex-direction:column;align-items:center;gap:.18rem;
+  width:42px;flex:none;cursor:ns-resize;touch-action:none;outline:none;
+  -webkit-user-select:none;user-select:none}
+.mknob__dial{position:relative;width:42px;height:42px}
+.mknob__dial svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.mknob__track{fill:none;stroke:rgba(255,255,255,.13);stroke-width:2.4;stroke-linecap:round}
+.mknob__fill{fill:none;stroke:var(--ice);stroke-width:2.4;stroke-linecap:round;
+  filter:drop-shadow(0 0 3px rgba(159,216,232,.5));transition:stroke .2s var(--ease)}
+.mknob--centred .mknob__fill{stroke:var(--muted)}
+.mknob__cap{position:absolute;inset:6.5px;border-radius:50%;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 42%),
+    radial-gradient(120% 120% at 50% 12%,#3a3a42 0%,#202027 38%,#101014 76%,#0a0a0d 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -2px 5px rgba(0,0,0,.85),
+    0 2px 6px rgba(0,0,0,.6);
+  transition:box-shadow .18s var(--ease)}
+.mknob__ptr{position:absolute;inset:0;display:block;pointer-events:none}
+/* the indicator: a short light bar from the cap's centre to its edge */
+.mknob__ptr::before{content:"";position:absolute;left:50%;top:11%;
+  width:2px;height:32%;margin-left:-1px;border-radius:1px;
+  background:linear-gradient(180deg,var(--light-hi),rgba(238,241,246,.55));
+  box-shadow:0 0 4px rgba(255,255,255,.5)}
+.mknob__label{font-family:var(--font-ui);font-size:.44rem;font-weight:700;
+  letter-spacing:.16em;color:var(--muted-2);transition:color .18s var(--ease)}
+.mknob:hover .mknob__label,.mknob:focus-visible .mknob__label{color:var(--muted)}
+.mknob:hover .mknob__cap{box-shadow:
+  inset 0 1px 0 rgba(255,255,255,.26),
+  inset 0 -2px 5px rgba(0,0,0,.85),
+  0 2px 10px rgba(159,216,232,.22)}
+.mknob:focus-visible{outline:1px solid rgba(159,216,232,.7);outline-offset:3px}
+.mknob--live .mknob__cap{box-shadow:
+  inset 0 1px 0 rgba(255,255,255,.3),
+  inset 0 -2px 5px rgba(0,0,0,.85),
+  0 0 14px rgba(159,216,232,.4)}
+.drawer__status--warn{display:flex;align-items:flex-start;gap:.5rem}
+.drawer__status--warn .ico{width:14px;height:14px;flex:none;margin-top:.1rem;color:#e0b341}
 .looper__hint{font-size:.54rem;letter-spacing:.2em;color:var(--muted-2)}
 .looper__field select:disabled{opacity:.45}
 
 /* ════════ account drawer ════════ */
 .account-chip{display:inline-flex;align-items:center;gap:.45rem}
+.account-chip .ico{width:15px;height:15px;flex:none;opacity:.85}
+.account-chip:hover .ico{opacity:1}
 .account-chip__ava{width:20px;height:20px;border-radius:50%;object-fit:cover}
 .account-chip__dot{width:8px;height:8px;border-radius:50%;background:var(--led)}
 .account-note{font-size:.74rem;color:var(--muted);line-height:1.65}
 .account-auth,.account-profile{display:flex;flex-direction:column;gap:.9rem}
-.account-providers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem}
-.account-providers button{font-size:.6rem;font-weight:700;letter-spacing:.14em;
-  padding:.6rem .5rem;border:1px solid var(--line-2);color:var(--text);transition:.15s}
-.account-providers button:hover{border-color:rgba(159,216,232,.6)}
-.account-providers button[data-p=google]{grid-column:1/-1;background:var(--light-hi);color:#0a0d12;border-color:transparent}
-.account-providers button[data-p=google]:hover{background:var(--light)}
+/* ── provider sign-in row ───────────────────────────────────────────────────
+   Every button carries the provider's own mark, so the row reads as logos
+   first and text second. Google takes the full width on white with its
+   full-colour mark (its brand guidance asks for exactly that); the other
+   three sit three-up beneath it, mark stacked over label. */
+.account-providers{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem}
+.account-providers button{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;
+  font-size:.56rem;font-weight:700;letter-spacing:.13em;
+  padding:.7rem .4rem;border:1px solid var(--line-2);background:var(--panel);
+  color:var(--text);cursor:pointer;
+  transition:border-color .18s var(--ease),background .18s var(--ease),transform .12s var(--ease)}
+.account-providers button:hover{border-color:rgba(159,216,232,.6);background:var(--panel-2)}
+.account-providers button:active{transform:translateY(1px)}
+.provider__mark{display:grid;place-items:center;width:20px;height:20px;flex:none}
+.provider__mark svg{width:100%;height:100%;display:block}
+.provider__label{white-space:nowrap}
+.account-providers button[data-p=google]{
+  grid-column:1/-1;flex-direction:row;gap:.6rem;
+  background:var(--light-hi);color:#0a0d12;border-color:transparent;
+  font-size:.62rem;letter-spacing:.16em;padding:.75rem .6rem}
+.account-providers button[data-p=google]:hover{background:var(--light);border-color:transparent}
+.account-providers button[data-p=google] .provider__mark{width:18px;height:18px}
 .account-rule{display:flex;align-items:center;gap:.7rem;color:var(--muted-2);
   font-size:.54rem;font-weight:600;letter-spacing:.34em}
 .account-rule::before,.account-rule::after{content:"";flex:1;height:1px;background:var(--line)}
