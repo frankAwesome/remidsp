@@ -258,8 +258,9 @@ export function powerLed(onParam: string, nx: number, ny: number, nr: number): H
   const wrap = document.createElement('button');
   wrap.className = 'pilot pilot--power';
   wrap.title = 'power';
+  // Sized to the baked dome itself (plus a hair of cover) — not a halo.
   wrap.style.cssText = `position:absolute;left:${nx * 100}%;top:${ny * 100}%;
-    width:${nr * 2 * 2.4 * 100}%;transform:translate(-50%,-50%)`;
+    width:${nr * 2 * 1.2 * 100}%;transform:translate(-50%,-50%)`;
   wrap.appendChild(document.createElement('i'));
   const sync = () => wrap.classList.toggle('on', store.get(onParam) > 0.5);
   sync();
@@ -286,19 +287,24 @@ export function delayLamp(engineIdx: 0 | 1 = 0): HTMLElement {
     : { A: { x: 0.4573, y: 0.1264 }, B: { x: 0.5378, y: 0.1302 } };
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:absolute;inset:0;pointer-events:none';
-  const mk = (color: string, at: { x: number; y: number }, wPct: number) => {
+  const mk = (color: string, deep: string, at: { x: number; y: number }, wPct: number) => {
     const d = document.createElement('div');
+    // glass micro-jewel: specular glint over a shaded core, thin bezel line
     d.style.cssText = `position:absolute;left:${at.x * 100}%;top:${at.y * 100}%;width:${wPct}%;aspect-ratio:1;
-      transform:translate(-50%,-50%);border-radius:50%;background:${color};opacity:.12;transition:none`;
+      transform:translate(-50%,-50%);border-radius:50%;opacity:.12;transition:none;
+      background:
+        radial-gradient(circle at 32% 27%, rgba(255,255,255,.8) 0%, transparent 34%),
+        radial-gradient(circle at 50% 45%, ${color} 0%, ${deep} 100%);
+      box-shadow: inset 0 -1px 1px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.45)`;
     wrap.appendChild(d);
     return d;
   };
   // Live jewels sit exactly over their baked twins, a hair larger to cover.
-  const dotA = mk('#5ec9c0', dots.A, 2.2);
-  const dotB = mk('#e2a35c', dots.B, 2.2);
+  const dotA = mk('#5ec9c0', '#1e4a46', dots.A, 2.2);
+  const dotB = mk('#e2a35c', '#5a3a1a', dots.B, 2.2);
   // A small white pip at the window's left edge marks the virtual note strike
   // that the echo pattern answers.
-  const pip = mk('#eef1f6', { x: 0.4315, y: 0.133 }, 1.1);
+  const pip = mk('#eef1f6', '#5a6470', { x: 0.4315, y: 0.133 }, 1.1);
 
   interface Ev { t: number; a: number }
   let evA: Ev[] = [], evB: Ev[] = [], period = 4000, sig = '', epoch = performance.now();

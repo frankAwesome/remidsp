@@ -40,6 +40,9 @@
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* author display rules (display:flex etc.) must never beat the hidden
+   attribute — the RIG|FEED view switch and every hidden panel rely on it */
+[hidden]{display:none !important}
 html,body{height:100%}
 body{
   font-family:var(--font-ui);
@@ -304,37 +307,62 @@ select{font:inherit}
 .gateway__status{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;color:var(--ice);
   min-height:1em;text-transform:uppercase}
 
-/* pedal pilot jewel — covers the baked (always-lit) LED; .on relights it */
+/* pedal pilot jewel — a real glass dome over the baked (always-lit) LED.
+   The lens carries a specular glint, a shaded core and a bezel line in BOTH
+   states, so it reads as hardware whether lit or dark; the feathered
+   surround only whispers (it masks the baked bloom, not the artwork). */
 .pilot{aspect-ratio:1/1;display:grid;place-items:center;
-  background:radial-gradient(circle,rgba(8,5,5,.92) 0%,rgba(8,5,5,.75) 42%,transparent 68%)}
+  background:radial-gradient(circle,rgba(8,5,5,.55) 0%,rgba(8,5,5,.30) 45%,transparent 70%)}
 .pilot i{display:block;width:46%;aspect-ratio:1/1;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#4a2a26,#2a1512 55%,#1a0c0a);
-  box-shadow:inset 0 1px 2px rgba(0,0,0,.8), inset 0 -1px 1px rgba(255,255,255,.05),
-    0 0 0 1px rgba(0,0,0,.6);
-  transition:background .15s, box-shadow .15s}
-.pilot.on{background:radial-gradient(circle,rgba(255,83,64,.30) 0%,rgba(255,83,64,.12) 40%,transparent 68%)}
-.pilot.on i{background:radial-gradient(circle at 35% 30%,#ffd9cf,#ff5340 55%,#8f1d12);
-  box-shadow:0 0 12px rgba(255,83,64,.85), 0 0 26px rgba(255,83,64,.4),
-    inset 0 0 3px rgba(255,255,255,.55), 0 0 0 1px rgba(60,10,6,.8)}
+  background:
+    radial-gradient(circle at 32% 26%,rgba(255,255,255,.65) 0%,rgba(255,255,255,.16) 14%,transparent 30%),
+    radial-gradient(circle at 50% 42%,#553330 0%,#331915 55%,#1d0d0b 100%);
+  box-shadow:
+    inset 0 -2px 3px rgba(0,0,0,.55),
+    inset 0 1px 1px rgba(255,255,255,.14),
+    0 0 0 1px rgba(15,8,6,.7),
+    0 1px 2px rgba(0,0,0,.3);
+  transition:background .16s, box-shadow .16s}
+.pilot.on{background:radial-gradient(circle,rgba(255,83,64,.30) 0%,rgba(255,83,64,.12) 42%,transparent 70%)}
+.pilot.on i{background:
+    radial-gradient(circle at 32% 26%,rgba(255,255,255,.95) 0%,rgba(255,255,255,.32) 12%,transparent 26%),
+    radial-gradient(circle at 50% 45%,#ffe3da 0%,#ff5340 48%,#a02015 86%,#6d130c 100%);
+  box-shadow:
+    0 0 10px rgba(255,83,64,.8), 0 0 22px rgba(255,83,64,.4),
+    inset 0 -2px 3px rgba(120,15,8,.55),
+    inset 0 1px 2px rgba(255,255,255,.5),
+    0 0 0 1px rgba(60,10,6,.85)}
 
 /* RIG | FEED view switch — one segmented control, the lit side is current */
 .viewswitch{display:flex;border:1px solid var(--line-2)}
 .viewswitch .hdr__btn{border:0;border-radius:0}
 .viewswitch .hdr__btn:not(.hdr__btn--lit):hover{background:rgba(255,255,255,.06)}
 
-/* studio power jewels — green when the unit is in, clickable */
+/* studio power jewels — the baked domes made live. Sized to the dome (no
+   oversized halo), NO dark surround (it sat harshly on the light FET metal):
+   just the glass lens with its glint, and a soft green bloom when in. */
 .pilot--power{aspect-ratio:1/1;display:grid;place-items:center;cursor:pointer;border:0;
-  background:radial-gradient(circle,rgba(6,7,6,.9) 0%,rgba(6,7,6,.7) 42%,transparent 68%);
-  pointer-events:auto;padding:0}
-.pilot--power i{display:block;width:52%;aspect-ratio:1/1;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#2f3d33,#17211a 55%,#0d130f);
-  box-shadow:inset 0 1px 2px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.6);
-  transition:background .15s, box-shadow .15s}
-.pilot--power:hover i{box-shadow:inset 0 1px 2px rgba(0,0,0,.8), 0 0 0 1px rgba(95,224,138,.4)}
-.pilot--power.on{background:radial-gradient(circle,rgba(95,224,138,.28) 0%,rgba(95,224,138,.1) 40%,transparent 68%)}
-.pilot--power.on i{background:radial-gradient(circle at 35% 30%,#d6ffe2,#5fe08a 55%,#1d7a44);
-  box-shadow:0 0 12px rgba(95,224,138,.85), 0 0 24px rgba(95,224,138,.4),
-    inset 0 0 3px rgba(255,255,255,.55), 0 0 0 1px rgba(10,40,22,.8)}
+  background:transparent;pointer-events:auto;padding:0}
+.pilot--power i{display:block;width:82%;aspect-ratio:1/1;border-radius:50%;
+  background:
+    radial-gradient(circle at 32% 26%,rgba(255,255,255,.55) 0%,rgba(255,255,255,.14) 15%,transparent 32%),
+    radial-gradient(circle at 50% 42%,#31413a 0%,#182219 55%,#0d130f 100%);
+  box-shadow:
+    inset 0 -1px 2px rgba(0,0,0,.5),
+    inset 0 1px 1px rgba(255,255,255,.12),
+    0 0 0 1px rgba(8,12,9,.65);
+  transition:background .16s, box-shadow .16s}
+.pilot--power:hover i{box-shadow:inset 0 -1px 2px rgba(0,0,0,.5),
+  inset 0 1px 1px rgba(255,255,255,.12), 0 0 0 1px rgba(95,224,138,.45)}
+.pilot--power.on{background:radial-gradient(circle,rgba(95,224,138,.22) 0%,rgba(95,224,138,.08) 45%,transparent 72%)}
+.pilot--power.on i{background:
+    radial-gradient(circle at 32% 26%,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 12%,transparent 26%),
+    radial-gradient(circle at 50% 45%,#dcffe6 0%,#5fe08a 48%,#1d7a44 86%,#0f4527 100%);
+  box-shadow:
+    0 0 8px rgba(95,224,138,.75), 0 0 16px rgba(95,224,138,.35),
+    inset 0 -1px 2px rgba(10,60,30,.55),
+    inset 0 1px 2px rgba(255,255,255,.5),
+    0 0 0 1px rgba(10,40,22,.8)}
 
 /* gate AUTO / GLOBAL keys — live twins fully covering the baked prints */
 .gate-key{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;

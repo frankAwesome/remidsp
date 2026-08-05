@@ -705,8 +705,8 @@ function studioPanel(): HTMLElement {
   for (const k of STUDIO_FACE.knobs) ov.appendChild(placeKnob(k.param, k.sprite, k.nx, k.ny, k.nr));
   // The baked LED domes are now the live power controls: green jewels that
   // light when the unit is in and toggle on click (desktop rc geometry).
-  ov.appendChild(powerLed('eq_on', 0.0441, 0.105, 0.0135));
-  ov.appendChild(powerLed('fet_on', 0.9355, 0.65, 0.0135));
+  ov.appendChild(powerLed('eq_on', 0.0441, 0.105, 0.0114));
+  ov.appendChild(powerLed('fet_on', 0.9355, 0.65, 0.0114));
   // Labelled toggles live in clear metal, away from the domes: EQ IN beside
   // the VOICE box, COMP IN after the FET nameplate.
   ov.appendChild(seat(paramToggle('eq_on', 'EQ IN', 'tab tab--mini tab--lightlit'), 0.655, 0.072));
