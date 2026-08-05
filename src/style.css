@@ -209,6 +209,11 @@ select{font:inherit}
   box-shadow:0 0 12px rgba(238,241,246,.35), inset 0 0 8px rgba(238,241,246,.12)}
 .face__overlay select{background:rgba(6,6,10,.6);backdrop-filter:blur(2px)}
 .face__overlay .tab--mini{font-size:.46rem;padding:.18rem .4rem;letter-spacing:.1em;white-space:nowrap}
+/* drive: live status bar covering the print's baked one */
+.drive-status{width:100%;height:100%;display:grid;place-items:center;
+  background:rgba(6,6,9,.9);border:1px solid rgba(255,255,255,.16);
+  font-size:clamp(5px,.62vw,8px);font-weight:600;letter-spacing:.16em;
+  color:#cfd3da;text-align:center;white-space:nowrap;overflow:hidden}
 .seat--fill{display:flex}
 .seat--fill>*{flex:1}
 

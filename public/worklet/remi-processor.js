@@ -272,14 +272,37 @@ class DrivePedal {
     this.clipL = new AdaaTanh(); this.clipR = new AdaaTanh();
     this.hpL = new OnePoleHP(); this.hpR = new OnePoleHP();
     this.lpL = new OnePoleLP(); this.lpR = new OnePoleLP();
-    this.hpL.setFc(35, sr); this.hpR.setFc(35, sr);
     this.toneZ = -1;
+    // Two pedals in one enclosure, voiced from the drive captures the desktop
+    // suite ships:
+    //   0 — TRANSPARENT OD: a Bluesbreaker-lineage overdrive. Symmetric soft
+    //       clipping, full-range low end, plenty of gain on tap, the amp's
+    //       own voice still audible underneath.
+    //   1 — CLEAN BOOST: the famous mid-forward transparent booster. Its
+    //       character is the CLEAN BLEND — a dry path summed with a lightly,
+    //       ASYMMETRICALLY clipped one (even harmonics), tighter lows and a
+    //       push around 900 Hz. It pushes an amp rather than distorting.
+    this.model = 0;
+    this.midL = new Biquad(); this.midR = new Biquad();
+    this.applyModel();
+  }
+
+  applyModel() {
+    const sr = this.sr, boost = this.model === 1;
+    this.hpL.setFc(boost ? 80 : 35, sr); this.hpR.setFc(boost ? 80 : 35, sr);
+    this.midL.peak(900, 0.7, boost ? 4.5 : 0, sr);
+    this.midR.peak(900, 0.7, boost ? 4.5 : 0, sr);
+    this.driveScale = boost ? 16 : 55;   // boost stays cleaner for the same knob
+    this.cleanBlend = boost ? 0.45 : 0;  // the blend IS the boost's signature
+    this.bias = boost ? 0.18 : 0;        // asymmetry → even harmonics
+    this.midOn = boost;
   }
   set(id, v) {
     if (id === 'on') this.on = v > 0.5;
     else if (id === 'gain') this.gain.set(v);
     else if (id === 'tone') this.tone.set(v);
     else if (id === 'level') this.level.set(v);
+    else if (id === 'model') { this.model = v | 0; this.applyModel(); }
     else if (id === 'air') {
       if (!this.airL) { this.airL = new Biquad(); this.airR = new Biquad(); }
       this.airL.highshelf(7500, (v - 0.5) * 12, this.sr);
@@ -297,11 +320,19 @@ class DrivePedal {
         this.lpL.setFc(fc, this.sr); this.lpR.setFc(fc, this.sr);
         this.toneZ = t;
       }
-      const pre = 1 + d * d * 55;              // up to ~35 dB, square-law feel
-      const comp = 1 / Math.pow(pre, 0.62);    // knee moves, level stays put
+      const pre = 1 + d * d * this.driveScale;  // square-law feel on the knob
+      const comp = 1 / Math.pow(pre, 0.62);     // knee moves, level stays put
       const lv = dbToGain(-6) * (0.25 + this.level.next() * 1.5);
-      let l = this.lpL.tick(this.clipL.tick(this.hpL.tick(L[i]) * pre)) * comp * lv;
-      let r = this.lpR.tick(this.clipR.tick(this.hpR.tick(R[i]) * pre)) * comp * lv;
+      let dl = this.hpL.tick(L[i]), dr = this.hpR.tick(R[i]);
+      if (this.midOn) { dl = this.midL.tick(dl); dr = this.midR.tick(dr); }
+      // Bias the clipper for the boost's asymmetry, then remove the DC it adds.
+      let l = this.lpL.tick(this.clipL.tick(dl * pre + this.bias) - this.bias) * comp;
+      let r = this.lpR.tick(this.clipR.tick(dr * pre + this.bias) - this.bias) * comp;
+      if (this.cleanBlend > 0) {   // the boost's clean path, summed alongside
+        l = l * (1 - this.cleanBlend) + dl * this.cleanBlend;
+        r = r * (1 - this.cleanBlend) + dr * this.cleanBlend;
+      }
+      l *= lv; r *= lv;
       if (this.airOn) { l = this.airL.tick(l); r = this.airR.tick(r); }
       L[i] = l; R[i] = r;
     }

@@ -352,6 +352,25 @@ function pedalPanel(key: SlotKey): HTMLElement {
   };
   const pg = pilots[key];
   if (pg) ov.appendChild(pilotLed(m.on, pg[0], pg[1], pg[2]));
+  if (key === 'drive') {
+    // MODEL selector over the print's baked "Drive 1" box, and a live status
+    // bar covering the baked one under the name plate (desktop geometry).
+    const sel = paramSelect('drive_model');
+    sel.style.height = '100%';
+    ov.appendChild(seat(sel, 0.495, 0.555, 0.235, 0.046));
+    const status = el('div', 'drive-status');
+    const syncStatus = () => {
+      status.textContent = store.get('drive_model') < 0.5
+        ? 'TRANSPARENT · SYMMETRIC SOFT CLIP'
+        : 'CLEAN BLEND · ASYMMETRIC · MID PUSH';
+    };
+    syncStatus();
+    const unS = store.subscribe((id) => {
+      if (!status.isConnected) { unS(); return; }
+      if (id === 'drive_model' || id === '*') syncStatus();
+    });
+    ov.appendChild(seat(status, 0.5, 0.74, 0.268, 0.074));
+  }
   if (key === 'gate') {
     ov.appendChild(gateMeter());
     // AUTO + GLOBAL keys over their baked twins (desktop resizedExtras geometry).

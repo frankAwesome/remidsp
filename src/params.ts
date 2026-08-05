@@ -65,6 +65,8 @@ export const PARAMS: ParamDef[] = [
   { id: 'comp_level', label: 'LEVEL', min: -12, max: 12, def: 0, unit: 'dB', format: db1 },
 
   { id: 'drive_on', label: 'DRIVE', min: 0, max: 1, def: 0 },
+  { id: 'drive_model', label: 'MODEL', min: 0, max: 1, def: 0,
+    choices: ['Drive 1 · Transparent OD', 'Drive 2 · Clean Boost'] },
   { id: 'drive_gain', label: 'DRIVE', min: 0, max: 1, def: 0.35, format: dial },
   { id: 'drive_tone', label: 'TONE', min: 0, max: 1, def: 0.5, format: dial },
   { id: 'drive_level', label: 'LEVEL', min: 0, max: 1, def: 0.5, format: dial },

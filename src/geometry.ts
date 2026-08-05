@@ -85,10 +85,14 @@ export const PEDAL_FACES: Record<string, FaceDef> = {
     img: '/assets/ui/pedal_drive.png', aspect: 1774 / 887,
     sprite: '/assets/ui/knob_fx_drive.png',
     knobs: [
+      // The print bakes FOUR captions — DRIVE / TONE / TONE / LEVEL — with a
+      // duplicated TONE. The second TONE well hosts AIR and the far-right one
+      // is LEVEL; swapping those two parks LEVEL under a TONE label and leaves
+      // the knob captioned LEVEL doing something else.
       A('drive_gain', 0.3405, 0.2943, 0.0383),
       A('drive_tone', 0.4465, 0.2943, 0.0383),
-      A('drive_level', 0.5581, 0.2943, 0.0383),
-      A('drive_air', 0.6646, 0.2943, 0.0383),
+      A('drive_air', 0.5581, 0.2943, 0.0383),
+      A('drive_level', 0.6646, 0.2943, 0.0383),
     ],
   },
   chorus: {
