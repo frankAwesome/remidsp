@@ -46,9 +46,11 @@ export interface Meters {
 }
 export interface LooperMsg {
   type: 'looper' | 'wave';
-  state?: string; beat?: number; beatsPerBar?: number; countBeats?: number;
+  state?: string; armed?: boolean;
+  beat?: number; beatsPerBar?: number; countBeats?: number;
   bars?: number; bpm?: number;
-  peaks?: Float32Array; bins?: number;
+  tracks?: { id: number; muted: boolean }[];
+  trackId?: number; peaks?: Float32Array; bins?: number;
 }
 
 type EngineState = 'idle' | 'booting' | 'running' | 'error';

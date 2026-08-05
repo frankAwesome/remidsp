@@ -19,6 +19,31 @@ const TWO_PI = Math.PI * 2;
 function dbToGain(db) { return Math.pow(10, db / 20); }
 function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 
+// Denormal guard. Feedback tails decay into denormal territory, where every
+// multiply costs orders of magnitude more — the classic source of "the reverb
+// crackles after the note stops". Flushing to zero keeps the loop cheap.
+const DENORM = 1e-20;
+function flush(x) { return (x > -DENORM && x < DENORM) ? 0 : x; }
+
+// Smooth limiter: exactly transparent below `th`, C1-continuous at the knee
+// (derivative is 1 there), asymptotic to 1.0 above. No transcendentals, no
+// hard corner — blooms compress instead of hitting a brick wall.
+function softLimit(x, th) {
+  const a = x < 0 ? -x : x;
+  if (a <= th) return x;
+  const room = 1 - th, over = a - th;
+  const lim = th + room * over / (over + room);
+  return x < 0 ? -lim : lim;
+}
+
+// Cheap deterministic noise (xorshift32) — Math.random() is a call into the
+// engine's PRNG and we need several per sample in the tape modes.
+let _rngState = 0x9e3779b9;
+function noise() {
+  _rngState ^= _rngState << 13; _rngState ^= _rngState >>> 17; _rngState ^= _rngState << 5;
+  return (_rngState >> 8) * 5.9604645e-8; // ~[-0.5, 0.5)
+}
+
 // One-pole parameter smoother (~time constant in ms).
 class Smooth {
   constructor(v = 0, ms = 12, sr = 48000) {
@@ -454,9 +479,19 @@ class DelayEngine {
     const sr = this.sr;
     const isTape = this.mode === 3, isAnalog = this.mode === 2, isDigital = this.mode === 0;
     const duckA = Math.exp(-1 / (0.004 * sr)), duckR = Math.exp(-1 / (0.35 * sr));
+    // Coefficients that only follow GRIT are re-derived once per block, not
+    // per sample: applyMode() runs exp()/pow() over a dozen filters and had
+    // been firing mid-loop during a knob sweep.
+    const gBlock = this.grit.get();
+    if (Math.abs(gBlock - this.lastGrit) > 0.005) this.applyMode();
+    const drive = 1 + gBlock * 5 + (isTape ? 0.8 : 0) + (isAnalog ? 0.5 : 0);
+    const norm = 1 / Math.pow(drive, 0.55);
+    const dAmt = this.diffAmt * (0.5 + gBlock * 0.5);
+    const diffuse = !isDigital && dAmt > 0.01;
+    const hissAmt = (isTape && gBlock > 0.05) ? 0.00035 * gBlock : 0;
+    const maxL = this.dL.buf.length - 8, maxR = this.dR.buf.length - 8;
     for (let i = 0; i < n; i++) {
       const g = this.grit.next();
-      if (Math.abs(g - this.lastGrit) > 0.01) this.applyMode();
       const t = this.timeMs.next();
       const fb = this.fb.next();
       const mix = this.mix.next();
@@ -466,16 +501,16 @@ class DelayEngine {
       if (this.lfoPhase >= 1) this.lfoPhase -= 1;
       let modMs = Math.sin(TWO_PI * this.lfoPhase) * modD * (isTape ? 2.6 : 1.8);
       if (isTape) {
-        this.flutterZ += 0.002 * ((Math.random() - 0.5) - this.flutterZ);
-        this.wowZ += 0.00012 * ((Math.random() - 0.5) * 2 - this.wowZ);
+        this.flutterZ += 0.002 * (noise() - this.flutterZ);
+        this.wowZ += 0.00012 * (noise() * 2 - this.wowZ);
         modMs += this.flutterZ * 14 * (0.3 + modD) + this.wowZ * 260 * (0.3 + modD);
       } else if (isAnalog) {
-        this.flutterZ += 0.0006 * ((Math.random() - 0.5) - this.flutterZ);
+        this.flutterZ += 0.0006 * (noise() - this.flutterZ);
         modMs += this.flutterZ * 6;
       }
       const off = this.offsetMs * 0.5;
-      const dSampL = clamp((t + modMs - off) * 0.001 * sr, 8, this.dL.buf.length - 8);
-      const dSampR = clamp((t + modMs + off) * 0.001 * sr, 8, this.dR.buf.length - 8);
+      const dSampL = clamp((t + modMs - off) * 0.001 * sr, 8, maxL);
+      const dSampR = clamp((t + modMs + off) * 0.001 * sr, 8, maxR);
       let echoL = this.dL.read(dSampL);
       let echoR = this.dR.read(dSampR);
       // Ducking (dry side-chain).
@@ -484,24 +519,23 @@ class DelayEngine {
       const duckAmt = this.duck.next();
       const duckG = 1 - duckAmt * clamp(this.duckEnv * 2.6, 0, 1) * 0.85;
       // Feedback into the loop: saturate → darken → (tape body) → diffuse.
-      const drive = 1 + g * 5 + (isTape ? 0.8 : 0) + (isAnalog ? 0.5 : 0);
-      const norm = 1 / Math.pow(drive, 0.55);
       let fbInL = this.satL.tick((this.pingpong ? echoR : echoL) * fb * drive) * norm;
       let fbInR = this.satR.tick((this.pingpong ? echoL : echoR) * fb * drive) * norm;
       fbInL = this.hicutL.tick(this.loopLpL.tick(this.loopHpL.tick(fbInL)));
       fbInR = this.hicutR.tick(this.loopLpR.tick(this.loopHpR.tick(fbInR)));
       if (isTape) { fbInL = this.bumpL.tick(fbInL); fbInR = this.bumpR.tick(fbInR); }
-      const dAmt = this.diffAmt * (0.5 + g * 0.5);
-      if (!isDigital && dAmt > 0.01) {
+      if (diffuse) {
         fbInL = fbInL + dAmt * (this.difL[1].tick(this.difL[0].tick(fbInL)) - fbInL);
         fbInR = fbInR + dAmt * (this.difR[1].tick(this.difR[0].tick(fbInR)) - fbInR);
       }
-      if (isTape && g > 0.05) { // hiss rides the repeats only
-        const h = (Math.random() - 0.5) * 0.00035 * g;
+      if (hissAmt !== 0) { // hiss rides the repeats only
+        const h = noise() * hissAmt;
         fbInL += h; fbInR -= h;
       }
-      this.dL.write(L[i] + fbInL);
-      this.dR.write(R[i] + fbInR);
+      // Keep what re-enters the line bounded: a repeat can bloom (feedback
+      // runs past unity by design) but it may never detonate.
+      this.dL.write(flush(softLimit(L[i] + fbInL, 0.92)));
+      this.dR.write(flush(softLimit(R[i] + fbInR, 0.92)));
       let wl = this.wetLpL.tick(this.wetHpL.tick(echoL));
       let wr = this.wetLpR.tick(this.wetHpR.tick(echoR));
       L[i] += wl * mix * duckG;
@@ -535,13 +569,21 @@ class DelayBlock {
     if (this.routing === 0) {
       this.A.process(L, R, n, this.dryL, this.dryR);
       this.B.process(L, R, n, this.dryL, this.dryR);
+      // SERIES stacks gain by design — B re-echoes A's repeats, and both
+      // engines can run their feedback past unity. Ride the ECHO STACK ONLY
+      // (dry passes through untouched) with the smooth limiter, so a bloom
+      // compresses musically instead of detonating into the master clipper.
+      for (let i = 0; i < n; i++) {
+        L[i] = this.dryL[i] + softLimit(L[i] - this.dryL[i], 0.82);
+        R[i] = this.dryR[i] + softLimit(R[i] - this.dryR[i], 0.82);
+      }
     } else {
       this.tmpL.set(this.dryL.subarray(0, n)); this.tmpR.set(this.dryR.subarray(0, n));
       this.A.process(L, R, n, this.dryL, this.dryR);
       this.B.process(this.tmpL, this.tmpR, n, this.dryL, this.dryR);
       for (let i = 0; i < n; i++) { // add B's wet on top (dry already in L/R)
-        L[i] += this.tmpL[i] - this.dryL[i];
-        R[i] += this.tmpR[i] - this.dryR[i];
+        L[i] = this.dryL[i] + softLimit((L[i] - this.dryL[i]) + (this.tmpL[i] - this.dryL[i]), 0.82);
+        R[i] = this.dryR[i] + softLimit((R[i] - this.dryR[i]) + (this.tmpR[i] - this.dryR[i]), 0.82);
       }
     }
   }
@@ -1050,28 +1092,39 @@ class Metronome {
   }
 }
 
-// Bar-count looper on the FINAL rig output: count-in → record N bars →
-// seamless loop playback, live signal always passing. The metronome rides
-// the count-in and record passes (and can run free for practice) but is
-// added AFTER the capture tap, so clicks are never printed into the loop.
+// MULTI-TRACK LOOPER on the FINAL rig output. The first pass sets the loop
+// length; every pass after that is an OVERDUB that arms instantly and starts
+// recording at the next top of the loop, so layers always line up. Tracks
+// play stacked and can be deleted individually.
+//
+// The metronome rides the count-in and the record passes (and can run free
+// for practice) but is mixed in AFTER the capture tap, so clicks are never
+// printed into a track.
 class Looper {
   constructor(sr, port) {
     this.sr = sr;
     this.port = port;
-    this.state = 'idle';
+    this.state = 'idle';       // idle | count | rec | play
+    this.armed = false;        // overdub queued for the next loop top
     this.bars = 4;
     this.countBars = 2;
     this.beatsPerBar = 4;
     this.bpm = 120;
-    this.clickOn = true;       // click during count-in + record
-    this.freeMetro = false;    // standalone practice metronome
+    this.clickOn = true;
+    this.freeMetro = false;
     this.metro = new Metronome(sr);
-    this.bufL = null; this.bufR = null;
-    this.len = 0; this.recPos = 0; this.playPos = 0;
+    this.tracks = [];          // { id, bufL, bufR, gain, muted }
+    this.nextId = 1;
+    this.rec = null;           // the track being written
+    this.len = 0;              // loop length in samples (set by track 1)
+    this.recPos = 0;
+    this.playPos = 0;
     this.spb = Math.round(sr * 60 / this.bpm);
-    this.beatSample = 0; this.beatIndex = 0;
-    this.loopGain = new Smooth(1, 15, sr);
+    this.beatSample = 0;
+    this.beatIndex = 0;
+    this.fade = Math.min(192, Math.round(sr * 0.004)); // 4 ms seam fade
   }
+
   setOpt(id, v) {
     if (id === 'bars') this.bars = v | 0;
     else if (id === 'countin') this.countBars = v | 0;
@@ -1080,96 +1133,170 @@ class Looper {
     if (id === 'on') {
       this.freeMetro = v > 0.5;
       if (this.freeMetro && this.state === 'idle') { this.beatSample = 0; this.beatIndex = -1; }
-    }
-    else if (id === 'gain') this.metro.gain = v;
-    else if (id === 'bpm') { this.bpm = v; if (this.state === 'idle') this.spb = Math.round(this.sr * 60 / v); }
+    } else if (id === 'gain') this.metro.gain = v;
+    else if (id === 'bpm') { this.bpm = v; if (this.state === 'idle' && !this.tracks.length) this.spb = Math.round(this.sr * 60 / v); }
   }
+
   cmd(m) {
     if (m.cmd === 'arm') {
       this.bpm = m.bpm || this.bpm;
       if (m.bars) this.bars = m.bars;
       if (m.countBars !== undefined) this.countBars = m.countBars;
-      this.spb = Math.round(this.sr * 60 / this.bpm);
-      this.len = this.bars * this.beatsPerBar * this.spb;
-      this.bufL = new Float32Array(this.len);
-      this.bufR = new Float32Array(this.len);
-      this.recPos = 0; this.beatSample = 0; this.beatIndex = -1;
-      this.state = this.countBars > 0 ? 'count' : 'rec';
-      this.post();
+      if (this.tracks.length) {
+        // OVERDUB: the loop is already turning — queue for the next top so
+        // the new layer starts exactly on the one.
+        this.armed = true;
+        this.post();
+      } else {
+        this.spb = Math.round(this.sr * 60 / this.bpm);
+        this.len = this.bars * this.beatsPerBar * this.spb;
+        this.openTrack();
+        this.recPos = 0;
+        this.beatSample = 0;
+        this.beatIndex = -1;
+        this.state = this.countBars > 0 ? 'count' : 'rec';
+        this.post();
+      }
     } else if (m.cmd === 'stop') {
-      this.state = 'idle';
+      // cancel whatever is pending / in progress, keep finished tracks
+      this.armed = false;
+      if (this.state === 'rec' && this.rec) this.closeTrack(true);
+      this.rec = null;
+      this.state = this.tracks.length ? 'play' : 'idle';
       this.post();
     } else if (m.cmd === 'play') {
-      if (this.bufL && this.len) { this.state = 'play'; this.playPos = 0; this.loopGain.jump(1); this.post(); }
+      if (this.tracks.length) { this.state = 'play'; this.post(); }
+    } else if (m.cmd === 'pause') {
+      if (this.state === 'play') { this.state = 'idle'; this.post(); }
+    } else if (m.cmd === 'delete') {
+      this.tracks = this.tracks.filter((t) => t.id !== m.id);
+      if (!this.tracks.length) { this.len = 0; this.playPos = 0; this.state = 'idle'; this.armed = false; }
+      this.post();
+    } else if (m.cmd === 'mute') {
+      const t = this.tracks.find((x) => x.id === m.id);
+      if (t) t.muted = !!m.muted;
+      this.post();
     } else if (m.cmd === 'clear') {
-      this.state = 'idle'; this.bufL = this.bufR = null; this.len = 0;
+      this.tracks = []; this.rec = null; this.len = 0;
+      this.playPos = 0; this.state = 'idle'; this.armed = false;
       this.post();
     }
   }
-  post(extra) {
-    this.port.postMessage({
-      type: 'looper', state: this.state,
-      beat: this.beatIndex, beatsPerBar: this.beatsPerBar,
-      countBeats: this.countBars * this.beatsPerBar,
-      bars: this.bars, bpm: this.bpm, ...extra,
-    });
+
+  openTrack() {
+    this.rec = { id: this.nextId++, bufL: new Float32Array(this.len),
+                 bufR: new Float32Array(this.len), gain: 1, muted: false };
   }
-  finalize() {
-    // Peak pyramid for the UI waveform: 1200 min/max bins of the mono sum.
-    const bins = 1200;
+
+  /** Close the take: seam-fade the join, publish its waveform, keep it. */
+  closeTrack(partial) {
+    const t = this.rec;
+    this.rec = null;
+    if (!t) return;
+    if (partial) { // a cancelled overdub still gets whatever it captured
+      for (let i = this.recPos; i < this.len; i++) { t.bufL[i] = 0; t.bufR[i] = 0; }
+    }
+    const f = Math.min(this.fade, this.len >> 1);
+    for (let i = 0; i < f; i++) {   // crossfade the loop seam so it never ticks
+      const g = i / f;
+      t.bufL[i] *= g; t.bufR[i] *= g;
+      const j = this.len - 1 - i;
+      t.bufL[j] *= g; t.bufR[j] *= g;
+    }
+    this.tracks.push(t);
+    this.port.postMessage({ type: 'wave', trackId: t.id, ...this.peaksOf(t) },
+                          []);
+    this.state = 'play';
+    this.post();
+  }
+
+  /** Min/max pyramid of the mono sum, for the UI lane. */
+  peaksOf(t) {
+    const bins = 600;
     const peaks = new Float32Array(bins * 2);
     const per = this.len / bins;
     for (let b = 0; b < bins; b++) {
       let lo = 0, hi = 0;
       const s = Math.floor(b * per), e = Math.min(this.len, Math.ceil((b + 1) * per));
       for (let i = s; i < e; i++) {
-        const v = (this.bufL[i] + this.bufR[i]) * 0.5;
+        const v = (t.bufL[i] + t.bufR[i]) * 0.5;
         if (v < lo) lo = v;
         if (v > hi) hi = v;
       }
       peaks[b * 2] = lo; peaks[b * 2 + 1] = hi;
     }
-    this.state = 'play';
-    this.playPos = 0;
-    this.loopGain.jump(1);
-    this.port.postMessage({ type: 'wave', peaks, bins, bars: this.bars, bpm: this.bpm }, [peaks.buffer]);
-    this.post();
+    return { peaks, bins, bars: this.bars, bpm: this.bpm };
   }
-  // Runs on the final output block. Captures first, then adds loop + click.
+
+  post(extra) {
+    this.port.postMessage({
+      type: 'looper', state: this.state, armed: this.armed,
+      beat: this.beatIndex, beatsPerBar: this.beatsPerBar,
+      countBeats: this.countBars * this.beatsPerBar,
+      bars: this.bars, bpm: this.bpm,
+      tracks: this.tracks.map((t) => ({ id: t.id, muted: t.muted })),
+      ...extra,
+    });
+  }
+
   process(L, R, n) {
-    const counting = this.state === 'count', recording = this.state === 'rec';
+    const counting = this.state === 'count';
+    const recording = this.state === 'rec';
     const playing = this.state === 'play';
-    const clockOn = counting || recording;
+    const clockOn = counting || recording || playing;
     const freeTick = this.freeMetro && !clockOn;
+
     for (let i = 0; i < n; i++) {
+      // ── the clock ──────────────────────────────────────────────
       if (clockOn || freeTick) {
         if (this.beatSample === 0) {
           this.beatIndex++;
           const inBar = this.beatIndex % this.beatsPerBar;
-          if (clockOn || this.freeMetro) {
-            if (clockOn ? this.clickOn : true) this.metro.trigger(inBar === 0);
+          if ((counting || recording) ? this.clickOn : this.freeMetro) this.metro.trigger(inBar === 0);
+          if (counting && this.beatIndex >= this.countBars * this.beatsPerBar) {
+            this.state = 'rec';
+            this.recPos = 0;
           }
-          if (clockOn) {
-            if (counting && this.beatIndex >= this.countBars * this.beatsPerBar) {
-              this.state = 'rec';
-              this.recPos = 0;
-            }
-            this.post();
-          }
+          if (counting || recording) this.post();
         }
         if (++this.beatSample >= this.spb) this.beatSample = 0;
       }
-      if (this.state === 'rec') {
-        this.bufL[this.recPos] = L[i];
-        this.bufR[this.recPos] = R[i];
-        if (++this.recPos >= this.len) { this.finalize(); }
+
+      // ── capture the finished rig sound ─────────────────────────
+      if (this.state === 'rec' && this.rec) {
+        this.rec.bufL[this.recPos] = L[i];
+        this.rec.bufR[this.recPos] = R[i];
+        if (++this.recPos >= this.len) {
+          this.closeTrack(false);
+          this.playPos = 0;   // the take ends exactly on the loop top
+        }
       }
-      if (playing && this.bufL) {
-        const g = this.loopGain.next();
-        L[i] += this.bufL[this.playPos] * g;
-        R[i] += this.bufR[this.playPos] * g;
-        if (++this.playPos >= this.len) this.playPos = 0;
+
+      // ── stacked playback ───────────────────────────────────────
+      if ((this.state === 'play' || this.state === 'rec') && this.tracks.length && this.len) {
+        let sl = 0, sr2 = 0;
+        for (let k = 0; k < this.tracks.length; k++) {
+          const t = this.tracks[k];
+          if (t.muted) continue;
+          sl += t.bufL[this.playPos] * t.gain;
+          sr2 += t.bufR[this.playPos] * t.gain;
+        }
+        // Layers sum; ride the stack so eight passes never wreck the mix.
+        L[i] += softLimit(sl, 0.85);
+        R[i] += softLimit(sr2, 0.85);
+        if (++this.playPos >= this.len) {
+          this.playPos = 0;
+          // top of the loop: a queued overdub starts here, sample-exact
+          if (this.armed) {
+            this.armed = false;
+            this.openTrack();
+            this.recPos = 0;
+            this.state = 'rec';
+            this.post();
+          }
+        }
       }
+
       const c = this.metro.tick();
       if (c !== 0) { L[i] += c; R[i] += c; }
     }

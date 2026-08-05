@@ -147,8 +147,14 @@ select{font:inherit}
 .chip.sel{filter:none}
 .chip.sel::after{content:"";position:absolute;inset:-3px;border:1px solid var(--light);
   box-shadow:0 0 18px rgba(238,241,246,.28), inset 0 0 8px rgba(238,241,246,.12)}
-.chip__led{position:absolute;top:5px;left:5px}
-.chip__led .led{width:8px;height:8px}
+/* the power jewel's hit area — a padded corner, far bigger than the dot,
+   so the switch is actually reachable with a mouse or a thumb */
+.chip__led{position:absolute;top:0;left:0;width:24px;height:24px;
+  display:grid;place-items:center;cursor:pointer;border-radius:0 0 8px 0;
+  z-index:2;transition:background .15s}
+.chip__led:hover{background:rgba(159,216,232,.10)}
+.chip__led:active{background:rgba(159,216,232,.18)}
+.chip__led .led{width:9px;height:9px}
 
 /* ════════ stage ════════ */
 .stage{position:relative;border:1px solid var(--line);border-top:0;background:var(--ink-2);
@@ -408,6 +414,18 @@ select{font:inherit}
 .looper__btn:hover:not(:disabled){border-color:rgba(159,216,232,.6)}
 .looper__btn:disabled{opacity:.3;cursor:default}
 .looper__wave{width:100%;height:118px;display:block;border:1px solid var(--line)}
+.looper__lanes{display:flex;flex-direction:column;gap:.4rem}
+.looper-lane{display:flex;align-items:center;gap:.5rem}
+.looper-lane__no{font-size:.8rem;color:var(--muted);width:26px;text-align:right;flex:none}
+.looper-lane__wave{flex:1;height:62px;display:block;border:1px solid var(--line);min-width:0}
+.looper-lane__btn{width:28px;height:28px;flex:none;border:1px solid var(--line-2);color:var(--muted);
+  font-size:.62rem;font-weight:700;display:grid;place-items:center;background:#0a0a0d;transition:.15s}
+.looper-lane__btn:hover{color:var(--light-hi);border-color:rgba(159,216,232,.6)}
+.looper-lane__btn.on{color:var(--ice);border-color:rgba(159,216,232,.45)}
+.looper-lane__btn--del:hover{color:#ff6a5a;border-color:rgba(255,106,90,.6)}
+.looper-lane--muted .looper-lane__no{color:var(--muted-2)}
+.looper__hint{font-size:.54rem;letter-spacing:.2em;color:var(--muted-2)}
+.looper__field select:disabled{opacity:.45}
 
 /* ════════ account drawer ════════ */
 .account-chip{display:inline-flex;align-items:center;gap:.45rem}

@@ -273,8 +273,14 @@ function buildRibbon(): HTMLElement {
     const setImg = () => (img.src = `/assets/ui/chip_${s.key === 'chorus' ? 'chorus' : s.key}_${store.get(s.onParam) > 0.5 ? 'on' : 'off'}.png`);
     setImg();
     b.appendChild(img);
-    const led = el('div', 'chip__led');
-    const dot = el('div', 'led');
+    // The corner jewel is the module's POWER switch. It used to be an 8px
+    // dot — the visible glow is box-shadow, which captures no clicks, so
+    // aiming at it hit the chip and merely selected the module. The live
+    // hit target is now a padded corner region around the dot.
+    const led = el('span', 'chip__led');
+    led.setAttribute('role', 'button');
+    led.title = `${s.title} — power`;
+    const dot = el('span', 'led');
     led.appendChild(dot);
     b.appendChild(led);
     const syncLed = () => {
@@ -284,10 +290,13 @@ function buildRibbon(): HTMLElement {
     syncLed();
     store.subscribe((id) => { if (id === s.onParam || id === '*') syncLed(); });
     b.addEventListener('click', () => selectSlot(s.key));
-    led.addEventListener('click', (e) => {
+    const togglePower = (e: Event) => {
       e.stopPropagation();
+      e.preventDefault();
       store.set(s.onParam, store.get(s.onParam) > 0.5 ? 0 : 1);
-    });
+    };
+    led.addEventListener('pointerdown', (e) => e.stopPropagation());
+    led.addEventListener('click', togglePower);
     r.appendChild(b);
   }
   const sync = () => r.querySelectorAll<HTMLElement>('.chip').forEach(
@@ -330,13 +339,15 @@ function pedalPanel(key: SlotKey): HTMLElement {
   const m = map[key]!;
   const f = facePanel(m.def, m.on);
   const ov = f.querySelector('.face__overlay')!;
-  // Live pilot jewel over the render's painted dome — centres pixel-scanned
-  // from each print's emissive core (median-clustered, sauce-calibrated).
+  // Live pilot jewel over the render's painted dome. Positions come from a
+  // LUMINANCE scan of each print (the LED is the one white-hot spot in the
+  // top strip) — the earlier redness scan lied on the chorus, whose whole
+  // enclosure is orange. Each was confirmed against the artwork.
   const pilots: Partial<Record<SlotKey, [number, number, number]>> = {
     gate: [0.4902, 0.1089, 0.0145],
-    comp: [0.4992, 0.0908, 0.0124],
-    drive: [0.5048, 0.0847, 0.012],
-    chorus: [0.4918, 0.1295, 0.016],
+    comp: [0.4983, 0.0878, 0.0115],
+    drive: [0.4978, 0.0818, 0.0125],
+    chorus: [0.4985, 0.0867, 0.011],
     sauce: [0.5, 0.075, 0.009],
   };
   const pg = pilots[key];
