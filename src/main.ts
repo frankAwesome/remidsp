@@ -345,10 +345,10 @@ function pedalPanel(key: SlotKey): HTMLElement {
   // enclosure is orange. Each was confirmed against the artwork.
   const pilots: Partial<Record<SlotKey, [number, number, number]>> = {
     gate: [0.4971, 0.0982, 0.0109],
-    comp: [0.4983, 0.0878, 0.0115],
-    drive: [0.4978, 0.0818, 0.0125],
+    comp: [0.4996, 0.089, 0.0107],
+    drive: [0.4997, 0.0873, 0.0119],
     chorus: [0.5019, 0.0926, 0.0118],
-    sauce: [0.5, 0.075, 0.009],
+    sauce: [0.5002, 0.0729, 0.0104],
   };
   const pg = pilots[key];
   if (pg) ov.appendChild(pilotLed(m.on, pg[0], pg[1], pg[2]));
@@ -686,10 +686,10 @@ function delayPanel(): HTMLElement {
   const routSel = paramSelect('dly_routing');
   routSel.style.height = '100%';
   ov.appendChild(seat(routSel, 0.6903, 0.827, 0.155, 0.052));
-  // PING-PONG chip: no baked twin — it anchors the bottom control row with
-  // DIVISION and ROUTING, clear of the enclosure edge, screws and captions.
+  // PING-PONG chip: no baked twin — it sits top-right on the enclosure, in
+  // the clear starfield between SYNC and Saturn, inside the corner screw.
   const pp = paramToggle(p + 'pingpong', 'PING-PONG', 'tab tab--mini');
-  seatFill(pp, [0.18, 0.827, 0.082, 0.052]);
+  seatFill(pp, [0.7365, 0.1137, 0.0715, 0.0475]);
   // Live ECHO SYNC lamp — flashes the routing's ACTUAL echo rhythm.
   ov.appendChild(delayLamp(delayEngineShown));
 
