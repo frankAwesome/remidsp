@@ -329,12 +329,13 @@ function pedalPanel(key: SlotKey): HTMLElement {
   const m = map[key]!;
   const f = facePanel(m.def, m.on);
   const ov = f.querySelector('.face__overlay')!;
-  // Live pilot jewel over the render's painted pilot spot (desktop geometry).
+  // Live pilot jewel over the render's painted dome — centres pixel-scanned
+  // from each print's emissive core (median-clustered, sauce-calibrated).
   const pilots: Partial<Record<SlotKey, [number, number, number]>> = {
-    gate: [0.4941, 0.0958, 0.0149],
+    gate: [0.4902, 0.1089, 0.0145],
     comp: [0.4992, 0.0908, 0.0124],
-    drive: [0.5, 0.098, 0.011],
-    chorus: [0.5035, 0.1091, 0.0147],
+    drive: [0.5048, 0.0847, 0.012],
+    chorus: [0.4918, 0.1295, 0.016],
     sauce: [0.5, 0.075, 0.009],
   };
   const pg = pilots[key];
