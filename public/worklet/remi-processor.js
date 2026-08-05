@@ -628,29 +628,52 @@ class DelayBlock {
  *   SPRING dispersive chirp, band-limited, fast flutter
  */
 
-// 4-grain Hann-windowed granular shifter — smooth enough to regenerate.
+/* Two-tap crossfaded delay-line pitch shifter.
+ *
+ * The read head walks its delay down at (ratio-1) samples per sample, so the
+ * pitch is exact; when a tap runs out of grain it restarts from the top.
+ * Two taps sit exactly half a grain apart carrying complementary sin²
+ * windows — sin²(πφ) + sin²(πφ + π/2) = 1 — so the pair is amplitude-
+ * preserving and the worst case is the two taps summing incoherently, a
+ * 3 dB dip. Four taps at quarter-grain spacing (what this used to be) comb
+ * far harder: their phases sweep a full circle and cancel outright, which
+ * measured as a 53 dB gain swing across the band. In a regenerating loop
+ * that is fatal — the octave voice vanishes on one note and honks on the
+ * next, and no single feedback gain can be safe for both.
+ */
 class GrainShifter {
-  constructor(sr, ratio) {
-    this.sr = sr;
-    this.ratio = ratio;
-    this.buf = new FracDelay(0.3 * sr);
-    this.grain = Math.round(0.118 * sr);
+  constructor(sr, ratio, grainSec) {
+    this.buf = new FracDelay(Math.max(0.3, grainSec * 1.6) * sr);
+    this.grain = Math.round(grainSec * sr);
+    this.rate = ratio - 1;
     this.ph = 0;
   }
-  tick(x) {
-    this.buf.write(x);
-    this.ph += (this.ratio - 1);
-    if (this.ph >= this.grain) this.ph -= this.grain;
-    let out = 0;
-    for (let k = 0; k < 4; k++) {
-      const p = (this.ph + k * this.grain * 0.25) % this.grain;
-      const w = Math.sin(Math.PI * p / this.grain);
-      out += this.buf.read(Math.max(2, this.grain - p)) * w * w;
-    }
-    return out * 0.5; // four sin² windows sum to 2
+  /** Always fed, even when SHIMMER is down, so raising the knob finds a warm
+   *  buffer instead of 120 ms of silence to chew through. */
+  write(x) { this.buf.write(x); }
+  read() {
+    const g = this.grain;
+    let p0 = this.ph + this.rate;
+    if (p0 >= g) p0 -= g;
+    this.ph = p0;
+    const h = g * 0.5;
+    const p1 = p0 < h ? p0 + h : p0 - h;
+    // sin²(φ+π/2) is exactly 1 - sin²(φ), so the second window costs nothing
+    // and the pair sums to unity by construction rather than by luck.
+    const s0 = Math.sin(Math.PI * p0 / g), w0 = s0 * s0;
+    return this.buf.read(Math.max(2, g - p0)) * w0
+         + this.buf.read(Math.max(2, g - p1)) * (1 - w0);
   }
-  reset() { this.buf.reset(); }
+  reset() { this.buf.reset(); this.ph = 0; }
 }
+
+/* Shimmer staging. The shifter pair averages ~0.86 across the band (its 3 dB
+ * crossfade floor), so MAKEUP normalises it to unity and FB alone sets the
+ * regeneration loop gain: at SHIMMER 100 % about three quarters of the
+ * octave comes back for another lap, which is what makes octaves stack
+ * instead of appearing once and dying. */
+const SHIM_MAKEUP = 1.16;
+const SHIM_FB = 0.83;
 
 class VastSkyReverb {
   constructor(sr) {
@@ -700,11 +723,19 @@ class VastSkyReverb {
     this.erTaps = [];      // [samples, gain, isLeft]
     this.erAmt = 0;
 
-    // Shimmer.
-    this.shiftOct = new GrainShifter(sr, 2);
-    this.shift5th = new GrainShifter(sr, 3);
+    // Shimmer. The two voices get deliberately incommensurate grain lengths
+    // (8.5 Hz and 12.3 Hz crossfade flutter) so their windows never lock into
+    // one audible throb. The send is band-limited BEFORE the shift so the
+    // octave lands under Nyquist at 44.1 k and the bottom octave never turns
+    // to mud; the return is limited again, and that top-end roll-off is what
+    // eventually starves the cascade and keeps it finite.
+    this.shiftOct = new GrainShifter(sr, 2, 0.118);
+    this.shift5th = new GrainShifter(sr, 3, 0.163);
+    this.shimFifth = new Smooth(0, 90, sr); // INTERVAL morph, click-free
+    this.shimInHp = new OnePoleHP(); this.shimInHp.setFc(200, sr);
+    this.shimInLp = new OnePoleLP(); this.shimInLp.setFc(7200, sr);
     this.shimLp = new OnePoleLP(); this.shimLp.setFc(6800, sr);
-    this.shimHp = new OnePoleHP(); this.shimHp.setFc(430, sr);
+    this.shimHp = new OnePoleHP(); this.shimHp.setFc(300, sr);
 
     // Wet voicing.
     this.tiltLoL = new Biquad(); this.tiltLoR = new Biquad();
@@ -784,7 +815,10 @@ class VastSkyReverb {
     else if (id === 'tone') { this.tone.set(v); this.tone.jump(v); this.retone(); }
     else if (id === 'mod') this.mod.set(v);
     else if (id === 'shimmer') this.shimmer.set(v);
-    else if (id === 'shimmer_mode') this.shimmerMode = v | 0;
+    else if (id === 'shimmer_mode') {
+      this.shimmerMode = v | 0;
+      this.shimFifth.set(this.shimmerMode === 1 ? 1 : 0);
+    }
     else if (id === 'duck') this.duckOn = v > 0.5;
     else if (id === 'hp') { this.wetHpL.setFc(v, this.sr); this.wetHpR.setFc(v, this.sr); }
     else if (id === 'lp') { this.wetLpL.setFc(v, this.sr); this.wetLpR.setFc(v, this.sr); }
@@ -836,12 +870,28 @@ class VastSkyReverb {
 
       for (const a of this.diff) d = a.tick(d);
 
-      // Shimmer regenerates the tail an octave (and a twelfth) up.
+      // Shimmer regenerates the tail an octave (and a twelfth) up and posts
+      // it back into the tank, so every lap stacks another octave. The send
+      // is a unit-norm draw off four lines — 0.5 = 1/sqrt(4) — which keeps
+      // the loop gain a property of SHIM_FB alone instead of an accident of
+      // how many lines happened to be tapped.
+      const tail = (this.lineOut[1] + this.lineOut[3] + this.lineOut[4] + this.lineOut[6]) * 0.5;
+      const send = flush(this.shimInLp.tick(this.shimInHp.tick(tail)));
+      this.shiftOct.write(send);
+      this.shift5th.write(send);
+      const fifth = this.shimFifth.next();
       if (shim > 0.005) {
-        const tail = 0.35 * (this.lineOut[1] + this.lineOut[4]) + 0.3 * this.lineOut[6];
-        let s = this.shiftOct.tick(tail);
-        if (this.shimmerMode === 1) s = 0.72 * s + 0.55 * this.shift5th.tick(tail);
-        d += this.shimHp.tick(this.shimLp.tick(s)) * shim * 0.58;
+        let s = this.shiftOct.read();
+        if (fifth > 0.001) {
+          // Power-preserving morph, or INTERVAL would double as a loudness
+          // switch and shove the loop gain up with it.
+          s = Math.sqrt(1 - 0.5 * fifth) * s + Math.sqrt(0.5 * fifth) * this.shift5th.read();
+        }
+        s = this.shimHp.tick(this.shimLp.tick(s)) * SHIM_MAKEUP;
+        // Each generation climbs an octave and loses more of itself to the
+        // roll-off above, so the cascade is self-starving; the soft ceiling
+        // is the backstop that keeps a 60-second tank from ever howling.
+        d += softLimit(s * shim * SHIM_FB, 0.7);
       }
 
       // Read all 8 lines — ensemble-modulated, Hermite-interpolated.
@@ -904,6 +954,8 @@ class VastSkyReverb {
     this.erBuf.reset();
     this.shiftOct.reset();
     this.shift5th.reset();
+    this.shimInHp.reset(); this.shimInLp.reset();
+    this.shimHp.reset(); this.shimLp.reset();
     this.lineOut.fill(0);
     this.drift.fill(0);
   }
