@@ -54,7 +54,7 @@ export const FACTORY_PRESETS: Preset[] = [
   P('80s Widescreen', 'SIGNATURE', 'portland', 'portland_bloom', {
     tempo: 118, cho_on: 1, cho_rate: 0.3, cho_depth: 0.65, cho_mix: 0.55,
     dlyA_mode: 0, dlyA_div: 3, dlyA_fb: 0.4, dlyA_mix: 0.42, dlyA_pingpong: 1,
-    rvb_machine: 2, rvb_decay: 2.8, rvb_mix: 0.24, fet_input: 0.6,
+    rvb_machine: 2, rvb_decay: 2.8, rvb_mix: 0.24, fet_input: 0.2,
   }),
   P('Smooth Blues', 'SIGNATURE', 'portland', 'portland_bloom', {
     tempo: 84, drive_on: 1, drive_gain: 0.28, comp_sustain: 0.4, dlyA_div: 1,
@@ -68,20 +68,22 @@ export const FACTORY_PRESETS: Preset[] = [
     tempo: 110, dlyA_div: 7, dlyA_fb: 0.15, dlyA_mix: 0.26, dlyA_mode: 3, dlyA_grit: 0.5,
     rvb_machine: 3, rvb_decay: 2.4, rvb_mix: 0.38, rvb_tone: -0.2,
   }),
+  // Katahdin is the high-gain amp, and it does not want anything squeezing or
+  // driving the front end: the capture already has all the compression and all
+  // the gain the part needs, and a stomp comp in front of it only pumps the
+  // noise floor up between chugs. Front end is a gate and nothing else, with a
+  // fast release so palm mutes stop dead instead of trailing.
   P('Modern Djent', 'SIGNATURE', 'katahdin', 'katahdin_red', {
-    tempo: 140, gate_thresh: -44, gate_release: 60, dly_on: 0,
+    tempo: 140, comp_on: 0, drive_on: 0,
+    gate_on: 1, gate_thresh: -44, gate_release: 45, dly_on: 0,
     sauce_on: 1, sauce_tight: 0.6, sauce_punch: 0.5, sauce_tame: 0.4, sauce_smooth: 0.3,
-    rvb_machine: 0, rvb_decay: 0.9, rvb_mix: 0.1, fet_input: 0.55, fet_ratio: 1,
+    rvb_machine: 0, rvb_decay: 0.9, rvb_mix: 0.1, fet_input: 0.18, fet_ratio: 1,
   }),
   P('Katahdin Lead', 'SIGNATURE', 'katahdin', 'katahdin_red', {
-    tempo: 96, dlyA_div: 1, dlyA_fb: 0.35, dlyA_mix: 0.3, dlyA_mode: 2,
-    rvb_machine: 1, rvb_decay: 3.8, rvb_mix: 0.3, cho_on: 0, comp_on: 0,
-  }),
-  P('Ambient Swell Bed', 'SIGNATURE', 'camden', 'camden_clean', {
-    tempo: 66, dlyA_div: 0, dlyA_fb: 0.75, dlyA_mix: 0.6, dlyA_mode: 1, dlyA_grit: 0.5,
-    dlyB_on: 1, dlyB_div: 2, dlyB_fb: 0.6, dlyB_mix: 0.5, dlyB_mode: 3, dly_routing: 0,
-    rvb_machine: 1, rvb_decay: 9, rvb_mix: 0.5, rvb_shimmer: 0.5, rvb_shimmer_mode: 1,
-    rvb_mod: 0.6, cho_on: 1, cho_mix: 0.35,
+    tempo: 96, comp_on: 0, drive_on: 0,
+    gate_on: 1, gate_thresh: -48, gate_release: 55,
+    dlyA_div: 1, dlyA_fb: 0.35, dlyA_mix: 0.3, dlyA_mode: 2,
+    rvb_machine: 1, rvb_decay: 3.8, rvb_mix: 0.3, cho_on: 0,
   }),
 ];
 

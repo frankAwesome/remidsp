@@ -107,7 +107,10 @@ export const PARAMS: ParamDef[] = [
   { id: 'eq_trim', label: 'TRIM', min: -12, max: 12, def: 0, unit: 'dB', format: db1 },
 
   { id: 'fet_on', label: 'COMP IN', min: 0, max: 1, def: 1 },
-  { id: 'fet_input', label: 'INPUT', min: 0, max: 1, def: 0.5, format: dial },
+  // INPUT is the 1176's compression amount (it drives a fixed threshold), so
+  // this default is what every preset that stays quiet about the FET inherits.
+  // It sits at 20% — the strip glues, it does not squeeze.
+  { id: 'fet_input', label: 'INPUT', min: 0, max: 1, def: 0.2, format: dial },
   { id: 'fet_output', label: 'OUTPUT', min: 0, max: 1, def: 0.5, format: dial },
   { id: 'fet_attack', label: 'ATTACK', min: 0, max: 1, def: 0.35, format: dial },
   { id: 'fet_release', label: 'RELEASE', min: 0, max: 1, def: 0.4, format: dial },

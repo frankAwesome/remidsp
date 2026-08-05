@@ -158,6 +158,34 @@ class FracDelay {
     const c3 = 0.5 * (x3 - x0) + 1.5 * (x1 - x2);
     return ((c3 * f + c2) * f + c1) * f + c0;
   }
+  // 6-point, 5th-order Lagrange read. Identical delay to read() — the extra
+  // taps reach further BACK into the line, never forward — so this buys
+  // interpolator accuracy at zero added latency.
+  //
+  // Worth it wherever the read head is moving, which for the delay is always:
+  // modulation, wow, ping-pong offset and every TIME change sweep the pointer
+  // across fractional positions. Cubic Hermite leaks a few percent of the
+  // signal into the stopband as it slides, and that leakage lands in-band as
+  // a fine grain riding the repeats.
+  read6(d) {
+    const rp = this.w - d;
+    const i = Math.floor(rp);
+    const f = rp - i;
+    const m = this.mask, b = this.buf;
+    const y0 = b[(i - 2) & m], y1 = b[(i - 1) & m], y2 = b[i & m];
+    const y3 = b[(i + 1) & m], y4 = b[(i + 2) & m], y5 = b[(i + 3) & m];
+    // Lagrange basis on nodes -2..3, evaluated at f. Shared sub-products keep
+    // it to ~20 multiplies.
+    const p2 = f + 2, p1 = f + 1, m1 = f - 1, m2 = f - 2, m3 = f - 3;
+    const a01 = p2 * p1, a23 = f * m1, a45 = m2 * m3;
+    const a012 = a01 * f, a0123 = a01 * a23;
+    return (p1 * a23 * a45) * y0 * -0.008333333333333333
+         + (p2 * a23 * a45) * y1 * 0.041666666666666664
+         + (a01 * m1 * a45) * y2 * -0.08333333333333333
+         + (a012 * a45) * y3 * 0.08333333333333333
+         + (a0123 * m3) * y4 * -0.041666666666666664
+         + (a0123 * m2) * y5 * 0.008333333333333333;
+  }
   reset() { this.buf.fill(0); }
 }
 
@@ -417,8 +445,83 @@ class BbdChorus {
 
 /* ---------- the delay: one block, two engines, repeats with soul ---------- */
 
+// Band-limited drift for the Analog and Tape read heads.
+//
+// Wow and flutter used to be a one-pole on white noise. A single pole leaves a
+// white tail running all the way up the audio band, and ANY high-frequency
+// content in a delay-time signal frequency-modulates the read head — which
+// sprays sidebands across the entire spectrum. Measured on the old Tape voice,
+// the non-harmonic energy in a repeat came out LOUDER than the note itself
+// (+3 dB), sitting right beside the fundamental. That was what the ear filed
+// as bitcrushing, and no filter downstream could touch it, because it was
+// never out of band to begin with.
+//
+// Two incommensurate oscillators per band instead, band-limited by
+// construction, with a very slow random wander on their amplitudes so it still
+// breathes. Real capstan flutter is quasi-periodic anyway, so this is closer
+// to the machine as well as quieter.
+class Drift {
+  constructor(sr, f1, f2, seed) {
+    this.i1 = f1 / sr; this.i2 = f2 / sr;
+    this.p1 = seed; this.p2 = (seed * 0.618 + 0.31) % 1;
+    this.w1 = 0.55; this.w2 = 0.45;
+    this.v1 = 0.55; this.v2 = 0.45;
+    this.wa = Math.exp(-1 / (1.4 * sr)); // ~1.4 s wander, ~0.11 Hz corner
+  }
+  // Sine-ish from a triangle. Its residual harmonics are all sub-audio, so
+  // unlike noise they can never land in the signal band.
+  static sn(p) {
+    const t = p < 0.5 ? p * 4 - 1 : 3 - p * 4;
+    return t * (1.5 - 0.5 * t * t);
+  }
+  next() {
+    this.p1 += this.i1; if (this.p1 >= 1) this.p1 -= 1;
+    this.p2 += this.i2; if (this.p2 >= 1) this.p2 -= 1;
+    // The wander is noise-driven, so it gets TWO poles, not one. A single
+    // 0.11 Hz pole still leaves enough white tail to phase-modulate a 6 kHz
+    // partial at about -57 dB — measurable, and on the wrong side of the line
+    // for a delay that is supposed to sound clean. The second pole drops that
+    // into irrelevance for the cost of two multiplies.
+    const t1 = 0.55 + noise(), t2 = 0.45 + noise();
+    this.v1 = t1 + this.wa * (this.v1 - t1);
+    this.v2 = t2 + this.wa * (this.v2 - t2);
+    this.w1 = this.v1 + this.wa * (this.w1 - this.v1);
+    this.w2 = this.v2 + this.wa * (this.w2 - this.v2);
+    return Drift.sn(this.p1) * this.w1 + Drift.sn(this.p2) * this.w2;
+  }
+  reset() { this.p1 = 0.13; this.p2 = 0.71; }
+}
+
+// Bound a feedback loop by turning it DOWN, not by bending it.
+//
+// The old loop wrote softLimit(input + feedback) into the line: a memoryless
+// waveshaper, no oversampling, no antiderivative smoothing — and applied to
+// the DRY signal as much as the recirculating one, so every echo was a clipped
+// copy of the source before it was ever an echo. On a hot two-note chord that
+// measured -13.8 dB of third-order intermod parked between the notes. A gain
+// is linear: it adds nothing to the spectrum at all. Ride it slowly and the
+// loop is bounded without a single new harmonic.
+class LoopRider {
+  constructor(sr, ceil = 0.86, atkMs = 1.2, relMs = 260) {
+    this.ceil = ceil;
+    this.env = 0; this.g = 1;
+    this.aA = Math.exp(-1 / (0.001 * atkMs * sr));
+    this.aR = Math.exp(-1 / (0.001 * relMs * sr));
+    this.down = 1 - Math.exp(-1 / (0.0035 * sr)); // 3.5 ms to clamp
+    this.up = 1 - Math.exp(-1 / (0.15 * sr));     // 150 ms to let go
+  }
+  gain(peak) {
+    this.env = peak > this.env ? peak + this.aA * (this.env - peak)
+                               : peak + this.aR * (this.env - peak);
+    const want = this.env > this.ceil ? this.ceil / this.env : 1;
+    this.g += (want < this.g ? this.down : this.up) * (want - this.g);
+    return this.g;
+  }
+  reset() { this.env = 0; this.g = 1; }
+}
+
 // One delay engine — Digital / Studio / Analog / Tape voicings, in-loop
-// saturation + compounding HF loss, diffusion smear, wow & flutter, ducking.
+// tone shaping, band-split saturation, allpass diffusion, drift, ducking.
 class DelayEngine {
   constructor(sr) {
     this.sr = sr;
@@ -435,16 +538,41 @@ class DelayEngine {
     this.offsetMs = 0;
     const cap = Math.ceil(1.7 * sr);
     this.dL = new FracDelay(cap); this.dR = new FracDelay(cap);
-    this.fbL = 0; this.fbR = 0;
-    // In-loop tone: compounding darkness + grit saturation + diffusion smear.
+    // In-loop tone. ORDER MATTERS, and it is the opposite of what it was:
+    // everything that removes bandwidth now runs BEFORE the saturator. Driving
+    // a full-bandwidth signal into tanh throws harmonics past Nyquist, they
+    // fold back in as inharmonic mush, and the loop re-drives that mush on the
+    // next lap — so the aliasing compounds with every repeat, which is exactly
+    // why the tail got harsher the longer it rang. Band-limit first and the
+    // harmonics have nowhere to fold from.
     this.loopLpL = new OnePoleLP(); this.loopLpR = new OnePoleLP();
     this.loopHpL = new OnePoleHP(); this.loopHpR = new OnePoleHP();
-    this.loopHpL.setFc(90, sr); this.loopHpR.setFc(90, sr);
-    this.satL = new AdaaTanh(); this.satR = new AdaaTanh();
+    this.loopHpL.setFc(75, sr); this.loopHpR.setFc(75, sr);
     this.hicutL = new OnePoleLP(); this.hicutR = new OnePoleLP();
     this.hicutL.setFc(9000, sr); this.hicutR.setFc(9000, sr);
-    this.difL = [new Allpass(0.0079 * sr, 0.52), new Allpass(0.0123 * sr, 0.48)];
-    this.difR = [new Allpass(0.0091 * sr, 0.52), new Allpass(0.0137 * sr, 0.48)];
+    // GRIT is band-split: only the low band reaches the saturator, the top
+    // passes through clean. The split corner walks down as drive comes up, so
+    // even at GRIT 10 the third harmonic of the highest saturated content
+    // still lands inside the passband. That is what keeps max grit clean.
+    this.splitL = new OnePoleLP(); this.splitR = new OnePoleLP();
+    this.splitL2 = new OnePoleLP(); this.splitR2 = new OnePoleLP();
+    this.satL = new AdaaTanh(); this.satR = new AdaaTanh();
+    // Diffusion: TRUE series allpasses. The old code cross-faded an allpass
+    // against its own input — which is a comb, not an allpass — and a comb
+    // inside a feedback loop raises its own ripple to the power of the repeat
+    // index. Six repeats deep, some bands were +15 dB and others notched to
+    // nothing. That was the metallic ring. Series allpasses are unity
+    // magnitude at every setting: smear without coloration, compounding
+    // smoothly instead of resonantly.
+    const apMsL = [1.13, 1.87, 2.53], apMsR = [1.31, 2.11, 2.89];
+    const toSamp = (ms) => Math.max(1, Math.round(ms * 0.001 * sr));
+    this.difL = apMsL.map((ms) => new Allpass(toSamp(ms), 0));
+    this.difR = apMsR.map((ms) => new Allpass(toSamp(ms), 0));
+    this.apLenL = apMsL.reduce((a, ms) => a + toSamp(ms), 0);
+    this.apLenR = apMsR.reduce((a, ms) => a + toSamp(ms), 0);
+    this.apCompL = this.apLenL; this.apCompR = this.apLenR;
+    // Keeps a runaway loop bounded with a gain instead of a waveshaper.
+    this.rider = new LoopRider(sr, 0.86, 1.2, 260);
     // Wet-only EQ trims.
     this.wetHpL = new OnePoleHP(); this.wetHpR = new OnePoleHP();
     this.wetLpL = new OnePoleLP(); this.wetLpR = new OnePoleLP();
@@ -455,18 +583,38 @@ class DelayEngine {
     this.bumpL = new Biquad(); this.bumpR = new Biquad();
     this.bumpL.peak(110, 0.9, 2.6, sr); this.bumpR.peak(110, 0.9, 2.6, sr);
     this.lfoPhase = Math.random();
-    this.flutterZ = 0; this.wowZ = 0;
+    this.wow = new Drift(sr, 0.61, 1.13, 0.17);
+    this.flut = new Drift(sr, 6.31, 9.73, 0.53);
     this.duckEnv = 0;
-    this.hiss = 0;
     this.applyMode();
   }
   applyMode() {
     const sr = this.sr;
+    const g = clamp(this.grit.get(), 0, 1);
     const fcBase = [16000, 11500, 3400, 5200][this.mode];
-    const g = this.grit.get();
-    const fc = fcBase * Math.pow(0.45, g);
+    const fc = fcBase * Math.pow(0.5, g);
     this.loopLpL.setFc(fc, sr); this.loopLpR.setFc(fc, sr);
-    this.diffAmt = [0.0, 0.55, 0.25, 0.45][this.mode];
+    // Two poles, not one: a 6 dB/oct split still let upper-mids through to the
+    // saturator only 5 dB down, and those are the notes where drive turns
+    // crunchy. 12 dB/oct keeps them out of it. The clean band is recovered by
+    // subtraction, so the two halves still sum back to the input exactly no
+    // matter how steep this gets.
+    const split = 2400 * Math.pow(0.58, g);
+    this.splitL.setFc(split, sr); this.splitR.setFc(split, sr);
+    this.splitL2.setFc(split, sr); this.splitR2.setFc(split, sr);
+    const apG = [0, 0.45, 0.3, 0.42][this.mode] * (0.62 + g * 0.38);
+    for (const a of this.difL) a.g = apG;
+    for (const a of this.difR) a.g = apG;
+    // The diffusers add their own delay to every lap, so take it back off the
+    // read. A Schroeder allpass has N samples of mean group delay (its phase
+    // runs to -Nπ across the band) even though it is far longer than that at
+    // DC, and compensating by exactly N measured best across all four voices —
+    // within ~1 ms of the requested time, against ~4 ms for any curve that
+    // chased the DC figure. The old build compensated nothing: its Studio
+    // repeats slid ~19 ms further apart with every lap, so a tempo-synced 3/8
+    // walked off the grid down the tail.
+    this.apCompL = this.apLenL;
+    this.apCompR = this.apLenR;
     this.lastGrit = g;
   }
   set(id, v) {
@@ -489,14 +637,18 @@ class DelayEngine {
   process(L, R, n, dryRefL, dryRefR) {
     if (!this.on) return;
     const sr = this.sr;
-    const isTape = this.mode === 3, isAnalog = this.mode === 2, isDigital = this.mode === 0;
+    const isTape = this.mode === 3, isAnalog = this.mode === 2;
     const duckA = Math.exp(-1 / (0.004 * sr)), duckR = Math.exp(-1 / (0.35 * sr));
     // Coefficients that only follow GRIT are re-derived once per block, not
     // per sample: applyMode() runs exp()/pow() over a dozen filters and had
     // been firing mid-loop during a knob sweep.
     const gBlock = this.grit.get();
     if (Math.abs(gBlock - this.lastGrit) > 0.005) this.applyMode();
-    const drive = 1 + gBlock * 5 + (isTape ? 0.8 : 0) + (isAnalog ? 0.5 : 0);
+    // Drive is far gentler than it was (peak 3.9-4.4 against 6.0-6.8) and it
+    // only ever sees the low band, so GRIT now reads as thickness rather than
+    // fizz. Smoothstep keeps the first third of the knob nearly clean.
+    const gc = gBlock * gBlock * (3 - 2 * gBlock);
+    const drive = 1 + gc * 2.9 + (isTape ? 0.5 : 0) + (isAnalog ? 0.35 : 0);
     // Unity small-signal compensation, and it has to be exact. AdaaTanh has a
     // slope of 1 at the origin, so the loop's quiet-signal gain is
     // fb x drive x norm — with norm = drive^-0.55 that left drive^0.45 of raw
@@ -507,12 +659,17 @@ class DelayEngine {
     // norm = 1/drive makes the loop gain exactly fb: GRIT is texture, and
     // only past 1.0 does a repeat bloom — which is the documented intent.
     const norm = 1 / drive;
-    const dAmt = this.diffAmt * (0.5 + gBlock * 0.5);
-    const diffuse = !isDigital && dAmt > 0.01;
-    const hissAmt = (isTape && gBlock > 0.05) ? 0.00035 * gBlock : 0;
+    // The clean top is trimmed a touch as grit comes up, so the split never
+    // sounds like the highs are simply bypassing the effect.
+    const hiTrim = 1 - 0.18 * gBlock;
+    // Tape hiss is the one bit of noise that stays, because it is the voicing
+    // rather than an artifact — but it is the whole reason Tape still measures
+    // a residual at max GRIT, so it comes in later on the knob and lands
+    // around -70 dBFS instead of -65.
+    const hissAmt = (isTape && gBlock > 0.15) ? 0.00015 * (gBlock - 0.15) / 0.85 : 0;
     const maxL = this.dL.buf.length - 8, maxR = this.dR.buf.length - 8;
     for (let i = 0; i < n; i++) {
-      const g = this.grit.next();
+      this.grit.next();
       const t = this.timeMs.next();
       const fb = this.fb.next();
       const mix = this.mix.next();
@@ -521,42 +678,50 @@ class DelayEngine {
       this.lfoPhase += this.modRate / sr;
       if (this.lfoPhase >= 1) this.lfoPhase -= 1;
       let modMs = Math.sin(TWO_PI * this.lfoPhase) * modD * (isTape ? 2.6 : 1.8);
-      if (isTape) {
-        this.flutterZ += 0.002 * (noise() - this.flutterZ);
-        this.wowZ += 0.00012 * (noise() * 2 - this.wowZ);
-        modMs += this.flutterZ * 14 * (0.3 + modD) + this.wowZ * 260 * (0.3 + modD);
-      } else if (isAnalog) {
-        this.flutterZ += 0.0006 * (noise() - this.flutterZ);
-        modMs += this.flutterZ * 6;
-      }
+      if (isTape) modMs += (this.wow.next() * 1.1 + this.flut.next() * 0.16) * (0.3 + modD);
+      else if (isAnalog) modMs += this.wow.next() * 0.09;
       const off = this.offsetMs * 0.5;
-      const dSampL = clamp((t + modMs - off) * 0.001 * sr, 8, maxL);
-      const dSampR = clamp((t + modMs + off) * 0.001 * sr, 8, maxR);
-      let echoL = this.dL.read(dSampL);
-      let echoR = this.dR.read(dSampR);
+      const dSampL = clamp((t + modMs - off) * 0.001 * sr - this.apCompL, 8, maxL);
+      const dSampR = clamp((t + modMs + off) * 0.001 * sr - this.apCompR, 8, maxR);
+      // Diffusion sits between the line and BOTH taps, not inside the feedback
+      // path alone. Buried in the loop it never touched the first repeat — so
+      // echo one arrived dry and early while the tail was smeared and late,
+      // and the repeats were not even evenly spaced (echo n landed at
+      // n·time + (n-1)·apDelay). One shared pass puts every generation through
+      // exactly the same smear and the same delay.
+      let echoL = this.difL[2].tick(this.difL[1].tick(this.difL[0].tick(this.dL.read6(dSampL))));
+      let echoR = this.difR[2].tick(this.difR[1].tick(this.difR[0].tick(this.dR.read6(dSampR))));
       // Ducking (dry side-chain).
       const dx = Math.max(Math.abs(dryRefL[i]), Math.abs(dryRefR[i]));
       this.duckEnv = dx > this.duckEnv ? dx + duckA * (this.duckEnv - dx) : dx + duckR * (this.duckEnv - dx);
       const duckAmt = this.duck.next();
       const duckG = 1 - duckAmt * clamp(this.duckEnv * 2.6, 0, 1) * 0.85;
-      // Feedback into the loop: saturate → darken → (tape body) → diffuse.
-      let fbInL = this.satL.tick((this.pingpong ? echoR : echoL) * fb * drive) * norm;
-      let fbInR = this.satR.tick((this.pingpong ? echoL : echoR) * fb * drive) * norm;
-      fbInL = this.hicutL.tick(this.loopLpL.tick(this.loopHpL.tick(fbInL)));
-      fbInR = this.hicutR.tick(this.loopLpR.tick(this.loopHpR.tick(fbInR)));
-      if (isTape) { fbInL = this.bumpL.tick(fbInL); fbInR = this.bumpR.tick(fbInR); }
-      if (diffuse) {
-        fbInL = fbInL + dAmt * (this.difL[1].tick(this.difL[0].tick(fbInL)) - fbInL);
-        fbInR = fbInR + dAmt * (this.difR[1].tick(this.difR[0].tick(fbInR)) - fbInR);
-      }
+      // One lap of the loop: condition → darken → (tape body) → saturate the
+      // low band only → diffuse → ride the peak. Band-limiting ahead of the
+      // one nonlinearity is what makes the repeats stay clean; keeping FB
+      // ahead of it keeps the small-signal loop gain exactly FEEDBACK, so a
+      // repeat still only blooms past 1.0, on the knob, by design.
+      let fl = (this.pingpong ? echoR : echoL) * fb;
+      let fr = (this.pingpong ? echoL : echoR) * fb;
+      fl = this.hicutL.tick(this.loopLpL.tick(this.loopHpL.tick(fl)));
+      fr = this.hicutR.tick(this.loopLpR.tick(this.loopHpR.tick(fr)));
+      if (isTape) { fl = this.bumpL.tick(fl); fr = this.bumpR.tick(fr); }
+      const loL = this.splitL2.tick(this.splitL.tick(fl));
+      const loR = this.splitR2.tick(this.splitR.tick(fr));
+      // Complementary split: a one-pole and its own residual sum back to the
+      // input exactly, so the clean band rejoins with no crossover notch.
+      fl = this.satL.tick(loL * drive) * norm + (fl - loL) * hiTrim;
+      fr = this.satR.tick(loR * drive) * norm + (fr - loR) * hiTrim;
       if (hissAmt !== 0) { // hiss rides the repeats only
         const h = noise() * hissAmt;
-        fbInL += h; fbInR -= h;
+        fl += h; fr -= h;
       }
-      // Keep what re-enters the line bounded: a repeat can bloom (feedback
-      // runs past unity by design) but it may never detonate.
-      this.dL.write(flush(softLimit(L[i] + fbInL, 0.92)));
-      this.dR.write(flush(softLimit(R[i] + fbInR, 0.92)));
+      // A repeat can bloom but may never detonate — and the source goes into
+      // the line CLEAN. Only what recirculates is bounded, and it is bounded
+      // by a gain, so nothing new is written into the spectrum.
+      const rg = this.rider.gain(Math.max(Math.abs(fl), Math.abs(fr)));
+      this.dL.write(flush(L[i] + fl * rg));
+      this.dR.write(flush(R[i] + fr * rg));
       let wl = this.wetLpL.tick(this.wetHpL.tick(echoL));
       let wr = this.wetLpR.tick(this.wetHpR.tick(echoR));
       L[i] += wl * mix * duckG;
@@ -566,6 +731,16 @@ class DelayEngine {
   reset() {
     this.dL.reset(); this.dR.reset();
     this.difL.forEach(a => a.reset()); this.difR.forEach(a => a.reset());
+    this.loopLpL.reset(); this.loopLpR.reset();
+    this.loopHpL.reset(); this.loopHpR.reset();
+    this.hicutL.reset(); this.hicutR.reset();
+    this.splitL.reset(); this.splitR.reset();
+    this.splitL2.reset(); this.splitR2.reset();
+    this.satL.reset(); this.satR.reset();
+    this.bumpL.reset(); this.bumpR.reset();
+    this.rider.reset();
+    this.wow.reset(); this.flut.reset();
+    this.duckEnv = 0;
   }
 }
 
@@ -579,6 +754,10 @@ class DelayBlock {
     this.B.on = false;
     this.tmpL = new Float32Array(128); this.tmpR = new Float32Array(128);
     this.dryL = new Float32Array(128); this.dryR = new Float32Array(128);
+    // The echo stack still needs a ceiling — SERIES lets B re-echo A and both
+    // loops can run past unity — but it gets the same treatment as the loops
+    // themselves: ridden, never clipped. Dry passes through untouched.
+    this.rider = new LoopRider(sr, 1.0, 2, 300);
   }
   set(id, v) {
     if (id === 'on') this.on = v > 0.5;
@@ -590,21 +769,22 @@ class DelayBlock {
     if (this.routing === 0) {
       this.A.process(L, R, n, this.dryL, this.dryR);
       this.B.process(L, R, n, this.dryL, this.dryR);
-      // SERIES stacks gain by design — B re-echoes A's repeats, and both
-      // engines can run their feedback past unity. Ride the ECHO STACK ONLY
-      // (dry passes through untouched) with the smooth limiter, so a bloom
-      // compresses musically instead of detonating into the master clipper.
       for (let i = 0; i < n; i++) {
-        L[i] = this.dryL[i] + softLimit(L[i] - this.dryL[i], 0.82);
-        R[i] = this.dryR[i] + softLimit(R[i] - this.dryR[i], 0.82);
+        const wl = L[i] - this.dryL[i], wr = R[i] - this.dryR[i];
+        const g = this.rider.gain(Math.max(Math.abs(wl), Math.abs(wr)));
+        L[i] = this.dryL[i] + wl * g;
+        R[i] = this.dryR[i] + wr * g;
       }
     } else {
       this.tmpL.set(this.dryL.subarray(0, n)); this.tmpR.set(this.dryR.subarray(0, n));
       this.A.process(L, R, n, this.dryL, this.dryR);
       this.B.process(this.tmpL, this.tmpR, n, this.dryL, this.dryR);
       for (let i = 0; i < n; i++) { // add B's wet on top (dry already in L/R)
-        L[i] = this.dryL[i] + softLimit((L[i] - this.dryL[i]) + (this.tmpL[i] - this.dryL[i]), 0.82);
-        R[i] = this.dryR[i] + softLimit((R[i] - this.dryR[i]) + (this.tmpR[i] - this.dryR[i]), 0.82);
+        const wl = (L[i] - this.dryL[i]) + (this.tmpL[i] - this.dryL[i]);
+        const wr = (R[i] - this.dryR[i]) + (this.tmpR[i] - this.dryR[i]);
+        const g = this.rider.gain(Math.max(Math.abs(wl), Math.abs(wr)));
+        L[i] = this.dryL[i] + wl * g;
+        R[i] = this.dryR[i] + wr * g;
       }
     }
   }
