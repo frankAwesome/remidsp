@@ -74,9 +74,9 @@
       "url": "https://remidsp.com/",
       "image": "https://remidsp.com/assets/img/og-card-portland.jpg",
       "description": "An all-in-one guitar rig: three amplifiers captured from real, mic'd-up rigs, a pedalboard that reorders itself and a studio strip that finishes the job.",
-      "softwareVersion": "0.6.0",
+      "softwareVersion": "0.8.0",
       "featureList": [
-        "Three amplifiers, nine voices, captured from real, mic'd-up rigs",
+        "Three amplifiers, six voices, captured from real, mic'd-up rigs",
         "Ten-slot reorderable pedalboard",
         "Console EQ and FET compressor studio strip",
         "Strobe tuner accurate to a hundredth of a cent",
@@ -194,10 +194,10 @@
       </ul>
       <div class="rig__voices" id="rigVoices">
         <div class="rig__voiceset is-active"><span>CLEAN</span><span>DRIVEN</span><span>MAX</span></div>
-        <div class="rig__voiceset"><span>BLOOM</span><span>CHIME</span><span>THICK</span><span>LEAD</span></div>
-        <div class="rig__voiceset"><span>BLUE</span><span>RED</span></div>
+        <div class="rig__voiceset"><span>BLOOM</span><span>PUSHED</span></div>
+        <div class="rig__voiceset"><span>RED</span></div>
       </div>
-      <p class="rig__cap mono">3&nbsp;AMPS&nbsp;·&nbsp;9&nbsp;VOICES&nbsp;·&nbsp;CAPTURED&nbsp;FROM&nbsp;REAL&nbsp;RIGS</p>
+      <p class="rig__cap mono">3&nbsp;AMPS&nbsp;·&nbsp;6&nbsp;VOICES&nbsp;·&nbsp;CAPTURED&nbsp;FROM&nbsp;REAL&nbsp;RIGS</p>
     </div>
   </div>
 
@@ -241,7 +241,7 @@
       <picture>
         <source srcset="assets/img/amp-window-portland.webp" type="image/webp">
         <img src="assets/img/amp-window-portland.png" width="1920" height="1208" loading="lazy"
-             alt="The Maine plugin window on its Bloom Clean patch — the Portland head in black tolex and gold, the effects chain along the top and the portland_bloom capture loaded below" />
+             alt="The Maine plugin window on its Pushed Crunch patch — the Portland head in black tolex and gold, the effects chain along the top and the Pushed voice selected below" />
       </picture>
       <span class="showcase__glare" aria-hidden="true"></span>
     </div>
@@ -255,8 +255,8 @@
 
 <!-- ░░ 02 · THE AMPLIFIERS — the whole lineup, side by side ░░
      Deliberately NOT a switcher. The hero already does one-at-a-time; this
-     section's whole job is the opposite — every head and all nine voices on
-     screen together, so the "9 voices" claim is shown rather than asserted.
+     section's whole job is the opposite — every head and all six voices on
+     screen together, so the "6 voices" claim is shown rather than asserted.
      Hover solos a column (siblings dim); nothing is ever hidden behind a tab. -->
 <section class="lineup" id="amps" data-bg="#07080b">
   <header class="shead" data-reveal>
@@ -268,7 +268,7 @@
   <div class="lineup__intro">
     <h2 data-reveal>All three.<br>All at once.</h2>
     <p data-reveal style="--d:.08s">
-      Nine voices across three heads, every one captured from a real, mic'd-up rig —
+      Six voices across three heads, every one captured from a real, mic'd-up rig —
       <strong>cab baked in</strong>, ready the moment you plug in.
     </p>
   </div>
@@ -302,13 +302,11 @@
         <span class="ampcol__no led">02</span>
         <h3>Portland</h3>
         <p class="ampcol__tag mono">BRITISH CRUNCH</p>
-        <p class="ampcol__copy">Four voices in one head, from '60s jangle to hot-rodded
-           lead. Turn the voice, swap the stack underneath it.</p>
+        <p class="ampcol__copy">Two voices in one head: the edge of breakup, and a '66
+           JTM45 through a Bluesbreaker with its Alnicos pushed.</p>
         <ul class="ampcol__voices">
           <li><span class="mono">01</span>Bloom</li>
-          <li><span class="mono">02</span>Chime</li>
-          <li><span class="mono">03</span>Thick</li>
-          <li><span class="mono">04</span>Lead</li>
+          <li><span class="mono">02</span>Pushed</li>
         </ul>
       </div>
     </article>
@@ -322,18 +320,18 @@
         <span class="ampcol__no led">03</span>
         <h3>Katahdin</h3>
         <p class="ampcol__tag mono">MODERN HIGH-GAIN</p>
-        <p class="ampcol__copy">Two modern high-gain voices behind one perforated grille.
-           Tight lows, endless sustain — palm mutes that land like a dropped anvil.</p>
+        <p class="ampcol__copy">One modern high-gain voice behind a perforated grille, and
+           it is the right one. Tight lows, endless sustain — palm mutes that land like a
+           dropped anvil.</p>
         <ul class="ampcol__voices">
-          <li><span class="mono">01</span>Blue</li>
-          <li><span class="mono">02</span>Red</li>
+          <li><span class="mono">01</span>Red</li>
         </ul>
       </div>
     </article>
   </div>
 
   <p class="lineup__tally mono" data-reveal>
-    <span class="led">3</span>&nbsp;HEADS&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">9</span>&nbsp;VOICES&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">11</span>&nbsp;CAPTURES&nbsp;&nbsp;·&nbsp;&nbsp;ONE&nbsp;WINDOW
+    <span class="led">3</span>&nbsp;HEADS&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">6</span>&nbsp;VOICES&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">7</span>&nbsp;CAPTURES&nbsp;&nbsp;·&nbsp;&nbsp;ONE&nbsp;WINDOW
   </p>
 </section>
 
@@ -472,7 +470,7 @@
     <div class="board__viewport">
       <div class="board__track" id="boardTrack">
         <article class="pcard" style="--tint:#d2a43a" data-card>
-          <div class="pcard__img"><img src="assets/img/pedal.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Drive pedal — Victory! gold enclosure" /></div>
+          <div class="pcard__img"><img src="assets/img/pedal.webp" width="1920" height="1128" loading="lazy" alt="REMI DSP Drive pedal — Victory! gold enclosure with drive, treble, bass and level" /></div>
           <div class="pcard__meta">
             <span class="pcard__no led">01</span>
             <h3>Drive</h3>
@@ -734,9 +732,9 @@
       <p class="dcard__req mono">NO ACCOUNT · NO SIGN-UP</p>
       <ul class="dcard__list">
         <li>Standalone, VST3, Audio Unit &amp; AAX</li>
-        <li>3 amps · 9 voices · 11 captures</li>
+        <li>3 amps · 6 voices · 7 captures</li>
         <li>Pedalboard, studio strip &amp; the Sauce finalizer</li>
-        <li>20 usable-tone presets · strobe tuner</li>
+        <li>19 usable-tone presets · strobe tuner</li>
         <li>Runs at 44.1–96&nbsp;kHz</li>
       </ul>
     </article>
