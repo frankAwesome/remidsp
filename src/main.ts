@@ -7,7 +7,7 @@ import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
 import {
   FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId,
-  deleteUserPresetAt, Preset,
+  deleteUserPresetAt, setPresetScope, replaceUserPresets, Preset,
 } from './presets';
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
 import { t3k, T3kError, type T3kFailure } from './tone3000';
@@ -23,7 +23,7 @@ import { AccountUI, session } from './ui/account';
 import { FeedView } from './ui/feed';
 import { ProfileView } from './ui/profile';
 import { openSaveDialog } from './ui/saveDialog';
-import { deletePreset, type CloudPreset, type CaptureRefDoc } from './cloud/store';
+import { deletePreset, myPresets, type CloudPreset, type CaptureRefDoc } from './cloud/store';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -901,6 +901,33 @@ function borrowedFrom(): string | null {
   return borrowed.username;
 }
 
+/* Hand the preset strip to whoever is signed in.
+ *
+ * The bank a player sees is the two built-in ones plus their OWN sounds, and
+ * nobody else's ever appears in it. Signing in points the local store at that
+ * profile's bucket and pulls their cloud library down into it, so the strip is
+ * the same list on any machine they sign in on; signing out drops back to the
+ * anonymous bucket, which is its own separate list rather than a view of the
+ * last person's. */
+async function switchPresetBank() {
+  const uid = session.user?.uid ?? null;
+  setPresetScope(uid);
+  if (uid) {
+    try {
+      // YOUR SOUNDS for a signed-in player IS their cloud library — replaced,
+      // not merged. That is what makes a sound deleted from the profile leave
+      // the preset strip everywhere, instead of stranding a copy that nothing
+      // can reach.
+      const cloud = await myPresets(uid);
+      replaceUserPresets(cloud.map((c) => ({
+        name: c.name, group: 'USER' as const, amp: c.amp, voice: c.voice,
+        params: c.params, capture: c.capture, cloudId: c.id,
+      })));
+    } catch { /* offline, or rules said no — the local bank still stands */ }
+  }
+  resyncPresetStrip();
+}
+
 /** Re-point the preset strip after the local library changed underneath it. */
 function resyncPresetStrip() {
   const list = allPresets();
@@ -1225,6 +1252,7 @@ function build() {
   profileView.onProfileSaved = () => account.refreshChip();
   profileView.onLibraryChanged = () => resyncPresetStrip();
   account.onSessionChange = () => {
+    void switchPresetBank();
     if (currentView === 'feed') void feedView.refresh();
     if (currentView === 'profile') void profileView.refresh();
   };

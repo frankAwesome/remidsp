@@ -237,15 +237,80 @@ export const FACTORY_PRESETS: Preset[] = [
   }),
 ];
 
-const LS_USER = 'remi_user_presets';
+/* Saved presets belong to a PROFILE, not to a browser.
+ *
+ * They used to live under one device-wide key, which meant two people signing
+ * in on the same machine shared one list: your sounds appeared in their strip
+ * and grew every time either of you saved. A preset bank is personal — the
+ * factory and signature banks are the only things everyone sees.
+ *
+ * So the store is keyed by uid, with a separate bucket for nobody-signed-in.
+ * Signing out does not hide your sounds behind someone else's; it shows the
+ * anonymous bucket, which is its own list. */
+const LS_PREFIX = 'remi_user_presets:';
+const LS_LEGACY = 'remi_user_presets';
+const ANON = 'anon';
 
-export function loadUserPresets(): Preset[] {
-  try { return JSON.parse(localStorage.getItem(LS_USER) ?? '[]'); } catch { return []; }
+let scope = ANON;
+
+/** Point the local bank at a profile, or at the anonymous bucket for null. */
+export function setPresetScope(uid: string | null) {
+  const next = uid ?? ANON;
+  if (next === scope) return;
+  scope = next;
+  // The pre-scoping blob belongs to whoever this browser is, and the first
+  // player to sign in is the best guess available. It is MOVED, not copied —
+  // copying is exactly how one list would start showing up under every
+  // account that ever used the machine.
+  if (uid) adoptLegacy();
 }
+
+function keyFor(s: string) { return LS_PREFIX + s; }
+
+function readAt(s: string): Preset[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(keyFor(s)) ?? '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch { return []; }
+}
+function writeAt(s: string, list: Preset[]) {
+  localStorage.setItem(keyFor(s), JSON.stringify(list));
+}
+
+function adoptLegacy() {
+  const raw = localStorage.getItem(LS_LEGACY);
+  if (raw === null) return;
+  let legacy: Preset[] = [];
+  try { const p = JSON.parse(raw); if (Array.isArray(p)) legacy = p; } catch { /* drop it */ }
+  if (legacy.length) {
+    const mine = readAt(scope);
+    const have = new Set(mine.map((p) => p.name));
+    writeAt(scope, [...mine, ...legacy.filter((p) => !have.has(p.name))]);
+  }
+  localStorage.removeItem(LS_LEGACY);
+}
+
+export function loadUserPresets(): Preset[] { return readAt(scope); }
+
 export function saveUserPreset(p: Preset) {
   const all = loadUserPresets().filter((x) => x.name !== p.name);
   all.push(p);
-  localStorage.setItem(LS_USER, JSON.stringify(all));
+  writeAt(scope, all);
+}
+
+/** Make a signed-in profile's local bank BE its cloud library.
+ *
+ *  Replace, not merge. The profile is the record and the local bank is only a
+ *  cache of it, so a sound deleted from the profile has to leave the preset
+ *  strip too — on this machine and every other one. Merging is what left
+ *  deleted sounds stranded in the list with nothing pointing at them: the
+ *  cloud document was gone, so nothing ever came along to say "drop this".
+ *  Replacing makes that orphan impossible rather than fixable.
+ *
+ *  A local save while signed in writes to both libraries, so this is not
+ *  losing work — anything that failed to reach the cloud said so at the time. */
+export function replaceUserPresets(list: Preset[]) {
+  writeAt(scope, list);
 }
 
 /** Remove the local preset at `index` in loadUserPresets() order.
@@ -259,7 +324,7 @@ export function deleteUserPresetAt(index: number): Preset | null {
   const all = loadUserPresets();
   if (index < 0 || index >= all.length) return null;
   const [gone] = all.splice(index, 1);
-  localStorage.setItem(LS_USER, JSON.stringify(all));
+  writeAt(scope, all);
   return gone ?? null;
 }
 
@@ -271,7 +336,7 @@ export function deleteUserPreset(match: { name?: string; cloudId?: string }): bo
     (match.cloudId !== undefined && p.cloudId === match.cloudId)
     || (match.name !== undefined && p.name === match.name)));
   if (keep.length === all.length) return false;
-  localStorage.setItem(LS_USER, JSON.stringify(keep));
+  writeAt(scope, keep);
   return true;
 }
 
@@ -282,5 +347,5 @@ export function tagUserPresetCloudId(name: string, cloudId: string) {
   const hit = all.find((p) => p.name === name);
   if (!hit) return;
   hit.cloudId = cloudId;
-  localStorage.setItem(LS_USER, JSON.stringify(all));
+  writeAt(scope, all);
 }
