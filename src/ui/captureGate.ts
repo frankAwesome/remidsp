@@ -13,6 +13,7 @@
 
 import { t3k, type T3kFailure } from '../tone3000';
 import { toast } from './toast';
+import { esc, escUpper } from './esc';
 
 export interface GateOpts {
   presetName: string;
@@ -27,8 +28,13 @@ export interface GateOpts {
 const SIGNUP = 'https://www.tone3000.com/signup';
 const KEYS = 'https://www.tone3000.com/settings/api-keys';
 
-/** Headline + explanation per failure, in the player's terms. */
-function copy(reason: T3kFailure, capture: string): { head: string; body: string } {
+/** Headline + explanation per failure, in the player's terms.
+ *
+ *  `capture` is a label off somebody else's shared preset, so it is escaped
+ *  once here and the bolding around it is ours. Everything this returns is
+ *  trusted HTML by the time it leaves. */
+function copy(reason: T3kFailure, rawCapture: string): { head: string; body: string } {
+  const capture = esc(rawCapture);
   switch (reason) {
     case 'auth':
       return {
@@ -70,12 +76,12 @@ export function openCaptureGate(o: GateOpts): Promise<boolean> {
     wrap.innerHTML = `
       <div class="t3k__panel" style="max-width:520px">
         <div class="t3k__head">
-          <div class="t3k__title">${head}<br><em>PRESET · ${o.presetName.toUpperCase()}</em></div>
+          <div class="t3k__title">${head}<br><em>PRESET · ${escUpper(o.presetName)}</em></div>
           <button class="t3k__close" aria-label="close">✕</button>
         </div>
         <div class="t3k__list" style="padding:.9rem 1rem;display:block">
           <p class="gate__body">${body}</p>
-          ${o.creator ? `<p class="gate__by">capture by <b>${o.creator}</b> · their license applies</p>` : ''}
+          ${o.creator ? `<p class="gate__by">capture by <b>${esc(o.creator)}</b> · their license applies</p>` : ''}
           ${needsKey ? `
             <ol class="gate__steps">
               <li><a href="${SIGNUP}" target="_blank" rel="noreferrer">Create a free TONE3000 account ↗</a></li>
@@ -95,7 +101,7 @@ export function openCaptureGate(o: GateOpts): Promise<boolean> {
           ${needsKey
             ? `<button class="t3k__pill on" data-a="connect">CONNECT TO TONE3000</button>`
             : `<button class="t3k__pill on" data-a="retry">TRY AGAIN</button>`}
-          <button class="t3k__pill" data-a="skip">USE ${o.fallbackLabel.toUpperCase()} INSTEAD</button>
+          <button class="t3k__pill" data-a="skip">USE ${escUpper(o.fallbackLabel)} INSTEAD</button>
           <a class="mono" style="margin-left:auto" href="https://www.tone3000.com" target="_blank"
              rel="noreferrer">TONE3000.COM ↗</a>
         </div>
@@ -151,15 +157,15 @@ export function openCaptureGate(o: GateOpts): Promise<boolean> {
 
     const attempt = async () => {
       busy(true);
-      say(`Loading <b>${o.captureLabel}</b>…`);
+      say(`Loading <b>${esc(o.captureLabel)}</b>…`);
       const ok = await o.retry();
       busy(false);
       if (ok) {
-        toast(`<b>${o.captureLabel}</b> loaded — ${o.presetName} is complete.`);
+        toast(`<b>${esc(o.captureLabel)}</b> loaded — ${esc(o.presetName)} is complete.`);
         finish(true);
       } else {
-        say(`<b>${o.captureLabel}</b> still would not load. Try again, or carry on with `
-            + `<b>${o.fallbackLabel}</b> — every other setting in the preset is already applied.`, true);
+        say(`<b>${esc(o.captureLabel)}</b> still would not load. Try again, or carry on with `
+            + `<b>${esc(o.fallbackLabel)}</b> — every other setting in the preset is already applied.`, true);
       }
     };
 

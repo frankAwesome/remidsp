@@ -5,6 +5,7 @@ import { AMP_FACES, PEDAL_FACES, STUDIO_FACE, delayFace, FaceDef } from './geome
 import { makeKnob, placeKnob } from './ui/knob';
 import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
+import { esc } from './ui/esc';
 import {
   FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId,
   deleteUserPresetAt, setPresetScope, replaceUserPresets, Preset,
@@ -698,8 +699,8 @@ async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> 
   }
   lastCaptureError = null;
   try {
-    toast(`Loading <b>${ref.label}</b>…`);
-    const json = await (await t3k.fetchModelFile(ref.url!)).text();
+    toast(`Loading <b>${esc(ref.label)}</b>…`);
+    const json = await (await t3k.fetchModelFile(ref.url!, { trusted: ref.trusted === true })).text();
     lastCaptureJson = json;
     await engine.loadCapture(json, {
       name: ref.label, source: 'tone3000',
@@ -715,7 +716,7 @@ async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> 
     };
     addRecent(ref);
     store.set('amp_on', 1);
-    toast(`<b>${ref.label}</b> on the amp${ref.creator ? ` · by ${ref.creator}` : ''}`);
+    toast(`<b>${esc(ref.label)}</b> on the amp${ref.creator ? ` · by ${esc(ref.creator)}` : ''}`);
     if (selectedSlot === 'amp') renderStage();
     return true;
   } catch (err) {

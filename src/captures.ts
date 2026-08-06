@@ -19,6 +19,10 @@ export interface CaptureRef {
    *  already in the capture, 'amp' means it is a DI that still needs one —
    *  which is exactly what decides whether the cab IR helps or ruins it. */
   gear?: Gear;
+  /** Did this ref's url come from the TONE3000 API (or a recent that did), or
+   *  out of a preset document somebody else wrote? Only the first kind may be
+   *  fetched with the player's bearer token — see tone3000.fetchModelFile. */
+  trusted?: boolean;
 }
 
 const B = (ampKey: string | undefined, stem: string, label: string): CaptureRef =>

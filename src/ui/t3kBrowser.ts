@@ -268,7 +268,9 @@ export class T3kBrowser {
     row.querySelector('button')!.addEventListener('click', async () => {
       try {
         toast(`Loading <b>${escapeHtml(m.name || t.title)}</b>…`);
-        const res = await t3k.fetchModelFile(m.model_url);
+        // This url came straight off the API response in this session, so it
+        // is the trusted kind and keeps its Bearer header.
+        const res = await t3k.fetchModelFile(m.model_url, { trusted: true });
         if (isIr) {
           const arr = await res.arrayBuffer();
           const buf = await engine.ctx!.decodeAudioData(arr);
@@ -291,6 +293,9 @@ export class T3kBrowser {
             kind: 'tone3000', id: String(m.id), label: m.name || t.title,
             url: m.model_url, creator: t.user?.username, license: t.license, toneUrl: t.url,
             gear: t.gear,
+            // Straight off the API, so re-loading it from RECENT keeps the
+            // bearer header. A preset's capture never gets this flag.
+            trusted: true,
           });
           window.dispatchEvent(new CustomEvent('remi:capture-loaded'));
           toast(`<b>${escapeHtml(info.name)}</b> on the amp · by ${escapeHtml(info.creator ?? '')}`);
