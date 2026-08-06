@@ -43,7 +43,13 @@ export function encodeWav24(L: Float32Array, R: Float32Array, sampleRate: number
   let at = HEADER;
   for (let i = 0; i < frames; i++) {
     for (const ch of [L, R]) {
-      const x = Math.max(-1, Math.min(1, ch[i]));
+      // A NaN would survive Math.max/min unchanged, and `NaN & 0xff` is 0 —
+      // so one bad sample would write silence rather than a wrong value, but
+      // a whole file of it would be baffling to debug. Nothing in the mix
+      // path should produce one; this makes that assumption explicit and
+      // cheap rather than load-bearing and invisible.
+      const raw = ch[i];
+      const x = Number.isFinite(raw) ? Math.max(-1, Math.min(1, raw)) : 0;
       // Asymmetric on purpose: 24-bit signed runs -8388608..8388607, so the
       // positive side has one step less than the negative one.
       const s = Math.round(x < 0 ? x * 0x800000 : x * 0x7fffff);
