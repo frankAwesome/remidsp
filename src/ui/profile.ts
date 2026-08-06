@@ -15,7 +15,8 @@ import { deleteUserPreset } from '../presets';
 import { session } from './account';
 import { renderCommentRow, timeAgo } from './feed';
 import { toast } from './toast';
-import { encodeAvatar, AVATAR_ACCEPT, AVATAR_MAX_B64 } from './avatar';
+import { AVATAR_MAX_B64 } from './avatar';
+import { uploadImage, mediaEnabled, AVATAR_ACCEPT } from '../cloud/media';
 import { urlFor } from './router';
 import { shareLink } from './share';
 
@@ -146,7 +147,9 @@ export class ProfileView {
               <input type="file" accept="${AVATAR_ACCEPT}" hidden data-el="avaFile" />
             </div>
             <div class="avatar-edit__note" data-el="avaNote">
-              Square works best — it is cropped to a circle and shrunk to 128 px.
+              Square works best — it is cropped to a circle${mediaEnabled()
+                ? ' and stored at 256 px.'
+                : ' and shrunk to 128 px to fit on your profile document.'}
             </div>
             <input name="avatarUrl" maxlength="${AVATAR_MAX_B64}"
               value="${escape(p.avatarUrl)}" placeholder="…or paste an image url" />
@@ -210,13 +213,19 @@ export class ProfileView {
       const file = avaFile.files?.[0];
       avaFile.value = ''; // so re-picking the same file fires change again
       if (!file) return;
-      avaNote.textContent = 'Resizing…';
+      // uploadImage picks the backend: a real upload where a media origin is
+      // configured, the inline 12 kB data URI where it is not. One call site,
+      // and the difference is invisible from here on purpose — the field
+      // below stores whatever comes back either way.
+      avaNote.textContent = mediaEnabled() ? 'Resizing and uploading…' : 'Resizing…';
       avaNote.classList.remove('avatar-edit__note--bad');
       try {
-        const data = await encodeAvatar(file);
+        const data = await uploadImage(file, 'avatar');
         avaField.value = data;
         paintAva(data);
-        avaNote.textContent = `Ready — ${(data.length / 1024).toFixed(1)} kB. Hit SAVE to keep it.`;
+        avaNote.textContent = mediaEnabled()
+          ? 'Uploaded. Hit SAVE to keep it.'
+          : `Ready — ${(data.length / 1024).toFixed(1)} kB. Hit SAVE to keep it.`;
       } catch (err) {
         avaNote.textContent = (err as Error).message;
         avaNote.classList.add('avatar-edit__note--bad');

@@ -242,8 +242,8 @@ service cloud.firestore {
       return v == null || (v is string && v.size() > 8 && v[0:8] == 'https://');
     }
 
-    function mediaPrefix() { return 'https://remi-share.workers.dev/m/'; }
-    function mediaPrefixLen() { return 33; }
+    function mediaPrefix() { return 'https://remi-share.sheepdeklerk.workers.dev/m/'; }
+    function mediaPrefixLen() { return 46; }
     function pictureOk(v, maxInline) {
       return v == null
         || v == ''
