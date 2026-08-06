@@ -81,27 +81,34 @@ export async function ensureProfile(user: User): Promise<Profile> {
   const snap = await getDoc(ref);
   if (snap.exists()) {
     const p = snap.data() as Profile;
-    // Profiles written before visibility existed have no isPublic field, and
-    // user search now filters on it — without this backfill they would
-    // silently drop out of search the day the rule ships.
-    if (typeof p.isPublic !== 'boolean') {
-      await setDoc(ref, { isPublic: true, updatedAt: serverTimestamp() }, { merge: true });
-      p.isPublic = true;
-    }
-    // Profiles that predate unique handles hold a name nobody ever claimed —
-    // and the rules now refuse a profile write whose handle is not claimed by
-    // its owner, so without this the player could never edit their own page
-    // again. Claim it here, on the way in. If the old name cannot be a handle
-    // (it had spaces, or somebody else got there first) it is migrated to the
-    // nearest free one rather than the player being locked out.
-    const claimed = await handleAvailable(p.username, user.uid)
-      && !handleProblem(p.username);
-    if (!claimed) {
-      const handle = await freeHandleNear(p.username || user.displayName || 'player', user.uid);
-      await saveProfile(user.uid, { ...p, username: handle });
-      p.username = handle;
-    } else if (!(await getDoc(doc(db, 'usernames', p.username.toLowerCase()))).exists()) {
-      await saveProfile(user.uid, p);   // name is fine, just never claimed
+    // Fix these in memory and let the migration write below carry them, if it
+    // gets that far. A separate earlier write cannot work any more: the rules
+    // refuse ANY profile write whose handle is unclaimed, and the claim is the
+    // very thing this function is on its way to make. Writing isPublic first
+    // was denied, threw, and left the caller with no profile at all — which
+    // renders as a signed-out rig for someone who is signed in.
+    if (typeof p.isPublic !== 'boolean') p.isPublic = true;
+
+    // Best-effort, and deliberately so. A profile that already exists must be
+    // RETURNED whatever happens to its handle: failing here used to reject the
+    // whole call, and a null profile is indistinguishable from signed out.
+    // Worst case the player keeps their old name for now and is asked again
+    // next time.
+    try {
+      const needsClaim = !!handleProblem(p.username)
+        || !(await getDoc(doc(db, 'usernames', p.username.toLowerCase()))).exists();
+      if (needsClaim) {
+        // A name that cannot be a handle, or that somebody else already holds,
+        // moves to the nearest free one instead of locking its owner out.
+        const usable = !handleProblem(p.username)
+          && await handleAvailable(p.username, user.uid);
+        const handle = usable ? p.username
+          : await freeHandleNear(p.username || user.displayName || 'player', user.uid);
+        await saveProfile(user.uid, { ...p, username: handle });
+        p.username = handle;
+      }
+    } catch (err) {
+      console.warn('username migration deferred:', err);
     }
     return p;
   }
@@ -115,9 +122,16 @@ export async function ensureProfile(user: User): Promise<Profile> {
     username, bio: '', avatarUrl: user.photoURL ?? '', isPublic: true,
     followersCount: 0, followingCount: 0,
   };
-  // saveProfile claims the handle and writes the profile in one transaction,
-  // so a new player can never exist with a name nobody holds.
-  await saveProfile(user.uid, fresh);
+  // saveProfile claims the handle before writing the profile, so a new player
+  // can never exist with a name nobody holds. If it cannot be written at all
+  // the player is still signed in and still has a profile in hand — returning
+  // null here would show them a signed-out rig, which is a worse lie than a
+  // profile that has not persisted yet.
+  try {
+    await saveProfile(user.uid, fresh);
+  } catch (err) {
+    console.warn('profile not written yet:', err);
+  }
   return fresh;
 }
 

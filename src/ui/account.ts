@@ -65,15 +65,24 @@ export class AccountUI {
   close() { this.root.classList.remove('open'); }
   refreshChip() { this.syncChip(); }
 
+  /* Signed in is signed in.
+   *
+   * This used to need a profile as well as a user, so anything that stopped
+   * the profile loading — a rules change, a bad network second — printed
+   * SIGN IN at someone who was signed in, on a page that would then take them
+   * straight to their own profile. The user is the fact; the profile is
+   * decoration on top of it, and a missing one falls back to a name rather
+   * than to a lie. */
   private syncChip() {
-    const p = session.profile;
-    if (session.user && p) {
-      this.chip.innerHTML = `${p.avatarUrl
-        ? `<img class="account-chip__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
-        : '<span class="account-chip__dot"></span>'}${escape(p.username)}`;
-    } else {
+    if (!session.user) {
       this.chip.innerHTML = `${ICONS.user}<span>SIGN IN</span>`;
+      return;
     }
+    const p = session.profile;
+    const name = p?.username || session.user.displayName || session.user.email?.split('@')[0] || 'you';
+    this.chip.innerHTML = `${p?.avatarUrl
+      ? `<img class="account-chip__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
+      : '<span class="account-chip__dot"></span>'}${escape(name)}`;
   }
 
   private render() {
