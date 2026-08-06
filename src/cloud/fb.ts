@@ -20,11 +20,41 @@ import {
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+/* authDomain — the origin that hosts the OAuth handler at /__/auth/handler.
+ *
+ * Whatever this is set to, the SDK asks Google for a redirect_uri of
+ * https://<authDomain>/__/auth/handler, and Google rejects any value that is
+ * not registered on the OAuth client — "Error 400: redirect_uri_mismatch".
+ *
+ * Firebase only auto-registers the PROJECT's domain, remidsp-98208.firebaseapp.com.
+ * The hosting site is a separate site (remidsp-maine), and its handler URL is
+ * NOT registered, even though the site serves a perfectly good handler. So
+ * pointing this at location.hostname on production — which is what it used to
+ * do — asked Google for a URI nobody had authorised, and every Google sign-in
+ * died at the consent screen.
+ *
+ * Same-origin is still the better end state. The redirect flow finishes by
+ * reading its result back through an iframe on authDomain, and Safari's ITP
+ * and Chrome's storage partitioning can cut that off when authDomain is a
+ * different origin from the app. To move to it, do BOTH of these and flip the
+ * flag below:
+ *
+ *   1. Google Cloud Console → APIs & Services → Credentials → the OAuth 2.0
+ *      client "Web client (auto created by Google Service)" → Authorized
+ *      redirect URIs → add  https://remidsp-maine.web.app/__/auth/handler
+ *   2. Firebase Console → Authentication → Settings → Authorized domains →
+ *      confirm remidsp-maine.web.app is listed.
+ *
+ * Until step 1 exists, this MUST stay false or sign-in breaks again.
+ */
+const SAME_ORIGIN_AUTH = false;
 const PROD_HOSTS = ['remidsp-maine.web.app', 'remidsp-maine.firebaseapp.com'];
 
 const app = initializeApp({
   apiKey: 'AIzaSyCc5q1QVR5KlV3khzwCryrO0ScB6P-D1xY',
-  authDomain: PROD_HOSTS.includes(location.hostname) ? location.hostname : 'remidsp-98208.firebaseapp.com',
+  authDomain: SAME_ORIGIN_AUTH && PROD_HOSTS.includes(location.hostname)
+    ? location.hostname
+    : 'remidsp-98208.firebaseapp.com',
   projectId: 'remidsp-98208',
   appId: '1:5196542133:web:830fc79f654c91bf22cefc',
 });
