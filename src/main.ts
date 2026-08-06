@@ -33,7 +33,10 @@ const SLOTS = [
   { key: 'studio', title: 'STUDIO STRIP', onParam: 'studio_on' },
   { key: 'chorus', title: 'CHORUS', onParam: 'cho_on' },
   { key: 'delay', title: 'DELAY', onParam: 'dly_on' },
-  { key: 'reverb', title: 'VAST SKY', onParam: 'rvb_on' },
+  // Named for what it does, like every other slot — and like the pedal's own
+  // render, which reads REVERB · ONE LUSH SPACE. The rail was the only place
+  // still calling it by a name the artwork underneath it never used.
+  { key: 'reverb', title: 'REVERB', onParam: 'rvb_on' },
 ] as const;
 type SlotKey = typeof SLOTS[number]['key'];
 
