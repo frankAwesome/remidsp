@@ -11,6 +11,7 @@ import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
 import { openCabWarning } from './ui/cabWarning';
 import { ICONS, withIcon } from './ui/icons';
+import { DevicePicker, savedInputChoice, loadSaved } from './ui/devices';
 import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed, powerLed } from './ui/live';
 import { LooperSection } from './ui/looper';
 import { preloadAssets } from './ui/preload';
@@ -1003,6 +1004,14 @@ async function loadBundledIr(index: number) {
 /* Warm every face render / sprite / chip before the rig opens — module
  * switches then paint instantly. Starts at page load so the bar runs while
  * the player reads the gateway; PLUG IN waits for it to finish. */
+/* The device picker is mounted at page load, not at boot: the whole point is
+ * that the interface, its channel and the output are settled BEFORE the rig
+ * opens, so start() takes the right input the first time instead of grabbing
+ * the OS default and being corrected afterwards. */
+const devicePicker = new DevicePicker();
+document.getElementById('devicePicker')?.appendChild(devicePicker.root);
+engine.input = savedInputChoice();
+
 const assetsWarm = preloadAssets((done, total) => {
   const pct = Math.round((done / total) * 100);
   const bar = document.getElementById('assetBar');
@@ -1056,6 +1065,11 @@ async function boot() {
     const total = lat.base + lat.output + lat.quantum;
     latEl.textContent = `${total.toFixed(1)} MS @ ${((engine.sampleRate() ?? 0) / 1000).toFixed(1)}K`;
   }
+
+  // The output device can only be routed once the context exists, so the
+  // choice made on the gate is applied here rather than at pick time.
+  const savedOut = loadSaved().output;
+  if (savedOut !== 'default') void engine.setOutput(savedOut);
 
   document.getElementById('gateway')!.classList.add('hidden');
   app.hidden = false;

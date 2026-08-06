@@ -352,11 +352,17 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .t3k__model button:hover{background:var(--ice);color:#0a0d12}
 
 /* ════════ start overlay ════════ */
+/* The gate now carries the pitch, the rig list and the device picker, so it
+   can outgrow a short laptop screen. `safe center` keeps it centred when it
+   fits and stops the top being clipped when it does not — plain `center`
+   overflows in BOTH directions and puts the logo out of reach. */
 .gateway{position:fixed;inset:0;z-index:400;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:1.6rem;background:var(--ink);transition:opacity .6s,visibility .6s}
+  justify-content:safe center;gap:1.15rem;padding:2rem 1rem;overflow-y:auto;
+  background:var(--ink);transition:opacity .6s,visibility .6s}
 .gateway.hidden{opacity:0;visibility:hidden}
-.gateway__logo{height:110px;filter:drop-shadow(0 6px 30px rgba(159,216,232,.25))}
-.gateway h1{font-family:var(--font-display);font-weight:700;font-size:clamp(3rem,8vw,5.6rem);
+.gateway__logo{height:clamp(56px,9vh,110px);flex:none;
+  filter:drop-shadow(0 6px 30px rgba(159,216,232,.25))}
+.gateway h1{font-family:var(--font-display);font-weight:700;font-size:clamp(2.4rem,7vw,4.8rem);
   letter-spacing:.06em;text-transform:uppercase;line-height:.88;text-align:center;
   background:linear-gradient(180deg,#ffffff 30%,#9fb4c4 90%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -380,7 +386,51 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   transition:.25s;border:1px solid transparent}
 .gateway__cta:hover{background:var(--light);box-shadow:0 12px 40px -12px rgba(159,216,232,.75)}
 .gateway__cta:disabled{opacity:.4;cursor:wait}
-.gateway__note{font-size:.72rem;color:var(--muted);max-width:420px;text-align:center;line-height:1.7}
+.gateway__note{font-size:.72rem;color:var(--muted);max-width:460px;text-align:center;line-height:1.7}
+.gateway__note b{color:var(--text);font-weight:600}
+
+/* ── the hook ───────────────────────────────────────────────────────────────
+   The one claim nothing else at this tier can make, so it is set second only
+   to the wordmark and is the only place on the gate that uses white light. */
+.gateway__hook{font-family:var(--font-display);text-transform:uppercase;
+  font-size:clamp(1.15rem,3.1vw,2rem);line-height:1.12;letter-spacing:.05em;
+  text-align:center;color:var(--muted);font-weight:600;margin-top:-.4rem}
+.gateway__hook b{display:inline-block;color:#0a0d12;background:var(--light-hi);
+  font-weight:700;padding:.06em .42em;margin-top:.22em;
+  box-shadow:0 10px 42px -14px rgba(159,216,232,.85)}
+
+/* the rig, ahead of the amp — four things, each one a line */
+.gateway__rig{list-style:none;display:grid;gap:.42rem;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  width:min(720px,88vw);margin-top:.15rem}
+.gateway__rig li{display:flex;flex-direction:column;gap:.1rem;
+  padding:.55rem .8rem;border:1px solid var(--line);background:rgba(255,255,255,.014);
+  transition:border-color .2s var(--ease),background .2s var(--ease)}
+.gateway__rig li:hover{border-color:var(--line-2);background:rgba(255,255,255,.03)}
+.gateway__rig b{font-family:var(--font-ui);font-size:.74rem;font-weight:700;
+  letter-spacing:.04em;color:var(--text)}
+.gateway__rig span{font-size:.62rem;color:var(--muted-2);line-height:1.45}
+
+/* ── device picker ──────────────────────────────────────────────────────── */
+.devices{width:min(720px,88vw);display:flex;flex-direction:column;gap:.5rem}
+.devices__ask{display:flex;flex-direction:column;align-items:center;gap:.5rem;text-align:center}
+.devices__ask span{font-size:.64rem;color:var(--muted-2);max-width:430px;line-height:1.6}
+.devices__ask--bad span{color:#e0a04a;max-width:430px}
+.devices__grant{font-family:var(--font-ui);font-weight:700;font-size:.62rem;letter-spacing:.2em;
+  padding:.6rem 1.3rem;border:1px solid var(--line-2);color:var(--text);cursor:pointer;
+  background:transparent;transition:border-color .2s var(--ease),background .2s var(--ease)}
+.devices__grant:hover{border-color:rgba(159,216,232,.65);background:rgba(159,216,232,.07)}
+.devices__grant:disabled{opacity:.5;cursor:wait}
+.devices__grid{display:grid;gap:.45rem;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+.devices__field{display:flex;flex-direction:column;gap:.25rem}
+.devices__field>span{font-family:var(--font-ui);font-size:.5rem;font-weight:700;
+  letter-spacing:.28em;color:var(--muted-2)}
+.devices__field select{background:#050507;color:var(--text);border:1px solid var(--line-2);
+  padding:.5rem .6rem;font:inherit;font-size:.74rem;width:100%;cursor:pointer;
+  transition:border-color .2s var(--ease)}
+.devices__field select:hover,.devices__field select:focus{border-color:rgba(159,216,232,.6);outline:none}
+.devices__field--off em{font-size:.66rem;color:var(--muted-2);font-style:normal;
+  border:1px dashed var(--line);padding:.5rem .6rem}
 .gateway__status{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.22em;color:var(--ice);
   min-height:1em;text-transform:uppercase}
 

@@ -3,9 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>REMI DSP — Maine · Web Suite</title>
-  <meta name="description" content="REMI DSP Maine guitar suite in the browser — NAM capture amp, cab IRs, dual-engine delay and Vast Sky reverb. WASM + AudioWorklet, zero added latency." />
+  <title>Maine — the guitar rig that runs in a browser tab. No install.</title>
+  <!-- The hook is the tab, not the amp. NAM in WASM is an npm install since
+       TONE3000 open-sourced it, so leading with the capture engine is leading
+       with the commodity. The dual-engine delay and the Vast Sky reverb are
+       what nothing else at this tier ships — so they lead, here and on the
+       gate, and "no install" is the first thing anyone reads. -->
+  <meta name="description" content="A full guitar rig in a browser tab — no install, no account. Dual-engine delay with tape bloom and >100% feedback, the Vast Sky shimmer reverb, a multitrack looper and a studio strip. Plays any NAM capture. Zero added latency." />
   <link rel="icon" href="/assets/app_icon_256.png" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://remidsp-maine.web.app/" />
+  <meta property="og:site_name" content="REMI DSP · Maine" />
+  <meta property="og:title" content="A full guitar rig that runs in a browser tab. No install." />
+  <meta property="og:description" content="Dual-engine delay with tape bloom and >100% feedback. The Vast Sky shimmer reverb. A multitrack looper and a studio strip. Plays any NAM capture — and there is nothing to download." />
+  <meta property="og:image" content="https://remidsp-maine.web.app/assets/app_icon_256.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="A full guitar rig that runs in a browser tab. No install." />
+  <meta name="twitter:description" content="Dual-engine delay with tape bloom and >100% feedback. The Vast Sky shimmer reverb. A multitrack looper and a studio strip. Plays any NAM capture — and there is nothing to download." />
+  <meta name="twitter:image" content="https://remidsp-maine.web.app/assets/app_icon_256.png" />
 </head>
 <body>
   <div class="bg"><div class="bg__grain"></div></div>
@@ -22,10 +38,25 @@
          together as "MaineREMI DSP…". The newline below is collapsed away at
          the end of the line box, so nothing moves on screen. The aria-label
          then gives the heading a properly punctuated name to announce. -->
-    <h1 aria-label="Maine — REMI DSP guitar suite, in the browser">
+    <h1 aria-label="Maine — REMI DSP guitar suite">
       Maine
-      <small>REMI DSP · GUITAR SUITE · IN THE BROWSER</small>
+      <small>REMI DSP · GUITAR SUITE</small>
     </h1>
+
+    <!-- The loudest thing on the gate. Every competitor at this tier costs a
+         download, an installer, a license and a plugin host; this one costs a
+         click. That is the pitch, so it gets the biggest type. -->
+    <p class="gateway__hook">Runs in the&nbsp;browser.<br /><b>No install.</b></p>
+
+    <!-- Rig first, amp second: the capture engine is a library anyone can
+         npm install, the effects are not. -->
+    <ul class="gateway__rig">
+      <li><b>Dual-engine delay</b><span>tape bloom, ducking, feedback past 100%</span></li>
+      <li><b>Vast Sky reverb</b><span>8-line FDN with granular shimmer</span></li>
+      <li><b>Multitrack looper</b><span>count-in, overdubs, per-layer level and pan</span></li>
+      <li><b>Studio strip</b><span>console EQ, FET compressor, cab IRs</span></li>
+    </ul>
+
     <div class="gateway__load" id="assetLoad">
       <div class="gateway__load-head">
         <span>INITIALIZING UI ASSETS</span>
@@ -33,10 +64,15 @@
       </div>
       <div class="gateway__bar"><i id="assetBar"></i></div>
     </div>
+
+    <!-- Devices are chosen here, before launch, so the rig opens on the right
+         interface instead of whatever the OS calls default. -->
+    <div id="devicePicker"></div>
+
     <button class="gateway__cta" id="startBtn">Plug In</button>
-    <p class="gateway__note">Plug your interface in, pick it as the browser's microphone when asked,
-      and kill echo cancellation dreams — we already did. Runs the NAM capture engine in WASM inside
-      an AudioWorklet: the chain itself adds zero latency beyond one 128-sample quantum.</p>
+    <p class="gateway__note">Plays any <b>NAM</b> capture — the bundled amps, or anything from
+      TONE3000. Echo cancellation, noise suppression and auto-gain are all forced off, and the
+      chain adds zero latency beyond one 128-sample quantum.</p>
     <div class="gateway__status" id="bootStatus"></div>
   </div>
 

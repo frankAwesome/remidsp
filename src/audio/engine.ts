@@ -46,6 +46,14 @@ export interface CaptureInfo {
   hasCab?: boolean;
 }
 
+/** Which physical input, and which channel of it, feeds the rig. */
+export interface InputChoice {
+  deviceId?: string;
+  /** Channel index on a multi-input interface; omit to take the stream as-is
+   *  (which for a mono device is the only channel there is). */
+  channel?: number;
+}
+
 export interface Meters {
   in: number; out: number; gr: number; gate: number; compGr: number;
   loopState: string; loopPos: number;
@@ -77,6 +85,14 @@ export class RigEngine {
   private ampBypass: GainNode | null = null;
   private micSource: MediaStreamAudioSourceNode | null = null;
   private micStream: MediaStream | null = null;
+  private micSplit: ChannelSplitterNode | null = null;
+  /** Which device/channel the rig listens to. Settable before launch. */
+  input: InputChoice = {};
+  output = 'default';
+  /** How many channels the open input actually gave us — the picker offers
+   *  a channel per one of these, and nothing when there is only the one. */
+  inputChannels = 1;
+  inputLabel = '';
   private module: EmModule | null = null;
   private paramQueue: [string, number][] = [];
 
@@ -254,17 +270,89 @@ export class RigEngine {
     return () => { osc.stop(); osc.disconnect(); g.disconnect(); };
   }
 
-  private async openMic(): Promise<void> {
-    this.micStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
-        channelCount: 1,
-      },
-    });
-    this.micSource = this.ctx!.createMediaStreamSource(this.micStream);
-    this.micSource.connect(this.pre!);
+  private async openMic(choice: InputChoice = this.input): Promise<void> {
+    const audio: MediaTrackConstraints = {
+      // The three processing blocks a browser adds for voice calls and a
+      // guitar never wants: they chase the signal, duck the tail of every
+      // note and re-level the picking hand.
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+      // Ask for every channel the interface has rather than pinning to 1. A
+      // 2-in box puts the guitar on ONE of its inputs; letting the browser
+      // downmix to mono would fold the empty input's noise floor in with it.
+      // The channel the player picked is split back out below.
+      channelCount: { ideal: 2 },
+    };
+    // `exact` on purpose: if the chosen interface was unplugged, this must
+    // fail loudly so the picker can say so, not silently land on the laptop
+    // mic and leave someone wondering why their amp sounds like a room.
+    if (choice.deviceId && choice.deviceId !== 'default') {
+      audio.deviceId = { exact: choice.deviceId };
+    }
+    this.micStream = await navigator.mediaDevices.getUserMedia({ audio });
+
+    const ctx = this.ctx!;
+    const track = this.micStream.getAudioTracks()[0];
+    this.inputChannels = track?.getSettings().channelCount ?? 1;
+    this.micSource = ctx.createMediaStreamSource(this.micStream);
+
+    if (this.inputChannels > 1 && typeof choice.channel === 'number') {
+      // pre is channelCount 1 / explicit / discrete, so it takes the one
+      // channel the splitter hands it and never mixes the other in.
+      const split = ctx.createChannelSplitter(this.inputChannels);
+      this.micSource.connect(split);
+      split.connect(this.pre!, Math.min(choice.channel, this.inputChannels - 1));
+      this.micSplit = split;
+    } else {
+      this.micSource.connect(this.pre!);
+    }
+    this.inputLabel = track?.label ?? '';
+  }
+
+  /** Drop the current input and free the device, so a re-open can take it. */
+  private closeMic() {
+    this.micSplit?.disconnect();
+    this.micSource?.disconnect();
+    this.micStream?.getTracks().forEach((t) => t.stop());
+    this.micSplit = null;
+    this.micSource = null;
+    this.micStream = null;
+  }
+
+  /** Point the rig at a different input, or a different channel of the same
+   *  one. Safe to call before the engine is running: the choice is stored and
+   *  applied when start() opens the input. */
+  async setInput(choice: InputChoice): Promise<boolean> {
+    this.input = { ...choice };
+    if (!this.ctx) return true;          // pre-launch: remembered, not applied
+    this.closeMic();
+    try {
+      await this.openMic();
+      this.micError = null;
+      return true;
+    } catch (err) {
+      this.micError = (err as Error).message;
+      return false;
+    }
+  }
+
+  /** Send the rig's output to a specific device. Returns false where the
+   *  browser has no AudioContext.setSinkId (Safari, Firefox at time of
+   *  writing) — the caller says so rather than pretending it worked. */
+  async setOutput(sinkId: string): Promise<boolean> {
+    const ctx = this.ctx as (AudioContext & { setSinkId?: (id: string) => Promise<void> }) | null;
+    if (!ctx?.setSinkId) return false;
+    // '' is the spec's "system default", which is not the same as the device
+    // that happens to be listed with deviceId 'default'.
+    await ctx.setSinkId(sinkId === 'default' ? '' : sinkId);
+    this.output = sinkId;
+    return true;
+  }
+
+  static get canPickOutput(): boolean {
+    return typeof AudioContext !== 'undefined'
+      && 'setSinkId' in AudioContext.prototype;
   }
 
   /** Swap the amp capture (bundled path or a fetched NAM json string). */
