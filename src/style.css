@@ -470,11 +470,44 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   box-shadow:0 0 12px rgba(180,212,230,.7);transition:width .18s var(--ease)}
 .gateway__load.done .gateway__load-head span:first-child{color:var(--ice)}
 
+/* ── the two doors ──────────────────────────────────────────────────────────
+   LISTEN FIRST carries the white light, because it is the one that should be
+   pressed by someone who has never been here. PLUG IN is the outline: still
+   obviously a door, visibly the second one, and never the thing a stranger
+   has to get past to hear the product. */
+.gateway__doors{display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center}
 .gateway__cta{font-family:var(--font-ui);font-weight:700;letter-spacing:.22em;font-size:.9rem;
-  text-transform:uppercase;padding:1.05rem 2.6rem;background:var(--light-hi);color:#0a0d12;
-  transition:.25s;border:1px solid transparent}
+  text-transform:uppercase;padding:.9rem 2.1rem;background:var(--light-hi);color:#0a0d12;
+  transition:.25s;border:1px solid transparent;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:.22rem}
 .gateway__cta:hover{background:var(--light);box-shadow:0 12px 40px -12px rgba(159,216,232,.75)}
 .gateway__cta:disabled{opacity:.4;cursor:wait}
+.gateway__cta-main{font-size:.9rem;letter-spacing:.22em;line-height:1}
+.gateway__cta-sub{font-family:var(--font-body);font-weight:500;font-size:.56rem;
+  letter-spacing:.13em;opacity:.68;text-transform:uppercase;line-height:1}
+.gateway__cta--demo{position:relative}
+/* A soft pulse on the primary door — the page is otherwise entirely still,
+   and one moving thing is enough to say "press this one". */
+@media (prefers-reduced-motion:no-preference){
+  .gateway__cta--demo{animation:gateBreathe 3.6s var(--ease) infinite}
+}
+@keyframes gateBreathe{
+  0%,100%{box-shadow:0 10px 34px -16px rgba(159,216,232,.55)}
+  50%{box-shadow:0 14px 46px -12px rgba(159,216,232,.95)}
+}
+.gateway__cta--plug{background:transparent;color:var(--text);border-color:var(--line-2)}
+.gateway__cta--plug:hover{background:rgba(159,216,232,.07);
+  border-color:rgba(159,216,232,.65);box-shadow:none}
+
+/* The interface picker is folded away: it is the most intimidating control on
+   the page and it means nothing on the demo path. */
+.gateway__devices{width:min(720px,88vw)}
+.gateway__devices>summary{font-family:var(--font-ui);font-size:.56rem;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--muted-2);cursor:pointer;
+  text-align:center;padding:.45rem;list-style:none;transition:color .2s var(--ease)}
+.gateway__devices>summary::-webkit-details-marker{display:none}
+.gateway__devices>summary:hover{color:var(--text)}
+.gateway__devices[open]>summary{color:var(--text);margin-bottom:.5rem}
 .gateway__note{font-size:.72rem;color:var(--muted);max-width:460px;text-align:center;line-height:1.7}
 .gateway__note b{color:var(--text);font-weight:600}
 
@@ -499,6 +532,47 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .gateway__rig b{font-family:var(--font-ui);font-size:.74rem;font-weight:700;
   letter-spacing:.04em;color:var(--text)}
 .gateway__rig span{font-size:.62rem;color:var(--muted-2);line-height:1.45}
+
+/* Pre-boot header: brand, the view switch and the account chip. Everything
+   else drives an engine that is not running yet. */
+.app--preboot .hdr__group:not(.hdr__group--always),
+.app--preboot .hdr__sep{display:none}
+
+/* ── the shared-link landing ────────────────────────────────────────────────
+   What a stranger sees when somebody sends them a rig. One card, one sentence
+   telling them the thing they are about to do costs nothing, and one button.
+   Deliberately sparse: every extra control here is a chance to leave. */
+.landing{display:flex;flex-direction:column;align-items:center;gap:1.1rem;
+  padding:2.4rem 1rem 3rem;max-width:min(680px,92vw);margin:0 auto}
+.landing__eyebrow{font-family:var(--font-ui);font-size:.58rem;font-weight:700;
+  letter-spacing:.26em;color:var(--muted-2);text-align:center}
+.landing__sub{font-size:.76rem;color:var(--muted);text-align:center;line-height:1.7;
+  max-width:44ch;margin:.5rem auto 0}
+.landing .feed-card{width:100%}
+/* The card's own LOAD button is meaningless before the engine exists — the
+   landing's single call to action is the one below it. */
+.landing .feed-card__foot .tone-card__load,
+.landing .feed-card__foot .feed-card__like,
+.landing .feed-card__foot [data-a=comments]{display:none}
+.landing__cta{margin-top:.3rem}
+
+/* ── share ────────────────────────────────────────────────────────────────── */
+.feed-card__share{cursor:pointer;background:transparent;border:1px solid var(--line);
+  color:var(--muted-2);transition:color .2s var(--ease),border-color .2s var(--ease)}
+.feed-card__share:hover{color:var(--text);border-color:rgba(159,216,232,.6)}
+
+/* ── input switch ──────────────────────────────────────────────────────────
+   Two states, one lit. The demo side is lit on arrival for anyone who came in
+   through LISTEN FIRST, so what is making the noise is never a mystery. */
+.insw{display:flex;border:1px solid var(--line);overflow:hidden}
+.insw__btn{font-family:var(--font-ui);font-size:.5rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;padding:.42rem .6rem;background:transparent;color:var(--muted-2);
+  border:0;cursor:pointer;transition:color .2s var(--ease),background .2s var(--ease);
+  white-space:nowrap;max-width:11ch;overflow:hidden;text-overflow:ellipsis}
+.insw__btn+.insw__btn{border-left:1px solid var(--line)}
+.insw__btn:hover:not(:disabled){color:var(--text);background:rgba(255,255,255,.04)}
+.insw__btn.on{color:#0a0d12;background:var(--light-hi)}
+.insw__btn:disabled{opacity:.45;cursor:wait}
 
 /* ── device picker ──────────────────────────────────────────────────────── */
 .devices{width:min(720px,88vw);display:flex;flex-direction:column;gap:.5rem}

@@ -4,6 +4,9 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // import.meta.env — Vite's define-time constants, so DEV-only code folds
+    // away in the production bundle instead of shipping.
+    "types": ["vite/client"],
     "strict": true,
     "noUnusedLocals": true,
     "skipLibCheck": true,

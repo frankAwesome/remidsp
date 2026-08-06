@@ -278,6 +278,33 @@ export async function searchUsers(q: string): Promise<ProfileHit[]> {
   return (await getDocs(qq)).docs.map((d) => ({ uid: d.id, ...d.data() } as ProfileHit));
 }
 
+/** Resolve @handle → uid, for the /u/<handle> route.
+ *
+ *  This is what the usernames collection was always for — its rules comment
+ *  says so — and it is why the claim doc is world-readable. The handle is
+ *  lowercased because the claim id is, while the profile keeps the casing the
+ *  player typed. */
+export async function uidForHandle(handle: string): Promise<string | null> {
+  const snap = await getDoc(doc(db, 'usernames', handle.trim().toLowerCase()));
+  return snap.exists() ? (snap.data().uid as string) ?? null : null;
+}
+
+/** One shared tone by id, for the /t/<id> route.
+ *
+ *  Returns null for a tone that is private, deleted, or never existed — the
+ *  rules refuse the read in the first two cases and the caller has nothing
+ *  useful to tell them apart with anyway. */
+export async function getSharedPreset(id: string): Promise<CloudPreset | null> {
+  try {
+    const snap = await getDoc(doc(db, 'presets', id));
+    if (!snap.exists()) return null;
+    const p = { id: snap.id, ...snap.data() } as CloudPreset;
+    return p.shared ? p : null;
+  } catch {
+    return null;                    // a rules refusal is a "no", not a crash
+  }
+}
+
 export async function isFollowing(me: string, target: string): Promise<boolean> {
   return (await getDoc(doc(db, 'profiles', me, 'following', target))).exists();
 }

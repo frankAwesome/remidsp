@@ -317,10 +317,16 @@ service cloud.firestore {
         && d.amp is string && d.amp.size() <= 30
         && d.voice is string && d.voice.size() <= 40
         && d.params is map
-        // The params map is the rig's knob positions and nothing else. Pinning
-        // it to numbers stops a 1 MB blob of strings riding along on a document
-        // the feed pulls thirty of, and stops the map being used as storage for
-        // something that will later be rendered.
+        // The params map is the rig's knob positions and nothing else. The cap
+        // stops a 1 MB blob riding along on a document the feed pulls thirty of.
+        //
+        // What is NOT enforced here, and cannot be: that every VALUE is a
+        // number. Rules have no iteration and a map's values cannot be
+        // type-tested as a set, so the only expressible version would be to
+        // enumerate all 107 params — which would then reject every save the
+        // day a param is added. That check therefore lives at the render site
+        // instead (src/ui/feed.ts, the g() accessor plus a per-card try), where
+        // a bad value costs one unrendered card rather than the whole feed.
         && d.params.size() <= 200
         && (d.capture == null
             || (d.capture is map && d.capture.keys().hasOnly(

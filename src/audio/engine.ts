@@ -81,6 +81,18 @@ type EngineState = 'idle' | 'booting' | 'running' | 'error';
 
 const num = (v: number) => v;
 
+/** The bundled demo DI.
+ *
+ *  Synthesised from `scripts/make-di.mjs` so it is ours outright and carries
+ *  no sample licence. It is a starting point, not the destination: the house
+ *  DI library lives on R2 and this is what plays before one is chosen. */
+export const DEFAULT_DI = {
+  id: 'house/ambient-dmaj-92',
+  url: '/assets/di/ambient_dmaj_92.wav',
+  label: 'AMBIENT · D MAJOR',
+  bpm: 92,
+};
+
 export class RigEngine {
   state: EngineState = 'idle';
   ctx: AudioContext | null = null;
@@ -96,6 +108,17 @@ export class RigEngine {
   private micSource: MediaStreamAudioSourceNode | null = null;
   private micStream: MediaStream | null = null;
   private micSplit: ChannelSplitterNode | null = null;
+  /* ── the DI source ────────────────────────────────────────────────────
+   * A looping dry instrument recording standing in for a guitar, so the rig
+   * can be played by someone who has neither a guitar nor an interface — and
+   * so the microphone permission prompt is never the price of admission.
+   * It occupies exactly the position the mic does: a node into `pre`. */
+  private diNode: AudioBufferSourceNode | null = null;
+  private diGain: GainNode | null = null;
+  private diBuffer: AudioBuffer | null = null;
+  /** Which of the two is currently feeding the chain. */
+  inputSource: 'mic' | 'di' = 'mic';
+  onInputSourceChange: ((s: 'mic' | 'di') => void) | null = null;
   /** Which device/channel the rig listens to. Settable before launch. */
   input: InputChoice = {};
   output = 'default';
@@ -123,8 +146,15 @@ export class RigEngine {
   }
 
   /** Boot: load wasm, load the default capture (this creates the context),
-   *  then build the graph and open the mic. Must run from a user gesture. */
-  async start(defaultCaptureUrl: string, defaultCapture: CaptureInfo): Promise<void> {
+   *  then build the graph and open the input. Must run from a user gesture.
+   *
+   *  `source: 'di'` boots WITHOUT ever calling getUserMedia. That is the whole
+   *  point of it: a visitor who arrived from a link has not agreed to hand
+   *  over a microphone, and asking before they have heard anything is how the
+   *  product used to lose them at the door. The mic can be opened later, on
+   *  purpose, by someone who has decided they want it. */
+  async start(defaultCaptureUrl: string, defaultCapture: CaptureInfo,
+              opts: { source?: 'mic' | 'di' } = {}): Promise<void> {
     if (this.state === 'running' || this.state === 'booting') return;
     this.setState('booting', 'loading engine');
 
@@ -206,13 +236,23 @@ export class RigEngine {
     for (const [id, v] of this.paramQueue) this.sendParam(id, v);
     this.paramQueue = [];
 
-    this.setState('booting', 'opening input');
-    try {
-      await this.openMic();
-    } catch (err) {
-      // No input is not fatal — the rig runs, the player can grant mic later.
-      console.warn('mic unavailable:', err);
-      this.micError = (err as Error).message;
+    if (opts.source === 'di') {
+      this.setState('booting', 'loading demo track');
+      this.inputSource = 'di';
+      // A failure here is not fatal either: the rig still runs, silently, and
+      // the player can switch to the mic or retry.
+      try { await this.startDi(); } catch (err) {
+        console.warn('DI unavailable:', err);
+      }
+    } else {
+      this.setState('booting', 'opening input');
+      try {
+        await this.openMic();
+      } catch (err) {
+        // No input is not fatal — the rig runs, the player can grant mic later.
+        console.warn('mic unavailable:', err);
+        this.micError = (err as Error).message;
+      }
     }
     await ctx.resume();
     this.capture = defaultCapture;
@@ -323,6 +363,86 @@ export class RigEngine {
       this.micSource.connect(this.pre!);
     }
     this.inputLabel = track?.label ?? '';
+  }
+
+  /* ── DI playback ──────────────────────────────────────────────────────
+   *
+   * The DI enters the graph at exactly the point the microphone does, so
+   * everything downstream — gate, comp, drive, the capture, the whole post
+   * chain — treats it identically to a plugged-in guitar. It is not a
+   * "preview mode"; it is the same rig with a different string on the front.
+   */
+
+  /** Which DI is loaded, so the UI can show it and a take can name it. */
+  diId: string | null = null;
+
+  /** Fetch and decode a DI, replacing whatever is playing. */
+  async loadDi(url: string, id: string): Promise<void> {
+    if (!this.ctx) throw new Error('engine not running');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`DI ${res.status}`);
+    this.diBuffer = await this.ctx.decodeAudioData(await res.arrayBuffer());
+    this.diId = id;
+    if (this.inputSource === 'di') this.restartDi();
+  }
+
+  private async startDi(): Promise<void> {
+    if (!this.diBuffer) await this.loadDi(DEFAULT_DI.url, DEFAULT_DI.id);
+    this.restartDi();
+  }
+
+  /** (Re)start the loop. An AudioBufferSourceNode is single-use by spec, so
+   *  every start builds a new one — reusing one silently does nothing. */
+  private restartDi() {
+    if (!this.ctx || !this.diBuffer || !this.pre) return;
+    this.stopDi();
+    const ctx = this.ctx;
+    this.diGain = ctx.createGain();
+    this.diGain.gain.value = 1;
+    this.diNode = ctx.createBufferSource();
+    this.diNode.buffer = this.diBuffer;
+    this.diNode.loop = true;
+    this.diNode.connect(this.diGain);
+    this.diGain.connect(this.pre);
+    this.diNode.start();
+  }
+
+  private stopDi() {
+    try { this.diNode?.stop(); } catch { /* never started */ }
+    this.diNode?.disconnect();
+    this.diGain?.disconnect();
+    this.diNode = null;
+    this.diGain = null;
+  }
+
+  /** Is the demo track currently the thing feeding the rig? */
+  get diPlaying(): boolean { return this.inputSource === 'di' && !!this.diNode; }
+
+  /** Swap what feeds the chain.
+   *
+   *  Going to 'mic' is the first moment a permission prompt can appear, and
+   *  it is a deliberate act by then. If it is refused we stay on the DI and
+   *  say so rather than dropping the player into silence. */
+  async setInputSource(next: 'mic' | 'di'): Promise<boolean> {
+    if (!this.ctx) { this.inputSource = next; return true; }
+    if (next === 'di') {
+      this.closeMic();
+      this.inputSource = 'di';
+      try { await this.startDi(); } catch { return false; }
+      this.onInputSourceChange?.('di');
+      return true;
+    }
+    try {
+      await this.openMic();
+    } catch (err) {
+      this.micError = (err as Error).message;
+      return false;                      // still on the DI, still making sound
+    }
+    this.stopDi();
+    this.inputSource = 'mic';
+    this.micError = null;
+    this.onInputSourceChange?.('mic');
+    return true;
   }
 
   /** Drop the current input and free the device, so a re-open can take it. */
