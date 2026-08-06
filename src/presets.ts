@@ -39,12 +39,25 @@ const P = (name: string, group: Preset['group'], amp: string, voice: string,
            params: Record<string, number>): Preset => ({ name, group, amp, voice, params });
 
 export const FACTORY_PRESETS: Preset[] = [
-  // The boot patch: the app opens on Portland's Pushed voice (a '66 JTM45
-  // through a Bluesbreaker). Index 0 is what boot() applies, so it stays first.
-  // The compressor is OFF here — the capture is already pushed, and a comp in
-  // front of it is the player's choice, not the opening statement.
-  P('Pushed Crunch', 'FACTORY', 'portland', 'portland_pushed', {
-    tempo: 120, comp_on: 0, dlyA_mix: 0.13,
+  // ── 176 BPM · the city post-punk ────────────────────────────────────────
+  // The boot patch. Index 0 is what boot() opens on — it loads this voice
+  // straight onto the amp and applies these params without going back through
+  // applyPreset, so whatever sits here IS the opening sound.
+  //
+  // Bloom is the clean-ish Marshall, so the drive pedal is allowed to be the
+  // gain stage here — and the stomp comp stays off, because tremolo-picked
+  // 16ths at 176 BPM need their dynamics or the part turns to mush. Reverb is
+  // a small dark room, not a wash: this should sound like a venue, not a hall.
+  P('Dublin Jangle', 'FACTORY', 'portland', 'portland_bloom', {
+    tempo: 176, comp_on: 0,
+    amp_gain: 0.55, amp_bass: 0.45, amp_mid: 0.55, amp_treble: 0.6, amp_cut: 0.2,
+    drive_on: 1, drive_gain: 0.34, drive_treble: 0.62, drive_bass: 0.42, drive_level: 0.68,
+    dlyA_div: 3, dlyA_fb: 0.18, dlyA_mix: 0.15, dlyA_mode: 3, dlyA_grit: 0.45,
+    dlyA_hicut: 4800,
+    rvb_machine: 0, rvb_decay: 1.4, rvb_predelay: 12, rvb_mix: 0.16, rvb_tone: -0.15,
+    sauce_on: 1, sauce_tight: 0.35, sauce_punch: 0.4, sauce_pres: 0.25,
+    fet_input: 0.18, fet_output: 0.76, fet_mix: 0.26,
+    gate_on: 1, gate_thresh: -48,
   }),
 
   // ── 126 BPM · the rooftop anthem ────────────────────────────────────────
@@ -114,23 +127,6 @@ export const FACTORY_PRESETS: Preset[] = [
     dlyA_hicut: 5500, dlyA_mod_depth: 0.25,
     rvb_machine: 2, rvb_decay: 1.8, rvb_predelay: 20, rvb_mix: 0.18,
     fet_input: 0.2, fet_output: 0.78, fet_mix: 0.3, gate_thresh: -54,
-  }),
-
-  // ── 176 BPM · the city post-punk ────────────────────────────────────────
-  // Bloom is the clean-ish Marshall, so the drive pedal is allowed to be the
-  // gain stage here — and the stomp comp stays off, because tremolo-picked
-  // 16ths at 176 BPM need their dynamics or the part turns to mush. Reverb is
-  // a small dark room, not a wash: this should sound like a venue, not a hall.
-  P('Dublin Jangle', 'SIGNATURE', 'portland', 'portland_bloom', {
-    tempo: 176, comp_on: 0,
-    amp_gain: 0.55, amp_bass: 0.45, amp_mid: 0.55, amp_treble: 0.6, amp_cut: 0.2,
-    drive_on: 1, drive_gain: 0.34, drive_treble: 0.62, drive_bass: 0.42, drive_level: 0.68,
-    dlyA_div: 3, dlyA_fb: 0.18, dlyA_mix: 0.15, dlyA_mode: 3, dlyA_grit: 0.45,
-    dlyA_hicut: 4800,
-    rvb_machine: 0, rvb_decay: 1.4, rvb_predelay: 12, rvb_mix: 0.16, rvb_tone: -0.15,
-    sauce_on: 1, sauce_tight: 0.35, sauce_punch: 0.4, sauce_pres: 0.25,
-    fet_input: 0.18, fet_output: 0.76, fet_mix: 0.26,
-    gate_on: 1, gate_thresh: -48,
   }),
 
   // ── 162 BPM · the north-east anthem ─────────────────────────────────────

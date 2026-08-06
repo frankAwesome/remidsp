@@ -40,14 +40,23 @@ const SLOTS = [
 ] as const;
 type SlotKey = typeof SLOTS[number]['key'];
 
-let currentAmp = 'portland';
-let currentVoice = 'portland_pushed';
+/* The boot patch is whatever sits first in the bank, and everything about the
+ * opening state is derived from it rather than restated. boot() loads this
+ * capture directly and then applies the preset's params WITHOUT going through
+ * applyPreset — that would re-fetch the same file — which only holds together
+ * while the two agree. Spelling the voice out separately is how they drift:
+ * reorder the bank and the rig would claim one amp while playing another. */
+const BOOT = FACTORY_PRESETS[0];
+const BOOT_LABEL = BOOT.voice.replace('_', ' ');
+
+let currentAmp = BOOT.amp;
+let currentVoice = BOOT.voice;
 let selectedSlot: SlotKey = 'amp';
 let delayEngineShown: 0 | 1 = 0;
 let quality: 'full' | 'eco' = 'full';
 let customIrName: string | null = null;
 let presetIdx = 0;
-let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: 'portland_pushed', label: 'portland pushed' };
+let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: BOOT.voice, label: BOOT_LABEL };
 let account: AccountUI;
 let feedView: FeedView;
 let profileView: ProfileView;
@@ -1030,14 +1039,15 @@ async function boot() {
   startBtn.disabled = true;
   engine.onStateChange = (s, detail) => { status.textContent = detail ?? s; };
   try {
-    // Boot straight into the Pushed Crunch patch (FACTORY_PRESETS[0]): the
-    // Portland Pushed voice, every other param already at its default.
-    const engineUp = engine.start('/assets/captures/portland_pushed.nam',
-      { name: 'portland pushed', source: 'bundled', hasCab: true });
+    // Boot straight into the first patch in the bank — its voice on the amp,
+    // every param it does not name left at its default.
+    const bootUrl = `/assets/captures/${BOOT.voice}.nam`;
+    const engineUp = engine.start(bootUrl,
+      { name: BOOT_LABEL, source: 'bundled', hasCab: true });
     status.textContent = 'warming ui assets';
     await assetsWarm;
     await engineUp;
-    lastCaptureJson = await (await fetch('/assets/captures/portland_pushed.nam')).text();
+    lastCaptureJson = await (await fetch(bootUrl)).text();
   } catch (err) {
     status.textContent = `failed: ${(err as Error).message}`;
     startBtn.disabled = false;
@@ -1082,7 +1092,7 @@ async function boot() {
       if (await engine.retryMic()) toast('<b>Input open</b> — play.');
     });
   } else {
-    toast('<b>Camden clean</b> on the amp — play.');
+    toast(`<b>${BOOT.name}</b> on the amp — play.`);
   }
   // console access for driving the rig while testing
   (window as unknown as { __rig: unknown }).__rig = { engine, store };
