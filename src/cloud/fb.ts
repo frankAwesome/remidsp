@@ -13,7 +13,7 @@ import {
   initializeAuth, onAuthStateChanged, signOut as fbSignOut,
   indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence,
   GoogleAuthProvider,
-  signInWithRedirect, getRedirectResult, browserPopupRedirectResolver,
+  getRedirectResult, browserPopupRedirectResolver,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendPasswordResetEmail, updateProfile as updateAuthProfile,
   type User, type AuthProvider,
@@ -94,22 +94,32 @@ const PROVIDERS: Record<string, () => AuthProvider> = {
   google: () => new GoogleAuthProvider(),
 };
 
-const PENDING = 'remi_auth_pending';
-
-/** Thrown when the redirect came back but the result never arrived. */
-export class RedirectLostError extends Error {
-  readonly code = 'auth/redirect-lost';
-  constructor(readonly provider: string) { super(`${provider} redirect returned no result`); }
-}
-
-export function signInWithProvider(key: string): Promise<never> {
+export function makeProvider(key: string): AuthProvider {
   const make = PROVIDERS[key];
   if (!make) throw new Error(`unknown provider ${key}`);
-  // A breadcrumb that survives the round trip. Without it a failed sign-in is
-  // indistinguishable from never having tried: getRedirectResult resolves null
-  // either way, and the player lands back on the gate with no explanation.
-  sessionStorage.setItem(PENDING, key);
-  return signInWithRedirect(auth, make());
+  return make();
+}
+
+/* Provider sign-in does NOT run on this page.
+ *
+ * The redirect flow reads its result back through Firebase's helper iframe at
+ * /__/auth/iframe, and this page runs COEP require-corp for the wasm audio
+ * engine. Under require-corp every document in the frame tree — same-origin
+ * included — must carry its own compatible COEP header, and that helper does
+ * not. Hosting serves it from a reserved namespace, so no header rule of ours
+ * can give it one: inside the rig the iframe is unloadable and the result
+ * never comes back. That is not a bug to fix here; it is isolation working.
+ *
+ * So the handshake is handed to /signin.html, which is deliberately served
+ * WITHOUT isolation. Firebase persists the session to localStorage, which is
+ * shared across this origin, so nothing has to be passed back: onAuthStateChanged
+ * finds the user the moment the player returns. */
+export function signInWithProvider(key: string): Promise<never> {
+  if (!PROVIDERS[key]) throw new Error(`unknown provider ${key}`);
+  const back = encodeURIComponent(location.pathname + location.search);
+  location.assign(`/signin.html?p=${encodeURIComponent(key)}&r=${back}`);
+  // Never resolves — the page is on its way out.
+  return new Promise<never>(() => {});
 }
 
 export async function emailSignIn(email: string, password: string): Promise<User> {
@@ -139,18 +149,17 @@ export function onUser(cb: (u: User | null) => void): void {
 }
 
 /** Surface a provider redirect result (or its error) once per page load. */
+/** Kept for the case where a redirect somehow lands back here rather than on
+ *  /signin.html. It cannot succeed under isolation — the helper iframe is
+ *  blocked — but it must not throw either: the sign-in page is the path that
+ *  works, and this returning null is the normal, uneventful answer. */
 export async function consumeRedirect(): Promise<User | null> {
-  const pending = sessionStorage.getItem(PENDING);
-  sessionStorage.removeItem(PENDING);
-  const res = await getRedirectResult(auth);
-  if (res?.user) return res.user;
-  // Came back from a provider empty-handed. The usual cause is this page being
-  // cross-origin isolated: the rig needs COEP require-corp for the wasm audio
-  // engine, and under that policy the auth helper iframe on a DIFFERENT origin
-  // is blocked outright, so the result can never be read back. Say so instead
-  // of quietly showing the gate again.
-  if (pending) throw new RedirectLostError(pending);
-  return null;
+  try {
+    const res = await getRedirectResult(auth);
+    return res?.user ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Human message for the auth error codes players will actually hit. */
