@@ -73,6 +73,8 @@ export class DevicePicker {
   private state: Saved = loadSaved();
   private channels = 1;
   private granted = false;
+  /** Has the stream-opening channel probe already run this session? */
+  private probed = false;
   private onChange: (() => void) | null = null;
 
   constructor(onChange?: () => void) {
@@ -80,7 +82,12 @@ export class DevicePicker {
     this.root = document.createElement('div');
     this.root.className = 'devices';
     this.render();
-    navigator.mediaDevices?.addEventListener?.('devicechange', () => void this.refresh());
+    // Only re-probe on a device change if a probe was already legitimate this
+    // session. Otherwise plugging in a pair of headphones would open the
+    // microphone of somebody who never asked for the picker at all.
+    navigator.mediaDevices?.addEventListener?.('devicechange', () => {
+      if (this.probed) void this.refresh(); else void this.render();
+    });
     void this.init();
   }
 
@@ -95,14 +102,33 @@ export class DevicePicker {
       const list = await navigator.mediaDevices.enumerateDevices().catch(() => []);
       this.granted = list.some((d) => d.kind === 'audioinput' && d.label !== '');
     }
-    if (this.granted) await this.refresh();
-    else this.render();
+    // NOT refresh(). This runs at page load, and refresh() probes the channel
+    // count by OPENING A STREAM — so for anyone who had ever granted the
+    // microphone on this origin, merely loading the page lit their mic
+    // indicator before they had pressed anything. That is a privacy surprise
+    // on its own, and it flatly contradicts the promise the LISTEN FIRST door
+    // is making one element away on the same screen.
+    //
+    // Labels only need enumerateDevices(), which costs no stream. The channel
+    // count is the only thing that needs one, and it is not needed until
+    // somebody is actually choosing an interface.
+    this.render();
   }
 
+  /** Probe the channel count — opens and immediately closes a stream, so it
+   *  is only ever called once somebody has asked for the picker. */
   private async refresh() {
     this.channels = await probeChannels(this.state.deviceId);
     if (this.state.channel >= this.channels) this.state.channel = 0;
     this.render();
+  }
+
+  /** The picker was actually opened. Now the stream-opening probe is fair.
+   *  Idempotent: re-opening the drawer must not re-prompt. */
+  async reveal(): Promise<void> {
+    if (!this.granted || this.probed) return;
+    this.probed = true;
+    await this.refresh();
   }
 
   private async devices() {
@@ -128,6 +154,7 @@ export class DevicePicker {
         try {
           await grant();
           this.granted = true;
+          this.probed = true;   // permission is live; probing costs no prompt
           await this.refresh();
         } catch (err) {
           this.root.innerHTML = `<div class="devices__ask devices__ask--bad">

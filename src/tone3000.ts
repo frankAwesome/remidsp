@@ -10,6 +10,46 @@
  */
 
 const API = 'https://www.tone3000.com/api/v1';
+
+/* ── where a capture may legitimately live ────────────────────────────────
+ *
+ * A capture url on a preset is attacker-controlled: anyone can share a tone
+ * whose capture.modelUrl points anywhere they like. Two separate rules keep
+ * that harmless, and they are deliberately not the same rule:
+ *
+ *   safeModelUrl()   — may we FETCH it at all? https only, no credentials
+ *                      embedded in the url, no loopback or private address.
+ *   isTone3000Host() — may it see the BEARER TOKEN? tone3000.com only.
+ *
+ * Keeping them apart is what lets TONE3000's pre-signed storage urls keep
+ * working (they authenticate themselves through the query string) without
+ * ever being trusted with the player's session. */
+
+const T3K_HOSTS = ['tone3000.com', 'www.tone3000.com'];
+
+/** True when the token may ride along — an exact host match, never a suffix
+ *  test. `endsWith('tone3000.com')` would also accept `eviltone3000.com`. */
+function isTone3000Host(u: URL): boolean {
+  return T3K_HOSTS.includes(u.hostname.toLowerCase());
+}
+
+/** Parse and vet a capture url, or null when it must not be fetched. */
+function safeModelUrl(raw: string): URL | null {
+  let u: URL;
+  try { u = new URL(raw); } catch { return null; }
+  if (u.protocol !== 'https:') return null;
+  // `https://user:pass@host/` — credentials in a url are never legitimate
+  // here, and some fetch stacks forward them.
+  if (u.username || u.password) return null;
+  const h = u.hostname.toLowerCase();
+  // No pointing the app at things only this machine can reach. Cloud
+  // metadata endpoints and dev servers both live behind names like these.
+  if (h === 'localhost' || h.endsWith('.localhost') || h === '0.0.0.0'
+      || /^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h)
+      || /^169\.254\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)
+      || h.startsWith('[')) return null;
+  return u;
+}
 const LS_KEY = 't3k_pub_key';
 const LS_TOKENS = 't3k_tokens';
 // Publishable key (t3k_pub_… — safe for browser code by design; the secret
@@ -216,11 +256,26 @@ export class Tone3000 {
    *  T3kError so callers can tell "you need to sign in" apart from "TONE3000
    *  is down" apart from "the creator deleted it" — three very different
    *  things to tell a player whose preset just failed to load. */
-  async fetchModelFile(modelUrl: string): Promise<Response> {
-    const tok = await this.accessToken().catch(() => null);
+  async fetchModelFile(modelUrl: string, opts: { trusted?: boolean } = {}): Promise<Response> {
+    // WHERE this url came from decides whether it may see the token.
+    //
+    // A model url reaches here two ways. From the TONE3000 API, which is the
+    // only thing that knows the real storage host — that url is TRUSTED and
+    // keeps its Bearer header exactly as before, so browsing and loading
+    // captures behave identically to how they always have.
+    //
+    // Or off a PRESET SHARED BY A STRANGER, where the url is whatever they
+    // typed and the rules only ever checked its length. Sending the token
+    // there handed that player's TONE3000 session to whoever posted the tone.
+    // Those are fetched anonymously; a real TONE3000 storage url is
+    // pre-signed and authenticates itself, so honest presets still load.
+    const target = safeModelUrl(modelUrl);
+    if (!target) throw new T3kError('that capture link is not a usable address', 'missing');
+    const mayAuth = opts.trusted === true || isTone3000Host(target);
+    const tok = mayAuth ? await this.accessToken().catch(() => null) : null;
     let r: Response;
     try {
-      r = await fetch(modelUrl, tok ? { headers: { Authorization: `Bearer ${tok}` } } : undefined);
+      r = await fetch(target.href, tok ? { headers: { Authorization: `Bearer ${tok}` } } : undefined);
     } catch (err) {
       // A blocked cross-origin fetch and a dead network look identical from
       // here; if we never had a token, the sign-in is the likelier fix.

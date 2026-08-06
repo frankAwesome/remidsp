@@ -1,10 +1,11 @@
 import './style.css';
-import { engine, CaptureInfo } from './audio/engine';
+import { engine, CaptureInfo, DEFAULT_DI } from './audio/engine';
 import { store, paramById } from './params';
 import { AMP_FACES, PEDAL_FACES, STUDIO_FACE, delayFace, FaceDef } from './geometry';
 import { makeKnob, placeKnob } from './ui/knob';
 import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
+import { esc } from './ui/esc';
 import {
   FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId,
   deleteUserPresetAt, setPresetScope, replaceUserPresets, Preset,
@@ -19,11 +20,14 @@ import { DevicePicker, savedInputChoice, loadSaved } from './ui/devices';
 import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed, powerLed } from './ui/live';
 import { LooperSection } from './ui/looper';
 import { preloadAssets } from './ui/preload';
+import { InputSwitch } from './ui/inputSwitch';
 import { AccountUI, session } from './ui/account';
 import { FeedView } from './ui/feed';
 import { ProfileView } from './ui/profile';
 import { openSaveDialog } from './ui/saveDialog';
-import { deletePreset, myPresets, type CloudPreset, type CaptureRefDoc } from './cloud/store';
+import { deletePreset, myPresets, uidForHandle, getSharedPreset, countDownload,
+  type CloudPreset, type CaptureRefDoc } from './cloud/store';
+import { onRoute, go, type Route } from './ui/router';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -62,6 +66,7 @@ let customIrName: string | null = null;
 let presetIdx = 0;
 let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: BOOT.voice, label: BOOT_LABEL };
 let account: AccountUI;
+let inputSwitch: InputSwitch | null = null;
 let looper: LooperSection | null = null;
 let feedView: FeedView;
 let profileView: ProfileView;
@@ -73,6 +78,10 @@ const BUNDLED_IRS = [
 
 const app = document.getElementById('app')!;
 const stage = document.createElement('section');
+/* Where a shared link lands before the engine exists — see showToneLanding. */
+const landing = document.createElement('section');
+landing.className = 'landing';
+landing.hidden = true;
 const meters: Record<string, HTMLElement> = {};
 let t3kBrowser: T3kBrowser;
 
@@ -264,7 +273,7 @@ function buildHeader(): HTMLElement {
   capBtn.addEventListener('click', () => t3kBrowser.open());
 
   // view switch: RIG | FEED — the lit side is where you are.
-  const fg = el('div', 'hdr__group');
+  const fg = el('div', 'hdr__group hdr__group--always');
   const sw = el('div', 'viewswitch');
   const rigBtn = el('button', 'hdr__btn hdr__btn--lit hdr__btn--ico', '');
   rigBtn.dataset.view = 'rig';
@@ -281,11 +290,17 @@ function buildHeader(): HTMLElement {
   feedBtn.addEventListener('click', () => setFeedMode(true));
 
   // account
-  const ag = el('div', 'hdr__group');
+  const ag = el('div', 'hdr__group hdr__group--always');
   ag.append(account.chip, el('div', 'hdr__caption', 'PROFILE'));
   h.appendChild(ag);
 
   h.appendChild(el('div', 'hdr__spacer'));
+
+  // input source — the demo track, or the player's own guitar
+  const isw = el('div', 'hdr__group');
+  inputSwitch = new InputSwitch();
+  isw.append(inputSwitch.root, el('div', 'hdr__caption', 'INPUT'));
+  h.appendChild(isw);
 
   // latency chip
   const lat = el('div', 'hdr__group');
@@ -698,8 +713,8 @@ async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> 
   }
   lastCaptureError = null;
   try {
-    toast(`Loading <b>${ref.label}</b>…`);
-    const json = await (await t3k.fetchModelFile(ref.url!)).text();
+    toast(`Loading <b>${esc(ref.label)}</b>…`);
+    const json = await (await t3k.fetchModelFile(ref.url!, { trusted: ref.trusted === true })).text();
     lastCaptureJson = json;
     await engine.loadCapture(json, {
       name: ref.label, source: 'tone3000',
@@ -715,7 +730,7 @@ async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> 
     };
     addRecent(ref);
     store.set('amp_on', 1);
-    toast(`<b>${ref.label}</b> on the amp${ref.creator ? ` · by ${ref.creator}` : ''}`);
+    toast(`<b>${esc(ref.label)}</b> on the amp${ref.creator ? ` · by ${esc(ref.creator)}` : ''}`);
     if (selectedSlot === 'amp') renderStage();
     return true;
   } catch (err) {
@@ -1160,6 +1175,11 @@ async function loadBundledIr(index: number) {
  * the OS default and being corrected afterwards. */
 const devicePicker = new DevicePicker();
 document.getElementById('devicePicker')?.appendChild(devicePicker.root);
+// The channel probe opens a stream, so it waits until somebody has actually
+// asked for the picker rather than firing on page load.
+document.getElementById('devicePickerWrap')?.addEventListener('toggle', function (this: HTMLDetailsElement) {
+  if (this.open) void devicePicker.reveal();
+});
 engine.input = savedInputChoice();
 
 const assetsWarm = preloadAssets((done, total) => {
@@ -1171,17 +1191,22 @@ const assetsWarm = preloadAssets((done, total) => {
   if (done === total) document.getElementById('assetLoad')?.classList.add('done');
 });
 
-async function boot() {
+/** How the rig was entered. 'di' never touches getUserMedia. */
+export type BootSource = 'mic' | 'di';
+
+async function boot(source: BootSource = 'mic') {
   const status = document.getElementById('bootStatus')!;
   const startBtn = document.getElementById('startBtn') as HTMLButtonElement;
+  const demoBtn = document.getElementById('demoBtn') as HTMLButtonElement | null;
   startBtn.disabled = true;
+  if (demoBtn) demoBtn.disabled = true;
   engine.onStateChange = (s, detail) => { status.textContent = detail ?? s; };
   try {
     // Boot straight into the first patch in the bank — its voice on the amp,
     // every param it does not name left at its default.
     const bootUrl = `/assets/captures/${BOOT.voice}.nam`;
     const engineUp = engine.start(bootUrl,
-      { name: BOOT_LABEL, source: 'bundled', hasCab: true });
+      { name: BOOT_LABEL, source: 'bundled', hasCab: true }, { source });
     status.textContent = 'warming ui assets';
     await assetsWarm;
     await engineUp;
@@ -1189,6 +1214,7 @@ async function boot() {
   } catch (err) {
     status.textContent = `failed: ${(err as Error).message}`;
     startBtn.disabled = false;
+    if (demoBtn) demoBtn.disabled = false;
     return;
   }
 
@@ -1224,14 +1250,42 @@ async function boot() {
 
   document.getElementById('gateway')!.classList.add('hidden');
   app.hidden = false;
-  if (engine.micError) {
-    toast(`No input yet (${engine.micError}) — allow the microphone and click the ROUND TRIP chip to retry.`, 6000);
+  // The header was built at module load, before the engine had an input at
+  // all, so it is still showing the default. start() picks the source without
+  // going through setInputSource(), which is what fires the change hook.
+  inputSwitch?.sync();
+  if (engine.inputSource === 'di') {
+    // Put the rig in the loop's time. The boot preset carries its own tempo
+    // (176 on Dublin Jangle) and the demo track runs at 92, so every
+    // tempo-synced delay would land between the notes — which is exactly the
+    // smeared, out-of-time first impression this door exists to avoid. A
+    // player who plugs a guitar in has their own tempo; a listener does not.
+    store.set('tempo', DEFAULT_DI.bpm);
+  }
+  if (engine.inputSource === 'di') {
+    // Nobody has been asked for a microphone and nobody is going to be until
+    // they ask for it. Say what is playing and what the knobs will do to it.
+    toast(`<b>${BOOT.name}</b> on the amp · a demo track is playing through it — `
+      + `<b>turn anything</b> and you will hear it.`, 7000);
+  } else if (engine.micError) {
+    toast(`No input yet (${esc(engine.micError)}) — allow the microphone and click the ROUND TRIP chip to retry.`, 6000);
     document.getElementById('latency')?.addEventListener('click', async () => {
       if (await engine.retryMic()) toast('<b>Input open</b> — play.');
     });
   } else {
     toast(`<b>${BOOT.name}</b> on the amp — play.`);
   }
+  // Space stops and starts the demo loop, like any transport.
+  window.addEventListener('keydown', (e) => { inputSwitch?.handleKey(e); });
+
+  // A link asked for a tone before there was a rig to put it on. There is now.
+  if (pendingTone) {
+    const p = pendingTone;
+    pendingTone = null;
+    setView('rig');
+    await applyCloudPreset(p, { fromLink: true });
+  }
+
   // console access for driving the rig while testing
   (window as unknown as { __rig: unknown }).__rig = { engine, store };
 }
@@ -1262,6 +1316,7 @@ function build() {
   app.appendChild(stage);
   looper = new LooperSection();
   app.appendChild(looper.root);
+  app.appendChild(landing);
   app.appendChild(feedView.root);
   app.appendChild(profileView.root);
   const foot = el('footer', 'foot');
@@ -1294,7 +1349,19 @@ function build() {
 }
 
 build();
-document.getElementById('startBtn')!.addEventListener('click', () => void boot());
+/* Dev-only handles, stripped from the production bundle by the constant fold.
+ * The share landing is the screen a stranger meets first and it only appears
+ * for a real shared tone, which makes it the hardest thing here to look at
+ * while building it — so it can be summoned with a made-up one. */
+if (import.meta.env.DEV) {
+  (window as unknown as { __dev: unknown }).__dev = { showToneLanding, setView, boot, engine, store };
+}
+// The router runs BEFORE the engine, on purpose. A deep link must show its
+// tone to someone who has not pressed a door yet and may never press one —
+// the feed and the profiles are readable with no audio at all.
+startRouter();
+document.getElementById('startBtn')!.addEventListener('click', () => void boot('mic'));
+document.getElementById('demoBtn')?.addEventListener('click', () => void boot('di'));
 // A TONE3000 load lands in the CAPTURE menu's recents — refresh the drawer
 // and remember it as the current capture for cloud saves.
 window.addEventListener('remi:capture-loaded', () => {
@@ -1308,9 +1375,16 @@ window.addEventListener('remi:capture-loaded', () => {
 
 /* ── rig / feed / profile view switch + cloud preset apply ── */
 
-type View = 'rig' | 'feed' | 'profile';
+type View = 'rig' | 'feed' | 'profile' | 'landing';
 let currentView: View = 'rig';
 
+/** Change the view AND the address, so every view is somewhere you can link
+ *  to and Back behaves the way a browser is supposed to. */
+function navigate(r: Route) { go(r); }
+
+/** Paint a view. Called BY the router, so the address is always what decided
+ *  what is on screen — never the other way round, which is how a Back button
+ *  ends up moving the URL without moving the page. */
 function setView(v: View) {
   currentView = v;
   const rig = v === 'rig';
@@ -1319,6 +1393,12 @@ function setView(v: View) {
   document.querySelector<HTMLElement>('.looper')!.hidden = !rig;
   feedView.root.hidden = v !== 'feed';
   profileView.root.hidden = v !== 'profile';
+  landing.hidden = v !== 'landing';
+  // Before the engine exists, most of the header is a row of controls that do
+  // nothing — SAVE with nothing to save, a tempo that is not driving anything,
+  // an input switch over an input that is not open. On the screen where a
+  // stranger decides whether this is worth a click, that is all noise.
+  app.classList.toggle('app--preboot', engine.state !== 'running');
   document.querySelectorAll<HTMLElement>('.viewswitch [data-view]').forEach((b) =>
     b.classList.toggle('hdr__btn--lit', b.dataset.view === v));
   account.chip.classList.toggle('account-chip--here', v === 'profile');
@@ -1327,9 +1407,95 @@ function setView(v: View) {
   if (v === 'profile') void profileView.refresh();
 }
 
-function setFeedMode(on: boolean) { setView(on ? 'feed' : 'rig'); }
+function setFeedMode(on: boolean) { navigate(on ? { view: 'feed' } : { view: 'rig' }); }
 
-async function applyCloudPreset(p: CloudPreset): Promise<boolean> {
+/* ── the router ───────────────────────────────────────────────────────────
+ *
+ * One place decides what is on screen, and it is the address bar.
+ *
+ * The hard part is that a link can arrive BEFORE the engine exists, and must
+ * still show something. The feed, the profiles and a tone's card are all
+ * ordinary DOM over a database that already permits anonymous reads — none of
+ * them need audio. Only the rig itself does. So the shell opens for the
+ * reading views immediately, and the engine is booted later, by a press, by
+ * someone who has by then seen what they are booting it for. */
+
+/** A tone a link asked for that the rig was not yet running to play. */
+let pendingTone: CloudPreset | null = null;
+
+/** Reveal the app chrome without an engine. */
+function revealShell() {
+  document.getElementById('gateway')!.classList.add('hidden');
+  app.hidden = false;
+}
+function showGateway() {
+  document.getElementById('gateway')!.classList.remove('hidden');
+  app.hidden = true;
+}
+
+function startRouter() {
+  onRoute(async (r) => {
+    const live = engine.state === 'running';
+    switch (r.view) {
+      case 'rig':
+        // The rig is the one view that genuinely cannot exist without audio.
+        if (live) setView('rig'); else showGateway();
+        break;
+      case 'feed': revealShell(); setView('feed'); break;
+      case 'profile': revealShell(); profileView.show(null); setView('profile'); break;
+      case 'user': {
+        revealShell();
+        setView('feed');                       // something to look at meanwhile
+        const uid = await uidForHandle(r.handle).catch(() => null);
+        if (!uid) { toast(`No player called <b>@${esc(r.handle)}</b>.`); go({ view: 'feed' }, true); return; }
+        profileView.show(uid);
+        setView('profile');
+        break;
+      }
+      case 'tone': {
+        const p = await getSharedPreset(r.id).catch(() => null);
+        if (!p) {
+          toast('That tone is not on the feed any more.', 5000);
+          go({ view: 'feed' }, true);
+          return;
+        }
+        if (live) {
+          // The rig is up, so put the tone straight on it — that is the one
+          // thing this product does that nothing else in the category can.
+          setView('rig');
+          await applyCloudPreset(p, { fromLink: true });
+        } else {
+          // No engine yet. Show whose sound this is and what it is made of,
+          // and let them press once to hear it. Nobody is asked for a
+          // microphone and nobody is asked to sign in.
+          pendingTone = p;
+          revealShell();
+          showToneLanding(p);
+        }
+        break;
+      }
+    }
+  });
+}
+
+/** The landing a shared link opens on before the engine exists. */
+function showToneLanding(p: CloudPreset) {
+  setView('landing');
+  landing.innerHTML = '';
+  const head = el('div', 'landing__head');
+  head.innerHTML = `<div class="landing__eyebrow">SOMEONE SENT YOU A RIG</div>
+    <div class="landing__sub">Press play and it is running in this tab. No install,
+      no account, and you do not need a guitar.</div>`;
+  landing.appendChild(head);
+  landing.appendChild(feedView.toneCard(p));
+  const cta = el('button', 'gateway__cta gateway__cta--demo landing__cta');
+  cta.innerHTML = `<span class="gateway__cta-main">Play This Rig</span>
+    <span class="gateway__cta-sub">no guitar · no mic · no account</span>`;
+  cta.addEventListener('click', () => void boot('di'));
+  landing.appendChild(cta);
+}
+
+async function applyCloudPreset(p: CloudPreset, opts: { fromLink?: boolean } = {}): Promise<boolean> {
   // The capture ref rides the preset; applyPreset installs it directly and
   // reports whether the rig ended up as its author heard it.
   const whole = await applyPreset({
@@ -1343,6 +1509,14 @@ async function applyCloudPreset(p: CloudPreset): Promise<boolean> {
     snapshot: store.snapshot(),
     amp: currentAmp, voice: currentVoice, capture: captureIdOf(currentCaptureRef),
   };
-  setFeedMode(false);
+  if (opts.fromLink) {
+    // Somebody arrived here from a link, so say whose sound they are hearing
+    // and what to do next. This is a stranger's first thirty seconds.
+    toast(`<b>${esc(p.name)}</b> by <b>${esc(p.username)}</b> is on the rig — `
+      + `turn anything and it becomes yours.`, 7000);
+    void countDownload(p.id);
+  } else {
+    setFeedMode(false);
+  }
   return whole;
 }

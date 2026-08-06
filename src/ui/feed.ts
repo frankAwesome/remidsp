@@ -15,6 +15,8 @@ import { session } from './account';
 import { toast } from './toast';
 import { DIVISIONS } from '../params';
 import { t3k } from '../tone3000';
+import { urlFor } from './router';
+import { shareLink } from './share';
 
 /** Resolves false when the preset's own capture could not be fetched and the
  *  rig fell back to a bundled voice — the caller must not claim success. */
@@ -168,7 +170,18 @@ export class FeedView {
       items = items.filter((p) => this.matches(p, kind, val));
 
       this.list.innerHTML = items.length ? '' : `<div class="t3k__note">${this.emptyNote(kind, val)}</div>`;
-      for (const p of items) this.list.appendChild(this.card(p));
+      // One card per try. A preset whose params carry a string where a number
+      // belongs makes .toFixed() throw, and throwing out here used to take the
+      // WHOLE feed down to "Feed unavailable" for every visitor — a denial of
+      // service costing one document write, removable by nobody but its author.
+      // A card that cannot be drawn is now just a card that is not drawn.
+      for (const p of items) {
+        try {
+          this.list.appendChild(this.card(p));
+        } catch (err) {
+          console.warn('skipped an unrenderable tone', p.id, err);
+        }
+      }
     } catch (err) {
       this.list.innerHTML = `<div class="t3k__note">Feed unavailable — ${(err as Error).message}</div>`;
     }
@@ -282,7 +295,13 @@ export class FeedView {
     const accent = t3kAmp ? T3K_ACCENT : (AMP_ACCENT[p.amp] ?? T3K_ACCENT);
     c.style.setProperty('--tone', accent);
     const when = p.createdAt ? timeAgo(p.createdAt.toMillis()) : '';
-    const g = (id: string, dflt = 0) => p.params?.[id] ?? dflt;
+    // Belt as well as the try/catch in refresh(): a params value is supposed
+    // to be a number and the rules now insist on it, but documents written
+    // before they did are still out there.
+    const g = (id: string, dflt = 0) => {
+      const v = p.params?.[id];
+      return typeof v === 'number' && Number.isFinite(v) ? v : dflt;
+    };
     // Flag the sign-in up front — better than finding out after the click.
     const needsT3k = p.capture?.source === 'tone3000' && !t3k.connected;
 
@@ -333,6 +352,7 @@ export class FeedView {
         <button class="feed-card__like" data-a="like">♥ <span>${p.likesCount}</span></button>
         <button class="feed-card__mini" data-a="comments">COMMENTS <span>${p.commentsCount}</span></button>
         <span class="feed-card__mini">LOADS ${p.downloadsCount}</span>
+        <button class="feed-card__mini feed-card__share" data-a="share" title="copy a link to this tone">SHARE</button>
         <button class="tone-card__load" data-a="load">LOAD THIS RIG</button>
       </footer>
       <div class="feed-card__comments" hidden></div>`;
@@ -351,6 +371,8 @@ export class FeedView {
     });
 
     c.querySelector('[data-a=user]')!.addEventListener('click', () => this.openUser(p.uid, p.username));
+
+    c.querySelector('[data-a=share]')!.addEventListener('click', () => void sharePreset(p));
 
     c.querySelector('[data-a=load]')!.addEventListener('click', async () => {
       const whole = await this.applyPreset(p);
@@ -397,6 +419,16 @@ export class FeedView {
       box.innerHTML = `<div class="t3k__note">${(err as Error).message}</div>`;
     }
   }
+}
+
+/** Send a tone somewhere. The mechanics live in ui/share.ts; this is just
+ *  the words that go with a rig. */
+export async function sharePreset(p: CloudPreset): Promise<void> {
+  await shareLink(
+    urlFor({ view: 'tone', id: p.id }),
+    `${p.name} — a rig by ${p.username}`,
+    `${p.name} by ${p.username}. Runs in your browser, nothing to install.`,
+  );
 }
 
 function stat(label: string, value: string, unit: string): string {

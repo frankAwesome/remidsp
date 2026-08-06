@@ -206,8 +206,54 @@ service cloud.firestore {
     // the thing actually holding that line — the byline is denormalised onto
     // every preset and comment, so an unbounded string here would be copied
     // hundreds of times over.
+    /* Where a picture may come from.
+     *
+     * Two shapes only:
+     *   data:image/…  the inline fallback, capped at 12 kB because this string
+     *                 is denormalised onto every preset and every comment.
+     *   https://…     but ONLY on our own media origin.
+     *
+     * The host pin is the point. Any-https meant a player could set their
+     * avatar to a URL on a server they control, and then every visitor who
+     * scrolled past one of their comments would fetch it — handing that
+     * player the IP address, and rough location, of everyone who reads the
+     * feed. A tracking beacon anyone can install, in a field that looks like
+     * decoration.
+     *
+     * Uploaded media is served by the share Worker at <origin>/m/<key>, never
+     * straight off the bucket, so there is exactly ONE origin to pin.
+     *
+     * ── EDIT BOTH OF THESE TOGETHER AT DEPLOY TIME ──
+     * MEDIA_PREFIX is the Worker origin plus '/m/'. MEDIA_PREFIX_LEN is its
+     * length in characters. They are separate because rules have no way to
+     * take a prefix of a dynamic length, and a mismatched pair fails CLOSED
+     * (every uploaded picture is rejected), which is the safe direction.
+     *
+     * A slice comparison rather than matches(): in a regex an unescaped '.'
+     * matches any character, so 'https://remi-share.workers.dev/' would also
+     * accept a domain somebody could actually register. */
+    // A url field that, if present, must be an ordinary https address. This
+    // refuses javascript:, data: and http: outright — a capture link is
+    // fetched by the browser and its scheme is not the author's to choose.
+    // Written as a slice rather than a regex on purpose: getting a backslash
+    // through a CEL string literal and into RE2 intact is a well-known way to
+    // ship a rule that silently matches nothing.
+    function httpsOrNull(v) {
+      return v == null || (v is string && v.size() > 8 && v[0:8] == 'https://');
+    }
+
+    function mediaPrefix() { return 'https://remi-share.sheepdeklerk.workers.dev/m/'; }
+    function mediaPrefixLen() { return 46; }
+    function pictureOk(v, maxInline) {
+      return v == null
+        || v == ''
+        || (v is string && v.size() <= maxInline && v[0:11] == 'data:image/')
+        || (v is string && v.size() <= 400
+            && v.size() > mediaPrefixLen()
+            && v[0:mediaPrefixLen()] == mediaPrefix());
+    }
     function avatarOk(v) {
-      return v == null || (v is string && v.size() <= 12000);
+      return pictureOk(v, 12000);
     }
 
     // A handle is what will sit in a URL and an @mention: lowercase letters,
@@ -230,7 +276,8 @@ service cloud.firestore {
     function profileShapeOk() {
       let d = request.resource.data;
       return d.keys().hasOnly(
-               ['username', 'usernameLower', 'bio', 'avatarUrl', 'isPublic',
+               ['username', 'usernameLower', 'bio', 'avatarUrl', 'coverUrl',
+                'link', 'isPublic',
                 'followersCount', 'followingCount', 'createdAt', 'updatedAt'])
         && d.username is string
         && d.username.size() >= 3 && d.username.size() <= 20
@@ -238,7 +285,13 @@ service cloud.firestore {
         && holdsHandle(d.usernameLower, request.auth.uid)
         && sOrNull(d.get('bio', null), 400)
         && (d.get('isPublic', true) is bool)
-        && avatarOk(d.get('avatarUrl', null));
+        && avatarOk(d.get('avatarUrl', null))
+        // A cover is a banner: it is only ever a hosted URL, never inline.
+        // 0 inline bytes allowed is the whole point — a 200 kB data URI on a
+        // document this heavily denormalised would be a disaster.
+        && pictureOk(d.get('coverUrl', null), 0)
+        && httpsOrNull(d.get('link', null))
+        && sOrNull(d.get('link', null), 200);
     }
     // Follow/unfollow rides a batched write that also creates/deletes the
     // follower's edge doc — the counter may move by exactly one.
@@ -307,12 +360,36 @@ service cloud.firestore {
         && d.amp is string && d.amp.size() <= 30
         && d.voice is string && d.voice.size() <= 40
         && d.params is map
+        // The params map is the rig's knob positions and nothing else. The cap
+        // stops a 1 MB blob riding along on a document the feed pulls thirty of.
+        //
+        // What is NOT enforced here, and cannot be: that every VALUE is a
+        // number. Rules have no iteration and a map's values cannot be
+        // type-tested as a set, so the only expressible version would be to
+        // enumerate all 107 params — which would then reject every save the
+        // day a param is added. That check therefore lives at the render site
+        // instead (src/ui/feed.ts, the g() accessor plus a per-card try), where
+        // a bad value costs one unrendered card rather than the whole feed.
+        && d.params.size() <= 200
         && (d.capture == null
             || (d.capture is map && d.capture.keys().hasOnly(
                   ['source', 'label', 'stem', 'modelId', 'modelUrl',
                    'creator', 'license', 'toneUrl'])
                 && d.capture.source in ['bundled', 'tone3000']
-                && sOrNull(d.capture.get('modelUrl', null), 500)))
+                // EVERY string here is rendered on somebody else's screen, and
+                // until now only modelUrl was checked at all — label and
+                // creator could be any type and any length, which is what let
+                // a shared tone carry markup into the capture gate's innerHTML.
+                // The client escapes them now; this is the second lock.
+                && sOrNull(d.capture.get('label', null), 120)
+                && sOrNull(d.capture.get('stem', null), 80)
+                && sOrNull(d.capture.get('modelId', null), 80)
+                && sOrNull(d.capture.get('creator', null), 80)
+                && sOrNull(d.capture.get('license', null), 120)
+                && sOrNull(d.capture.get('toneUrl', null), 500)
+                && sOrNull(d.capture.get('modelUrl', null), 500)
+                && httpsOrNull(d.capture.get('modelUrl', null))
+                && httpsOrNull(d.capture.get('toneUrl', null))))
         && d.shared is bool
         && d.description is string && d.description.size() <= 500
         && d.likesCount is int && d.commentsCount is int && d.downloadsCount is int;

@@ -67,11 +67,33 @@
       <div class="gateway__bar"><i id="assetBar"></i></div>
     </div>
 
-    <!-- Devices are chosen here, before launch, so the rig opens on the right
-         interface instead of whatever the OS calls default. -->
-    <div id="devicePicker"></div>
+    <!-- TWO DOORS, and the wide one is deliberately first.
+         The rig used to open exactly one way: a microphone permission prompt
+         before the visitor had heard a single note. Most people do not have a
+         guitar plugged into the machine they are reading this on, and asking
+         a stranger for their microphone to prove that a website makes sound
+         is the whole reason they leave. LISTEN FIRST boots the identical rig
+         with a demo track running through it and never calls getUserMedia. -->
+    <div class="gateway__doors">
+      <button class="gateway__cta gateway__cta--demo" id="demoBtn">
+        <span class="gateway__cta-main">Listen First</span>
+        <span class="gateway__cta-sub">no guitar · no mic · no account</span>
+      </button>
+      <button class="gateway__cta gateway__cta--plug" id="startBtn">
+        <span class="gateway__cta-main">Plug In</span>
+        <span class="gateway__cta-sub">my guitar is connected</span>
+      </button>
+    </div>
 
-    <button class="gateway__cta" id="startBtn">Plug In</button>
+    <!-- Devices are chosen here, before launch, so the rig opens on the right
+         interface instead of whatever the OS calls default. Hidden until PLUG
+         IN is the chosen door: it is meaningless to the demo path and it is
+         the most intimidating thing on the page to someone who just arrived. -->
+    <details class="gateway__devices" id="devicePickerWrap">
+      <summary>Choose an audio interface</summary>
+      <div id="devicePicker"></div>
+    </details>
+
     <p class="gateway__note">Plays any <b>NAM</b> capture — the bundled amps, or anything from
       TONE3000. Echo cancellation, noise suppression and auto-gain are all forced off, and the
       chain adds zero latency beyond one 128-sample quantum.</p>

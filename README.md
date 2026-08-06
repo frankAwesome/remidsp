@@ -67,6 +67,61 @@ Pick your audio interface as the browser "microphone" (echo cancellation / noise
 suppression / AGC are all disabled). Use 48 kHz output if you can — captures are
 48 kHz-native and the engine runs at the device rate.
 
+## Two doors, and addresses
+
+The gate offers **LISTEN FIRST** and **PLUG IN**. Listen First boots the same
+rig with a looping demo DI as its input and **never calls `getUserMedia`** — no
+microphone, no interface, no account, and no guitar required. The mic ask lives
+on the `DEMO / GUITAR` switch in the header instead, behind a deliberate press,
+after the rig is already making sound; refusing it leaves the demo running.
+
+The demo DI is synthesised by `scripts/make-di.mjs` (Karplus-Strong plucked
+strings, D–Bm7–Gmaj9–Asus4 at 92 BPM) so it carries no sample licence and is
+reproducible from source. Regenerate with `node scripts/make-di.mjs`. It is a
+starting point — a real recorded DI will always beat it, and the plumbing is
+identical either way.
+
+Everything now has an address (`src/ui/router.ts`):
+
+| Route | What |
+|---|---|
+| `/#/` | the rig |
+| `/#/feed` | the feed |
+| `/#/t/<presetId>` | a shared tone, loaded straight onto the rig |
+| `/#/u/<handle>` | a player's profile |
+| `/#/me` | your own profile |
+
+**They are hash routes for a load-bearing reason.** The COOP/COEP headers in
+`firebase.json` are scoped to `/` and `/index.html`. A hosting rewrite for a
+path like `/t/abc` would serve the rig *without* them — not cross-origin
+isolated, `SharedArrayBuffer` undefined, NAM wasm unable to instantiate. The rig
+would break only on shared links. `/#/t/abc` is the same document at `/`, so the
+headers apply. Do not "tidy this up" into clean paths without moving the headers.
+
+A link arriving before the engine exists lands on a share page — whose sound it
+is, what it is made of, one PLAY THIS RIG button — because the feed, profiles
+and tone cards are ordinary DOM over a database that already allows anonymous
+reads. Only the rig itself needs audio.
+
+## The share Worker (`worker/`, not deployed)
+
+Serves the crawlable twin of each route: `/t/<id>` and `/u/<handle>` as real
+HTML with per-item `og:` tags, `/og/t/<id>.svg`, and `/m/<key>` for R2 media.
+
+Two things it exists for: crawlers and unfurlers never run JS, so the feed is
+otherwise invisible to search and to every chat app; and R2 media must return
+`Cross-Origin-Resource-Policy: cross-origin` or it is **silently blocked inside
+the rig** by COEP while playing fine everywhere else. Firebase Storage cannot
+set that header — this is why the media lives on R2, not a preference.
+
+It holds no credentials: the rules already permit anonymous reads of shared
+presets and public profiles, so it reads as nobody.
+
+Deploy is deliberately not wired up. Rotate the API token in `.dev.vars` first,
+put the Worker on a subdomain before the apex, and assert after any routing
+change that `/` still returns both `cross-origin-*` headers and `/signin.html`
+still returns neither.
+
 ## Accounts, profiles & the feed (optional)
 
 Sign-in is optional — the rig runs fully without it. With an account you get a profile
