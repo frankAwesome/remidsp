@@ -702,7 +702,14 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .feed-card__ampbadge{margin-left:auto;font-family:var(--font-display);font-weight:600;
   font-size:.66rem;letter-spacing:.3em;color:var(--tone,#9fd8e8);
   border:1px solid color-mix(in srgb, var(--tone,#9fd8e8) 45%, transparent);
-  padding:.24rem .6rem .2rem .75rem}
+  padding:.24rem .6rem .2rem .75rem;max-width:46%;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+/* A TONE3000 capture is somebody else's amp, not one of ours — the badge is
+   its name, so it gets tighter tracking to fit and a filled ground to read as
+   a different KIND of thing from the three bundled faces. */
+.feed-card__ampbadge--t3k{letter-spacing:.12em;font-family:var(--font-ui);
+  font-size:.58rem;font-weight:700;text-transform:none;
+  background:color-mix(in srgb, var(--tone,#9fd8e8) 14%, transparent)}
 .feed-card__title{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
   font-size:clamp(1.3rem,3vw,1.9rem);letter-spacing:.02em;line-height:.95;margin:.65rem 0 .1rem}
 .feed-card__desc{font-size:.84rem;color:var(--text);opacity:.82;line-height:1.6;

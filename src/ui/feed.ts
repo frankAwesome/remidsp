@@ -28,6 +28,17 @@ const CHAIN: [string, string][] = [
 const AMP_ACCENT: Record<string, string> = {
   camden: '#8fd8cf', portland: '#e9b765', katahdin: '#c25a52',
 };
+/* A capture from TONE3000 is its own amp, and it gets its own accent. The
+ * preset's `amp` field is the FACE — which render the rig wears — and a
+ * player who loads someone's Marshall capture onto the Portland face has
+ * not made a Portland. Colouring those cards by face would say they had. */
+const T3K_ACCENT = '#9fd8e8';
+
+/** Bundled voices, and pre-capture presets that predate the field, are the
+ *  only ones the face actually describes. */
+const isBundledAmp = (p: CloudPreset) => !p.capture || p.capture.source === 'bundled';
+/** Stable per-capture key — the model id where there is one, else the label. */
+const captureKey = (p: CloudPreset) => p.capture?.modelId || p.capture?.label || '';
 const MACHINES = ['ROOM', 'HALL', 'PLATE', 'SPRING'];
 
 export class FeedView {
@@ -36,7 +47,12 @@ export class FeedView {
   private people: HTMLElement;
   private lane: 'everyone' | 'following' = 'everyone';
   private sort: FeedSort = 'latest';
+  /** '' | 'bundled:<face>' | 't3k:*' | 't3k:<captureKey>' */
   private amp = '';
+  /** Every TONE3000 capture the feed has shown, so the picker can offer them
+   *  by name. Built from what comes back rather than from a second query —
+   *  the list is only ever as complete as what has actually been seen. */
+  private t3kSeen = new Map<string, string>();
   private followingIds: string[] | null = null;
   private followingSet = new Set<string>();
   private applyPreset: ApplyCloudPreset;
@@ -67,9 +83,14 @@ export class FeedView {
           <button class="t3k__pill" data-sort="downloads">MOST LOADED</button>
           <select data-f="amp">
             <option value="">ALL AMPS</option>
-            <option value="camden">CAMDEN</option>
-            <option value="portland">PORTLAND</option>
-            <option value="katahdin">KATAHDIN</option>
+            <optgroup label="BUNDLED">
+              <option value="bundled:camden">CAMDEN</option>
+              <option value="bundled:portland">PORTLAND</option>
+              <option value="bundled:katahdin">KATAHDIN</option>
+            </optgroup>
+            <optgroup label="TONE3000" data-el="t3kgroup">
+              <option value="t3k:*">ANY TONE3000 CAPTURE</option>
+            </optgroup>
           </select>
           <input type="search" class="feed__search" placeholder="find players…" />
         </div>
@@ -120,6 +141,12 @@ export class FeedView {
   async refresh() {
     this.list.innerHTML = `<div class="t3k__note">Loading the feed…</div>`;
     try {
+      const [kind, val] = this.amp ? this.amp.split(':') : ['', ''];
+      // Only a bundled selection can be narrowed server-side, and even then
+      // only by face: `amp` is the render, so the query also returns TONE3000
+      // presets wearing it. The capture test below is what actually decides.
+      const serverAmp = kind === 'bundled' ? val : undefined;
+
       let items: CloudPreset[];
       if (this.lane === 'following') {
         if (!session.user) {
@@ -127,21 +154,70 @@ export class FeedView {
           return;
         }
         const ids = await this.ensureFollowing();
-        items = await followingFeed(this.sort, ids);
-        if (this.amp) items = items.filter((p) => p.amp === this.amp);
         if (!ids.length) {
           this.list.innerHTML = `<div class="t3k__note">You're not following anyone yet — search players above and hit FOLLOW.</div>`;
           return;
         }
+        items = await followingFeed(this.sort, ids);
+        if (serverAmp) items = items.filter((p) => p.amp === serverAmp);
       } else {
-        items = await feed(this.sort, this.amp || undefined);
+        items = await feed(this.sort, serverAmp);
       }
-      this.list.innerHTML = items.length ? '' :
-        `<div class="t3k__note">Nothing here yet — dial a sound, hit SAVE, tick "share to the feed".</div>`;
+
+      this.rememberCaptures(items);
+      items = items.filter((p) => this.matches(p, kind, val));
+
+      this.list.innerHTML = items.length ? '' : `<div class="t3k__note">${this.emptyNote(kind, val)}</div>`;
       for (const p of items) this.list.appendChild(this.card(p));
     } catch (err) {
       this.list.innerHTML = `<div class="t3k__note">Feed unavailable — ${(err as Error).message}</div>`;
     }
+  }
+
+  /** Does this preset belong under the chosen amp?
+   *
+   *  A bundled pick means the face AND a bundled capture: a TONE3000 capture
+   *  sitting on the Camden render is not a Camden, however much it looks like
+   *  one. A TONE3000 pick is the capture itself, which is the only thing that
+   *  actually identifies the amp on those. */
+  private matches(p: CloudPreset, kind: string, val: string): boolean {
+    if (!kind) return true;
+    if (kind === 'bundled') return isBundledAmp(p) && p.amp === val;
+    if (p.capture?.source !== 'tone3000') return false;
+    return val === '*' || captureKey(p) === val;
+  }
+
+  private emptyNote(kind: string, val: string): string {
+    if (kind === 'bundled') return `No shared tones on <b>${escape(val)}</b> yet — the bundled amp, not a capture wearing its face.`;
+    if (kind === 't3k') {
+      return val === '*'
+        ? 'No shared tones built on a TONE3000 capture yet.'
+        : `No shared tones on <b>${escape(this.t3kSeen.get(val) ?? val)}</b> yet.`;
+    }
+    return 'Nothing here yet — dial a sound, hit SAVE, tick "share to the feed".';
+  }
+
+  /** Grow the TONE3000 group from whatever the feed has returned. */
+  private rememberCaptures(items: CloudPreset[]) {
+    let added = false;
+    for (const p of items) {
+      if (p.capture?.source !== 'tone3000') continue;
+      const k = captureKey(p);
+      if (!k || this.t3kSeen.has(k)) continue;
+      this.t3kSeen.set(k, p.capture.label || k);
+      added = true;
+    }
+    if (!added) return;
+    const group = this.root.querySelector<HTMLElement>('[data-el=t3kgroup]');
+    const sel = this.root.querySelector<HTMLSelectElement>('[data-f=amp]');
+    if (!group || !sel) return;
+    const keep = sel.value;
+    group.innerHTML = `<option value="t3k:*">ANY TONE3000 CAPTURE</option>`
+      + [...this.t3kSeen.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([k, label]) => `<option value="t3k:${escape(k)}">${escape(label.toUpperCase())}</option>`)
+        .join('');
+    sel.value = keep;   // rebuilding the group must not move the selection
   }
 
   /* ── people search ── */
@@ -202,7 +278,8 @@ export class FeedView {
   private card(p: CloudPreset): HTMLElement {
     const c = document.createElement('article');
     c.className = 'feed-card';
-    const accent = AMP_ACCENT[p.amp] ?? '#9fd8e8';
+    const t3kAmp = p.capture?.source === 'tone3000';
+    const accent = t3kAmp ? T3K_ACCENT : (AMP_ACCENT[p.amp] ?? T3K_ACCENT);
     c.style.setProperty('--tone', accent);
     const when = p.createdAt ? timeAgo(p.createdAt.toMillis()) : '';
     const g = (id: string, dflt = 0) => p.params?.[id] ?? dflt;
@@ -232,7 +309,11 @@ export class FeedView {
             : `<div class="feed-card__ava feed-card__ava--blank">${escape((p.username || '?')[0].toUpperCase())}</div>`}
           <span class="feed-card__who"><b>${escape(p.username)}</b><span>${when}</span></span>
         </button>
-        <span class="feed-card__ampbadge">${escape(p.amp.toUpperCase())}</span>
+        ${t3kAmp
+          ? `<span class="feed-card__ampbadge feed-card__ampbadge--t3k"
+               title="${escape(p.capture!.label)} — a TONE3000 capture${p.capture!.creator ? `, by ${escape(p.capture!.creator)}` : ''}. Shown on the ${escape(p.amp)} face.">
+               ${escape(p.capture!.label.toUpperCase())}</span>`
+          : `<span class="feed-card__ampbadge" title="the bundled ${escape(p.amp)} amp">${escape(p.amp.toUpperCase())}</span>`}
       </header>
       <div class="feed-card__title">${escape(p.name)}</div>
       ${p.description ? `<p class="feed-card__desc">${escape(p.description)}</p>` : ''}
