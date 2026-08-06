@@ -45,9 +45,13 @@ import { getFirestore } from 'firebase/firestore';
  *   2. Firebase Console → Authentication → Settings → Authorized domains →
  *      confirm remidsp-maine.web.app is listed.
  *
- * Until step 1 exists, this MUST stay false or sign-in breaks again.
+ * Step 1 is done — https://remidsp-maine.web.app/__/auth/handler is registered
+ * on the OAuth client — so this is on. It is not a preference: the rig sends
+ * COEP require-corp for the wasm audio engine, and under that policy the auth
+ * helper iframe is blocked unless it is same-origin. Turning this back off
+ * does not just lose a hardening step, it breaks provider sign-in outright.
  */
-const SAME_ORIGIN_AUTH = false;
+const SAME_ORIGIN_AUTH = true;
 const PROD_HOSTS = ['remidsp-maine.web.app', 'remidsp-maine.firebaseapp.com'];
 
 const app = initializeApp({
