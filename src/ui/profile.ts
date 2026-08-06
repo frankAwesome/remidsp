@@ -8,6 +8,7 @@ import { signOut } from '../cloud/fb';
 import {
   saveProfile, getProfile, myPresets, myComments, publicTones,
   setShared, deletePreset, isFollowing, setFollowing,
+  handleProblem, handleAvailable, HandleTakenError, HANDLE_MAX,
   type Profile, type CloudPreset, type CommentDoc,
 } from '../cloud/store';
 import { deleteUserPreset } from '../presets';
@@ -35,6 +36,48 @@ export class ProfileView {
   /** Fired when the local preset library changed under the rig's feet, so the
    *  preset strip can re-sync instead of pointing at something deleted. */
   onLibraryChanged: (() => void) | null = null;
+
+  /* Tell the player where they stand while they type, rather than after they
+   * submit. The shape check is instant and local; only a well-formed handle
+   * that has actually changed is worth a read, and the sequence guard drops
+   * the answer to a query the player has already typed past. */
+  private handleSeq = 0;
+  private wireHandleField(form: HTMLFormElement, original: string) {
+    const input = form.elements.namedItem('username') as HTMLInputElement;
+    const note = form.querySelector<HTMLElement>('[data-el=handleNote]')!;
+    const save = form.querySelector<HTMLButtonElement>('button[type=submit]')!;
+    const set = (cls: string, html: string, ok: boolean) => {
+      note.className = `handle-note ${cls}`;
+      note.innerHTML = html;
+      save.disabled = !ok;
+    };
+    let timer = 0;
+    const check = async () => {
+      const raw = input.value.trim();
+      if (raw.toLowerCase() === original.toLowerCase()) {
+        set('', 'This is your handle.', true);
+        return;
+      }
+      const problem = handleProblem(raw);
+      if (problem) { set('handle-note--bad', `Needs ${problem}.`, false); return; }
+      const seq = ++this.handleSeq;
+      set('', `Checking <b>@${escape(raw)}</b>…`, false);
+      try {
+        const free = await handleAvailable(raw, session.user?.uid);
+        if (seq !== this.handleSeq) return;   // the player typed on
+        set(free ? 'handle-note--ok' : 'handle-note--bad',
+            free ? `<b>@${escape(raw)}</b> is free.` : `<b>@${escape(raw)}</b> is taken.`,
+            free);
+      } catch {
+        if (seq !== this.handleSeq) return;
+        set('', 'Could not check that one — saving will tell you for sure.', true);
+      }
+    };
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(() => void check(), 300);
+    });
+  }
 
   constructor(applyPreset: ApplyCloudPreset, openAuth: () => void, renderToneCard: RenderToneCard) {
     this.applyPreset = applyPreset;
@@ -107,7 +150,13 @@ export class ProfileView {
               value="${escape(p.avatarUrl)}" placeholder="…or paste an image url" />
           </div>
         </div>
-        <input name="username" maxlength="40" value="${escape(p.username)}" placeholder="username" />
+        <div class="handle-field">
+          <span class="handle-field__at">@</span>
+          <input name="username" maxlength="${HANDLE_MAX}" value="${escape(p.username)}"
+            placeholder="username" autocapitalize="off" autocorrect="off" spellcheck="false" />
+        </div>
+        <div class="handle-note" data-el="handleNote">Your handle is unique — it is how players
+          find you, and it will be your address on the app. Letters, numbers and underscores.</div>
         <textarea name="bio" maxlength="400" rows="3" placeholder="bio — amps, bands, worship team, whatever">${escape(p.bio)}</textarea>
         <label class="profile__vis">
           <span class="profile__vis__head">PROFILE PAGE</span>
@@ -137,6 +186,7 @@ export class ProfileView {
 
     // edit toggle + save
     const form = this.root.querySelector<HTMLFormElement>('.profile__edit')!;
+    this.wireHandleField(form, p.username);
     this.root.querySelector('[data-a=edit]')!.addEventListener('click', () => { form.hidden = !form.hidden; });
     this.root.querySelector('[data-a=cancel]')!.addEventListener('click', () => { form.hidden = true; });
 
@@ -187,14 +237,20 @@ export class ProfileView {
         toast('That picture is too large to store — upload it again and it will be resized.', 4500);
         return;
       }
-      const next: Profile = { username: v('username') || 'player', bio: v('bio'), avatarUrl, isPublic };
+      const next: Profile = { username: v('username'), bio: v('bio'), avatarUrl, isPublic };
       try {
         await saveProfile(user.uid, next);
         session.profile = { ...session.profile, ...next };
-        toast('<b>Profile saved.</b>');
+        toast(`<b>Saved.</b> You are <b>@${escape(next.username)}</b>.`);
         this.onProfileSaved?.();
         void this.refresh();
-      } catch (err) { toast(`Profile save failed — ${(err as Error).message}`, 4500); }
+      } catch (err) {
+        // A taken handle is not a failure to explain in stack terms — it is a
+        // normal thing that happens, and the player just needs another name.
+        toast(err instanceof HandleTakenError
+          ? `<b>@${escape(err.handle)}</b> is already someone's. Pick another.`
+          : `Profile save failed — ${(err as Error).message}`, 4500);
+      }
     });
     this.root.querySelector('[data-a=signout]')!.addEventListener('click', async () => {
       await signOut();

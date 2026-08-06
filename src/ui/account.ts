@@ -7,7 +7,10 @@ import {
   onUser, signInWithProvider, emailSignIn, emailSignUp,
   resetPassword, signOut, authErrorText, type User,
 } from '../cloud/fb';
-import { ensureProfile, saveProfile, type Profile } from '../cloud/store';
+import {
+  ensureProfile, saveProfile, handleProblem, handleAvailable, HandleTakenError,
+  type Profile,
+} from '../cloud/store';
 import { toast } from './toast';
 import { BRAND_MARKS, PROVIDER_LABEL } from './brandMarks';
 import { ICONS } from './icons';
@@ -94,7 +97,8 @@ export class AccountUI {
       </div>
       <div class="account-rule"><span>OR EMAIL</span></div>
       <form class="account-form">
-        <input name="username" placeholder="username (for new accounts)" maxlength="40" autocomplete="nickname" />
+        <input name="username" placeholder="username (for new accounts)" maxlength="20"
+          autocomplete="nickname" autocapitalize="off" autocorrect="off" spellcheck="false" />
         <input name="email" type="email" placeholder="email" required autocomplete="email" />
         <input name="password" type="password" placeholder="password" required minlength="6" autocomplete="current-password" />
         <div class="account-form__row">
@@ -123,13 +127,32 @@ export class AccountUI {
       try {
         if (!val('email') || !val('password')) { toast('Email and password first.'); return; }
         const wanted = val('username');
+        // Check the shape BEFORE creating the account: failing after it exists
+        // would leave a player signed in, wondering why their name did not
+        // stick, with no obvious way to try again.
+        if (wanted) {
+          const problem = handleProblem(wanted);
+          if (problem) { toast(`Username needs ${problem}.`, 4500); return; }
+          if (!(await handleAvailable(wanted))) {
+            toast(`<b>@${escape(wanted)}</b> is taken — pick another.`, 4500);
+            return;
+          }
+        }
         const user = await emailSignUp(val('email'), val('password'), wanted);
-        // Claim the typed name: ensureProfile already ran off the auth-state
-        // event (with the email prefix), so write the real one over it.
+        // ensureProfile already ran off the auth-state event and claimed an
+        // auto-generated handle, so this is a rename to the one they typed.
+        // Someone can still have taken it in between, which is exactly what
+        // the transaction in saveProfile is there to catch.
         if (wanted) {
           const prof: Profile = { username: wanted, bio: '', avatarUrl: '' };
-          await saveProfile(user.uid, prof).catch(() => undefined);
-          session.profile = { ...session.profile, ...prof };
+          try {
+            await saveProfile(user.uid, prof);
+            session.profile = { ...session.profile, ...prof };
+          } catch (e) {
+            toast(e instanceof HandleTakenError
+              ? `<b>@${escape(wanted)}</b> went to somebody else just then — you are <b>@${escape(session.profile?.username ?? '')}</b> for now, change it on your profile.`
+              : `Account made, but the username did not stick — ${(e as Error).message}`, 6000);
+          }
           this.syncChip();
         }
         toast('<b>Account created.</b> Welcome.');

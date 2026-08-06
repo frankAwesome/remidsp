@@ -5,7 +5,10 @@ import { AMP_FACES, PEDAL_FACES, STUDIO_FACE, delayFace, FaceDef } from './geome
 import { makeKnob, placeKnob } from './ui/knob';
 import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
-import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId, Preset } from './presets';
+import {
+  FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId,
+  deleteUserPreset, Preset,
+} from './presets';
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
 import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
@@ -20,7 +23,7 @@ import { AccountUI, session } from './ui/account';
 import { FeedView } from './ui/feed';
 import { ProfileView } from './ui/profile';
 import { openSaveDialog } from './ui/saveDialog';
-import type { CloudPreset, CaptureRefDoc } from './cloud/store';
+import { deletePreset, type CloudPreset, type CaptureRefDoc } from './cloud/store';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -1033,7 +1036,38 @@ function openPresetMenu() {
       <span class="presetmenu__bpm">${p.params.tempo ?? 120}</span>`;
     item.addEventListener('click', () => { presetIdx = i; void applyPreset(p); closePresetMenu(); });
     items.push(item);
-    menu.appendChild(item);
+
+    // Your own patches can be thrown away from right here. This is the only
+    // place that can reach a local preset whose cloud twin is already gone —
+    // deleting from the profile removes both, but a preset orphaned before
+    // that existed had nothing left pointing at it, and no way out of the
+    // list. A row is a row and a button is a button: the ✕ is a SIBLING, not
+    // a button inside a button, so keyboard walking still sees one option.
+    if (p.group === 'USER') {
+      const row = el('div', 'presetmenu__row');
+      const del = el('button', 'presetmenu__del', '✕') as HTMLButtonElement;
+      del.type = 'button';
+      del.title = `delete "${p.name}"`;
+      del.setAttribute('aria-label', `delete ${p.name}`);
+      del.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete "${p.name}" from your preset list?`)) return;
+        deleteUserPreset({ name: p.name, cloudId: p.cloudId });
+        // Take the cloud copy with it when there is one and it is reachable.
+        // A missing document is the expected case for an orphan, not a fault.
+        if (p.cloudId && session.user) {
+          await deletePreset(p.cloudId).catch(() => undefined);
+        }
+        toast(`<b>${p.name}</b> deleted.`);
+        resyncPresetStrip();
+        closePresetMenu();
+        openPresetMenu();
+      });
+      row.append(item, del);
+      menu.appendChild(row);
+    } else {
+      menu.appendChild(item);
+    }
   });
   strip.appendChild(menu);
 

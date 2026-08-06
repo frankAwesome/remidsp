@@ -11,7 +11,7 @@
 
 import {
   collection, collectionGroup, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
-  query, where, orderBy, limit, serverTimestamp, increment, writeBatch,
+  query, where, orderBy, limit, serverTimestamp, increment, writeBatch, runTransaction,
   type Timestamp,
 } from 'firebase/firestore';
 import { db, type User } from './fb';
@@ -88,22 +88,36 @@ export async function ensureProfile(user: User): Promise<Profile> {
       await setDoc(ref, { isPublic: true, updatedAt: serverTimestamp() }, { merge: true });
       p.isPublic = true;
     }
+    // Profiles that predate unique handles hold a name nobody ever claimed —
+    // and the rules now refuse a profile write whose handle is not claimed by
+    // its owner, so without this the player could never edit their own page
+    // again. Claim it here, on the way in. If the old name cannot be a handle
+    // (it had spaces, or somebody else got there first) it is migrated to the
+    // nearest free one rather than the player being locked out.
+    const claimed = await handleAvailable(p.username, user.uid)
+      && !handleProblem(p.username);
+    if (!claimed) {
+      const handle = await freeHandleNear(p.username || user.displayName || 'player', user.uid);
+      await saveProfile(user.uid, { ...p, username: handle });
+      p.username = handle;
+    } else if (!(await getDoc(doc(db, 'usernames', p.username.toLowerCase()))).exists()) {
+      await saveProfile(user.uid, p);   // name is fine, just never claimed
+    }
     return p;
   }
-  // The username is PUBLIC — it rides every post, comment and search result.
-  // Never derive it from the email: 'john.smith@work.com' would publish
-  // 'john.smith' to the whole feed for anyone who never edited it. Fall back
-  // to a neutral handle instead and let the player choose.
-  const username = user.displayName
-    || `player-${user.uid.slice(0, 4).toLowerCase()}`;
+  // The username is PUBLIC — it rides every post, comment and search result,
+  // and it is about to ride URLs too. Never derive it from the email:
+  // 'john.smith@work.com' would publish 'john.smith' to the whole feed for
+  // anyone who never edited it. A display name is already public where it
+  // came from, so it seeds the handle; failing that, a neutral one.
+  const username = await freeHandleNear(user.displayName || 'player', user.uid);
   const fresh: Profile = {
     username, bio: '', avatarUrl: user.photoURL ?? '', isPublic: true,
     followersCount: 0, followingCount: 0,
   };
-  await setDoc(ref, {
-    ...fresh, usernameLower: username.toLowerCase(),
-    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-  });
+  // saveProfile claims the handle and writes the profile in one transaction,
+  // so a new player can never exist with a name nobody holds.
+  await saveProfile(user.uid, fresh);
   return fresh;
 }
 
@@ -112,12 +126,127 @@ export async function getProfile(uid: string): Promise<Profile | null> {
   return snap.exists() ? (snap.data() as Profile) : null;
 }
 
+/* ── usernames ────────────────────────────────────────────────────────────
+ *
+ * A username is a handle, not a display name: it will end up in a URL, an
+ * @mention and a search box, so it is unique across the whole app.
+ *
+ * Firestore has no unique constraint, so uniqueness comes from where document
+ * IDs already are unique — a claim collection keyed by the LOWERCASED handle.
+ * /usernames/frankawesome can only be created once, and the rules only let
+ * you create one that points at yourself. Case is kept on the profile, so
+ * "frankAwesome" displays as typed while "FrankAwesome" can never be a second
+ * account.
+ *
+ * A rename is a delete and a create, both inside one transaction with the
+ * profile write, so the old handle is never released without the new one
+ * being taken — and two people racing for the same free handle cannot both
+ * win: the loser's transaction sees the doc and retries into a failure.
+ */
+
+export const HANDLE_MIN = 3;
+export const HANDLE_MAX = 20;
+/** Letters, digits and underscore. No spaces, no dots, no leading digit-only
+ *  handles that could be mistaken for an id. */
+const HANDLE_RE = /^[a-z][a-z0-9_]{2,19}$/;
+/** Kept back for routes and system voices the app may want later. */
+const RESERVED = new Set([
+  'admin', 'administrator', 'root', 'support', 'help', 'api', 'remi', 'remidsp',
+  'me', 'you', 'user', 'users', 'profile', 'profiles', 'feed', 'rig', 'settings',
+  'account', 'login', 'logout', 'signin', 'signup', 'new', 'edit', 'delete',
+  'null', 'undefined', 'anonymous', 'system', 'staff', 'moderator', 'mod',
+]);
+
+/** Why a handle is not allowed, or null when it is fine. */
+export function handleProblem(raw: string): string | null {
+  const h = raw.trim();
+  if (h.length < HANDLE_MIN) return `at least ${HANDLE_MIN} characters`;
+  if (h.length > HANDLE_MAX) return `at most ${HANDLE_MAX} characters`;
+  if (/\s/.test(h)) return 'no spaces — letters, numbers and _ only';
+  if (!HANDLE_RE.test(h.toLowerCase())) return 'letters, numbers and _ only, starting with a letter';
+  if (RESERVED.has(h.toLowerCase())) return 'that one is reserved';
+  return null;
+}
+
+/** Squeeze any display name into something that could be a handle. */
+export function slugifyHandle(raw: string): string {
+  const s = raw.normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9_]+/g, '').slice(0, HANDLE_MAX);
+  return /^[a-z]/.test(s) ? s : `player${s}`.slice(0, HANDLE_MAX);
+}
+
+/** Is this handle free — or already yours? */
+export async function handleAvailable(handle: string, forUid?: string): Promise<boolean> {
+  const snap = await getDoc(doc(db, 'usernames', handle.toLowerCase()));
+  return !snap.exists() || (!!forUid && snap.data().uid === forUid);
+}
+
+export class HandleTakenError extends Error {
+  constructor(readonly handle: string) { super(`@${handle} is taken`); }
+}
+
+/** Claim `username` for `uid` and write the profile, atomically.
+ *  Throws HandleTakenError when somebody else holds it. */
 export async function saveProfile(uid: string, p: Profile): Promise<void> {
-  await setDoc(doc(db, 'profiles', uid),
-    { username: p.username, bio: p.bio, avatarUrl: p.avatarUrl,
+  const problem = handleProblem(p.username);
+  if (problem) throw new Error(`Username needs ${problem}.`);
+  const lower = p.username.toLowerCase();
+
+  const profRef = doc(db, 'profiles', uid);
+  const prev = (await getDoc(profRef)).data()?.usernameLower as string | undefined;
+
+  // Three steps, in this order, and the order is the whole design.
+  //
+  // 1. CLAIM, in a transaction of its own. It has to commit before the
+  //    profile write, because the profile rule verifies the claim with a
+  //    get() — and inside a transaction, rules see the database as it was
+  //    BEFORE that transaction's own writes. Claim and profile in one
+  //    transaction would therefore be refused by the very rule meant to
+  //    protect it. The transaction is still what makes the claim safe: two
+  //    players racing for the same free handle both read "free", and the
+  //    loser's commit is rejected and retried into the taken branch.
+  if (!prev || prev !== lower) {
+    await runTransaction(db, async (tx) => {
+      const claimRef = doc(db, 'usernames', lower);
+      const claim = await tx.get(claimRef);
+      if (claim.exists()) {
+        if (claim.data().uid !== uid) throw new HandleTakenError(lower);
+        return;                       // already ours; nothing to write
+      }
+      tx.set(claimRef, { uid, createdAt: serverTimestamp() });
+    });
+  }
+
+  // 2. PROFILE. The claim is committed, so the rule's get() can see it.
+  await setDoc(profRef,
+    { username: p.username.trim(), bio: p.bio, avatarUrl: p.avatarUrl,
       isPublic: p.isPublic !== false,
-      usernameLower: p.username.toLowerCase(), updatedAt: serverTimestamp() },
+      usernameLower: lower, updatedAt: serverTimestamp() },
     { merge: true });
+
+  // 3. RELEASE the old handle, last and best-effort. Failing here leaves a
+  //    handle held by someone who no longer uses it, which costs one name.
+  //    Doing it first and then failing would leave the player holding none.
+  if (prev && prev !== lower) {
+    await deleteDoc(doc(db, 'usernames', prev)).catch(() => undefined);
+  }
+}
+
+/** Find a free handle near `base`, widening with a numeric tail. */
+async function freeHandleNear(base: string, uid: string): Promise<string> {
+  const stem = slugifyHandle(base) || 'player';
+  const first = stem.length >= HANDLE_MIN ? stem : `${stem}${uid.slice(0, 4).toLowerCase()}`;
+  if (!handleProblem(first) && await handleAvailable(first, uid)) return first;
+  for (let i = 0; i < 12; i++) {
+    // A short tail off the uid first (stable across retries for the same
+    // player), then random, so two people slugging to the same stem do not
+    // walk the same ladder in lockstep.
+    const tail = i < 4 ? uid.slice(i * 2, i * 2 + 3).toLowerCase().replace(/[^a-z0-9]/g, '')
+                       : Math.floor(Math.random() * 9000 + 1000).toString();
+    const cand = `${first.slice(0, HANDLE_MAX - tail.length - 1)}_${tail}`;
+    if (!handleProblem(cand) && await handleAvailable(cand, uid)) return cand;
+  }
+  return `player_${uid.slice(0, 8).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
 }
 
 /* ── people: search + follows ── */

@@ -210,14 +210,32 @@ service cloud.firestore {
       return v == null || (v is string && v.size() <= 12000);
     }
 
+    // A handle is what will sit in a URL and an @mention: lowercase letters,
+    // digits and underscore, starting with a letter. The doc id IS the
+    // lowercased handle, which is where uniqueness actually comes from —
+    // Firestore has no unique constraint, but it does have unique ids.
+    function handleOk(h) {
+      return h is string && h.size() >= 3 && h.size() <= 20
+        && h.matches('^[a-z][a-z0-9_]*$');
+    }
+    // The profile may only carry a handle this player actually holds. Without
+    // this, uniqueness would live entirely in client code and a crafted write
+    // could take a name that is already someone's.
+    function holdsHandle(h, uid) {
+      return handleOk(h)
+        && exists(/databases/$(database)/documents/usernames/$(h))
+        && get(/databases/$(database)/documents/usernames/$(h)).data.uid == uid;
+    }
+
     function profileShapeOk() {
       let d = request.resource.data;
       return d.keys().hasOnly(
                ['username', 'usernameLower', 'bio', 'avatarUrl', 'isPublic',
                 'followersCount', 'followingCount', 'createdAt', 'updatedAt'])
         && d.username is string
-        && d.username.size() >= 1 && d.username.size() <= 40
-        && sOrNull(d.get('usernameLower', null), 40)
+        && d.username.size() >= 3 && d.username.size() <= 20
+        && d.usernameLower == d.username.lower()
+        && holdsHandle(d.usernameLower, request.auth.uid)
         && sOrNull(d.get('bio', null), 400)
         && (d.get('isPublic', true) is bool)
         && avatarOk(d.get('avatarUrl', null));
@@ -231,6 +249,28 @@ service cloud.firestore {
         && (request.resource.data.followersCount - resource.data.get('followersCount', 0)) <= 1
         && (request.resource.data.followersCount - resource.data.get('followersCount', 0)) >= -1;
     }
+    /* The username index.
+     *
+     * One document per taken handle, its id being the lowercased handle. That
+     * id is the uniqueness guarantee: a create on an id that already exists
+     * fails, so two players racing for the same free name cannot both win.
+     * A rename is a delete plus a create inside one client transaction, which
+     * is why update is closed — an update would let a handle change owner
+     * without the old owner ever releasing it. */
+    match /usernames/{handle} {
+      // Readable by anyone: this is how "is it taken?" is answered before a
+      // claim, and how a handle will resolve to a profile for a /u/<name>
+      // route later. It holds a uid and nothing else.
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && handleOk(handle);
+      // Release only what is yours.
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
+
     match /profiles/{uid} {
       // Public by default; a player can hide the page. Docs written before
       // isPublic existed have no field, so absent reads as public — and

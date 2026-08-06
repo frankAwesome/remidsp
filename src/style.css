@@ -144,6 +144,15 @@ select{font:inherit}
 .presetmenu__tick .ico{width:13px;height:13px;stroke-width:2.4}
 .presetmenu__name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .presetmenu__bpm{font-family:var(--font-mono);font-size:.6rem;color:var(--muted-2);flex:none}
+/* your own patches carry a way out — the only reach a local preset has once
+   its cloud twin is gone */
+.presetmenu__row{display:flex;align-items:stretch}
+.presetmenu__row .presetmenu__item{flex:1;min-width:0}
+.presetmenu__del{flex:none;width:30px;color:var(--muted-2);font-size:.66rem;cursor:pointer;
+  background:transparent;border:0;border-left:1px solid transparent;
+  transition:color .15s var(--ease),background .15s var(--ease)}
+.presetmenu__row:hover .presetmenu__del{color:var(--muted)}
+.presetmenu__del:hover{color:#ff6a5a;background:rgba(255,106,90,.1)}
 .presetmenu__item:hover .presetmenu__bpm,
 .presetmenu__item:focus-visible .presetmenu__bpm{color:var(--muted)}
 
@@ -685,6 +694,19 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .account-chip__ava{width:20px;height:20px;border-radius:50%;object-fit:cover}
 .account-chip__dot{width:8px;height:8px;border-radius:50%;background:var(--led)}
 .account-note{font-size:.74rem;color:var(--muted);line-height:1.65}
+/* the handle field — the @ is furniture, so it sits inside the box */
+.handle-field{display:flex;align-items:center;background:#050507;
+  border:1px solid var(--line-2);border-radius:9px;overflow:hidden}
+.handle-field__at{padding:0 .1rem 0 .8rem;color:var(--muted-2);font-size:.86rem}
+.handle-field input{flex:1;border:0!important;background:transparent!important;
+  border-radius:0!important;padding-left:.15rem!important}
+.handle-field:focus-within{border-color:rgba(159,216,232,.6)}
+.handle-note{font-size:.68rem;color:var(--muted-2);line-height:1.6;margin-top:-.2rem}
+.handle-note b{color:var(--text);font-weight:600}
+.handle-note--ok{color:var(--led)}
+.handle-note--ok b{color:var(--led)}
+.handle-note--bad{color:#e0a04a}
+.handle-note--bad b{color:#e0a04a}
 /* somebody else's sound, still theirs */
 .save-borrowed{font-size:.74rem;color:var(--muted);line-height:1.7;
   border:1px solid rgba(224,160,74,.28);border-left-width:2px;border-radius:9px;
