@@ -1,0 +1,45 @@
+## REMI DSP — share surface
+##
+## NOT DEPLOYED. `npx wrangler deploy` from this directory publishes it; do
+## that only after the API token in ../.dev.vars has been rotated, because the
+## one it currently holds was pasted into a chat and must be considered burned.
+##
+## This Worker exists because Firebase Hosting cannot do two things this
+## product needs:
+##
+##   1. Per-tone HTML. A crawler and a link unfurler never run JavaScript, so
+##      a client-rendered feed is invisible to both. Every tone needs a real
+##      document with its own <title> and og: tags.
+##   2. Cross-Origin-Resource-Policy on media. The rig document is
+##      COEP: require-corp, so any cross-origin subresource it loads — which
+##      is exactly what <audio src> issues — is BLOCKED unless the response
+##      carries `Cross-Origin-Resource-Policy: cross-origin`. Firebase/GCS
+##      cannot set that header on an object. R2 behind this Worker can.
+##
+## It reads Firestore over the REST API with NO credentials at all: the
+## security rules already permit anonymous reads of shared presets and public
+## profiles, so an unauthenticated GET returns exactly, and only, what the feed
+## is allowed to show. There is deliberately no service account here.
+
+name = "remi-share"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "remidsp-98208"
+# Where OPEN IN THE RIG points. The rig stays on Firebase Hosting.
+RIG_ORIGIN = "https://remidsp-maine.web.app"
+
+## Printed takes, the house DI library, avatars and generated OG images.
+## Create with:  npx wrangler r2 bucket create remi-media
+# [[r2_buckets]]
+# binding = "MEDIA"
+# bucket_name = "remi-media"
+
+## Routes. Put this on a subdomain FIRST — share.remidsp.com — so the Firebase
+## origin and its headers are untouched while this is proven. Moving the apex
+## behind the Worker later needs a deploy assertion that `/` still returns both
+## cross-origin-* headers and that /signin.html still returns neither.
+# [[routes]]
+# pattern = "share.remidsp.com/*"
+# custom_domain = true
