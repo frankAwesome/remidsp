@@ -1175,6 +1175,11 @@ async function loadBundledIr(index: number) {
  * the OS default and being corrected afterwards. */
 const devicePicker = new DevicePicker();
 document.getElementById('devicePicker')?.appendChild(devicePicker.root);
+// The channel probe opens a stream, so it waits until somebody has actually
+// asked for the picker rather than firing on page load.
+document.getElementById('devicePickerWrap')?.addEventListener('toggle', function (this: HTMLDetailsElement) {
+  if (this.open) void devicePicker.reveal();
+});
 engine.input = savedInputChoice();
 
 const assetsWarm = preloadAssets((done, total) => {
@@ -1270,6 +1275,9 @@ async function boot(source: BootSource = 'mic') {
   } else {
     toast(`<b>${BOOT.name}</b> on the amp — play.`);
   }
+  // Space stops and starts the demo loop, like any transport.
+  window.addEventListener('keydown', (e) => { inputSwitch?.handleKey(e); });
+
   // A link asked for a tone before there was a rig to put it on. There is now.
   if (pendingTone) {
     const p = pendingTone;

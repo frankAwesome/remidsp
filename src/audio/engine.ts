@@ -418,6 +418,35 @@ export class RigEngine {
   /** Is the demo track currently the thing feeding the rig? */
   get diPlaying(): boolean { return this.inputSource === 'di' && !!this.diNode; }
 
+  /* Stop and start the loop WITHOUT leaving DI mode.
+   *
+   * These are separate from setInputSource on purpose. Wanting the loop to
+   * shut up is not the same as wanting the microphone — someone tweaking a
+   * reverb tail, or reading the feed with the rig open, or just sick of
+   * hearing the same four bars, wants silence and nothing else. Making that
+   * cost a microphone permission would be absurd. */
+
+  /** Silence the loop, keeping DI as the input. */
+  pauseDi() {
+    if (this.inputSource !== 'di') return;
+    this.stopDi();
+    this.onInputSourceChange?.('di');
+  }
+
+  /** Start it again from the top. */
+  resumeDi() {
+    if (this.inputSource !== 'di' || this.diNode) return;
+    this.restartDi();
+    this.onInputSourceChange?.('di');
+  }
+
+  /** Flip it, returning whether it is now playing. */
+  toggleDi(): boolean {
+    if (this.diNode) { this.pauseDi(); return false; }
+    this.resumeDi();
+    return this.diPlaying;
+  }
+
   /** Swap what feeds the chain.
    *
    *  Going to 'mic' is the first moment a permission prompt can appear, and

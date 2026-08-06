@@ -565,6 +565,15 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
    Two states, one lit. The demo side is lit on arrival for anyone who came in
    through LISTEN FIRST, so what is making the noise is never a mystery. */
 .insw{display:flex;border:1px solid var(--line);overflow:hidden}
+.insw__play{width:2rem;background:transparent;border:0;border-right:1px solid var(--line);
+  color:var(--light-hi);cursor:pointer;font-size:.6rem;line-height:1;padding:0;
+  display:grid;place-items:center;transition:color .2s var(--ease),background .2s var(--ease)}
+.insw__play:hover:not(:disabled){background:rgba(159,216,232,.1)}
+.insw__play:disabled{opacity:.45;cursor:wait}
+/* Stopped is a state worth seeing at a glance — otherwise "why is there no
+   sound" is a question the UI refuses to answer. */
+.insw__play--stopped{color:var(--muted-2)}
+.insw__play[hidden]{display:none}
 .insw__btn{font-family:var(--font-ui);font-size:.5rem;font-weight:700;letter-spacing:.14em;
   text-transform:uppercase;padding:.42rem .6rem;background:transparent;color:var(--muted-2);
   border:0;cursor:pointer;transition:color .2s var(--ease),background .2s var(--ease);

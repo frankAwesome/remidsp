@@ -31,10 +31,12 @@ FIREBASE_PROJECT_ID = "remidsp-98208"
 RIG_ORIGIN = "https://remidsp-maine.web.app"
 
 ## Printed takes, the house DI library, avatars and generated OG images.
-## Create with:  npx wrangler r2 bucket create remi-media
-# [[r2_buckets]]
-# binding = "MEDIA"
-# bucket_name = "remi-media"
+## The bucket exists (account 501e1ef0…, bucket "remidsp"). This binding is
+## live — the Worker reaches R2 directly, so there are NO S3 access keys
+## anywhere in this project and none are needed.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "remidsp"
 
 ## Routes. Put this on a subdomain FIRST — share.remidsp.com — so the Firebase
 ## origin and its headers are untouched while this is proven. Moving the apex

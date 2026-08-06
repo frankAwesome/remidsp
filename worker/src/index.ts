@@ -18,6 +18,8 @@
  * show, and a bug here cannot become a data breach.
  */
 
+import { verifyIdToken } from './auth';
+
 export interface Env {
   FIREBASE_PROJECT_ID: string;
   RIG_ORIGIN: string;
@@ -173,10 +175,92 @@ function ogSvg(p: Record<string, any>): Response {
 
 /* ── routes ────────────────────────────────────────────────────────────── */
 
+/** Origins allowed to upload. An allowlist, not `*`: this endpoint writes. */
+function allowedOrigin(env: Env, origin: string | null): string | null {
+  if (!origin) return null;
+  const ok = [env.RIG_ORIGIN, 'http://localhost:5199', 'http://127.0.0.1:5199'];
+  return ok.includes(origin) ? origin : null;
+}
+
+function corsHeaders(origin: string): Headers {
+  const h = new Headers();
+  h.set('access-control-allow-origin', origin);
+  h.set('access-control-allow-methods', 'POST, OPTIONS');
+  h.set('access-control-allow-headers', 'authorization, content-type');
+  h.set('access-control-max-age', '86400');
+  // The rig is COEP: require-corp and it is the page doing the fetch.
+  h.set('cross-origin-resource-policy', 'cross-origin');
+  return h;
+}
+
+const UPLOAD_LIMITS: Record<string, { bytes: number }> = {
+  avatar: { bytes: 80_000 },
+  cover: { bytes: 300_000 },
+};
+const ALLOWED_TYPES = new Set(['image/webp', 'image/jpeg', 'image/png']);
+
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
     const seg = url.pathname.split('/').filter(Boolean);
+
+    /* ── uploads ──────────────────────────────────────────────────────────
+     * The ONLY write path, and the only route that authenticates. The uid in
+     * the object key comes from the verified token, never from the request,
+     * so a signed-in player can overwrite their own picture and nobody
+     * else's — there is no key the client gets to choose. */
+    if (seg[0] === 'upload') {
+      const origin = allowedOrigin(env, req.headers.get('origin'));
+      if (!origin) return new Response('origin not allowed', { status: 403 });
+      if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
+      if (req.method !== 'POST') return new Response('POST only', { status: 405, headers: corsHeaders(origin) });
+      if (!env.MEDIA) return new Response('media bucket not bound', { status: 503, headers: corsHeaders(origin) });
+
+      const kind = seg[1];
+      const limit = UPLOAD_LIMITS[kind];
+      if (!limit) return new Response('unknown upload kind', { status: 404, headers: corsHeaders(origin) });
+
+      const authz = req.headers.get('authorization') ?? '';
+      const token = authz.startsWith('Bearer ') ? authz.slice(7) : '';
+      if (!token) return new Response('sign in first', { status: 401, headers: corsHeaders(origin) });
+
+      let uid: string;
+      try {
+        ({ uid } = await verifyIdToken(token, env.FIREBASE_PROJECT_ID));
+      } catch (err) {
+        return new Response(`auth: ${(err as Error).message}`, { status: 401, headers: corsHeaders(origin) });
+      }
+
+      const type = (req.headers.get('content-type') ?? '').split(';')[0].trim();
+      if (!ALLOWED_TYPES.has(type)) {
+        return new Response('images only (webp, jpeg, png)', { status: 415, headers: corsHeaders(origin) });
+      }
+      // Content-Length can lie, so the body is read and measured. The declared
+      // length is checked first only to reject the obvious cheaply.
+      const declared = Number(req.headers.get('content-length') ?? '0');
+      if (declared > limit.bytes) {
+        return new Response('too large', { status: 413, headers: corsHeaders(origin) });
+      }
+      const body = await req.arrayBuffer();
+      if (body.byteLength > limit.bytes) {
+        return new Response('too large', { status: 413, headers: corsHeaders(origin) });
+      }
+
+      // A content hash in the key means a re-upload of the same picture is
+      // the same object, and a changed one is a new URL — so caching can be
+      // immutable and nothing ever serves a stale face.
+      const digest = await crypto.subtle.digest('SHA-256', body);
+      const hash = [...new Uint8Array(digest).slice(0, 8)]
+        .map((b) => b.toString(16).padStart(2, '0')).join('');
+      const ext = type === 'image/webp' ? 'webp' : type === 'image/png' ? 'png' : 'jpg';
+      const key = `${kind}/${uid}/${hash}.${ext}`;
+
+      await env.MEDIA.put(key, body, { httpMetadata: { contentType: type } });
+
+      const h = corsHeaders(origin);
+      h.set('content-type', 'application/json');
+      return new Response(JSON.stringify({ url: `${url.origin}/m/${key}`, key }), { headers: h });
+    }
 
     // Media out of R2. THE CORP HEADER IS THE ENTIRE POINT OF THIS ROUTE:
     // without it a printed take plays perfectly on this page and is silently
