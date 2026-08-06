@@ -238,19 +238,46 @@ service cloud.firestore {
     // Written as a slice rather than a regex on purpose: getting a backslash
     // through a CEL string literal and into RE2 intact is a well-known way to
     // ship a rule that silently matches nothing.
+    // '' counts as ABSENT. The clients write '' rather than omitting a field
+    // (saveProfile sends `link: p.link ?? ''`), so a rule that only tolerated
+    // null rejected every profile save the moment this was added. Optional
+    // means optional in both spellings.
     function httpsOrNull(v) {
-      return v == null || (v is string && v.size() > 8 && v[0:8] == 'https://');
+      return v == null || v == ''
+        || (v is string && v.size() > 8 && v[0:8] == 'https://');
     }
 
-    function mediaPrefix() { return 'https://remi-share.sheepdeklerk.workers.dev/m/'; }
-    function mediaPrefixLen() { return 46; }
+    /* ── WHAT THIS USED TO DO, AND WHY IT DOES NOT ANY MORE ──
+     *
+     * This pinned avatarUrl to a data: URI or our own media origin, to close
+     * the beacon described above. It also broke the entire product, and the
+     * lesson is worth keeping in the file.
+     *
+     * A profile's avatar is not always ours to choose. ensureProfile() seeds
+     * it from `user.photoURL`, which for a Google sign-in is a
+     * lh3.googleusercontent.com URL, and the edit form has always offered
+     * "…or paste an image url". Both are legitimate, both are remote, and
+     * neither matches the pin.
+     *
+     * The blast radius was much wider than the profile, because avatarUrl is
+     * DENORMALISED onto every preset and comment: presetShapeOk() calls
+     * avatarOk() on that copy, and the preset UPDATE rule re-validates the
+     * whole document — so a rejected avatar took saving a preset and sharing
+     * to the feed down with it. One over-tight predicate, three broken
+     * features, and nothing in the product could tell the player why.
+     *
+     * So: any https URL is accepted again, size-capped. The beacon stays open
+     * and is tracked in docs/SOCIAL_PLAN.md. The real fix is not a stricter
+     * predicate — it is to stop hotlinking third-party images at all: copy
+     * the provider photo into R2 on first sign-in and store our own URL. Then
+     * this pin becomes true by construction and can be reinstated safely. */
     function pictureOk(v, maxInline) {
       return v == null
         || v == ''
         || (v is string && v.size() <= maxInline && v[0:11] == 'data:image/')
-        || (v is string && v.size() <= 400
-            && v.size() > mediaPrefixLen()
-            && v[0:mediaPrefixLen()] == mediaPrefix());
+        // a hosted image — ours, an identity provider's, or one the player
+        // pasted. Length-capped so it can never be a payload.
+        || (v is string && v.size() <= 500 && httpsOrNull(v));
     }
     function avatarOk(v) {
       return pictureOk(v, 12000);
