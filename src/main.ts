@@ -6,6 +6,7 @@ import { makeKnob, placeKnob } from './ui/knob';
 import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
 import { esc } from './ui/esc';
+import { confirmDialog, promptDialog } from './ui/dialog';
 import {
   FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId,
   deleteUserPresetAt, setPresetScope, replaceUserPresets, Preset,
@@ -1100,7 +1101,14 @@ function openPresetMenu() {
       del.setAttribute('aria-label', `delete ${p.name}`);
       del.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!confirm(`Delete "${p.name}" from your preset list?`)) return;
+        if (!await confirmDialog({
+          title: `Delete "${p.name}"?`,
+          body: 'It goes from this device\u2019s preset list' +
+            (p.cloudId && session.user ? ' and from your profile.' : '.'),
+          note: 'The rig keeps playing whatever is loaded right now — this only removes the saved copy.',
+          confirmLabel: 'DELETE',
+          danger: true,
+        })) return;
         deleteUserPresetAt(i - FACTORY_PRESETS.length);
         // Take the cloud copy with it when there is one and it is reachable.
         // A missing document is the expected case for an orphan, not a fault.
@@ -1367,7 +1375,8 @@ build();
  * for a real shared tone, which makes it the hardest thing here to look at
  * while building it — so it can be summoned with a made-up one. */
 if (import.meta.env.DEV) {
-  (window as unknown as { __dev: unknown }).__dev = { showToneLanding, setView, boot, engine, store };
+  (window as unknown as { __dev: unknown }).__dev =
+    { showToneLanding, setView, boot, engine, store, confirmDialog, promptDialog };
 }
 // The router runs BEFORE the engine, on purpose. A deep link must show its
 // tone to someone who has not pressed a door yet and may never press one —

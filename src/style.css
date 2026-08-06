@@ -326,7 +326,17 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   padding:clamp(.75rem,4vh,2.4rem);
   background:radial-gradient(120% 100% at 50% 0%, rgba(6,10,14,.7), rgba(2,2,3,.86));
   backdrop-filter:blur(18px) saturate(115%);-webkit-backdrop-filter:blur(18px) saturate(115%)}
-.t3k.open,.modal.open{display:grid;animation:modal-veil .2s var(--ease)}
+/* opacity is stated, not merely animated TO.
+   Relying on the keyframe to land on 1 makes the dialog invisible anywhere
+   the animation does not actually run — a throttled background tab, a
+   reduced-motion setting that disables animations, an automation context —
+   and an invisible modal still swallows clicks, which is the worst of both.
+   The veil is decoration on top of a state that is correct without it. */
+.t3k.open,.modal.open{display:grid;opacity:1;animation:modal-veil .2s var(--ease)}
+@media (prefers-reduced-motion:reduce){
+  .t3k.open,.modal.open{animation:none}
+  .t3k__panel,.modal__panel{animation:none}
+}
 @keyframes modal-veil{from{opacity:0}to{opacity:1}}
 
 .t3k__panel,.modal__panel{
@@ -395,6 +405,24 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .modal__btn--go{background:var(--light-hi);color:#0a0d12;border-color:transparent}
 .modal__btn--go:hover{background:var(--light);border-color:transparent;
   box-shadow:0 12px 34px -12px rgba(159,216,232,.75)}
+/* Destructive actions read as destructive. Kept as an outline rather than a
+   solid red slab: the lit fill in this suite means "the thing you want", and
+   deleting is never that. */
+.modal__btn--danger{border-color:rgba(216,74,74,.55);color:#f0a39a;
+  background:rgba(216,74,74,.08)}
+.modal__btn--danger:hover{border-color:rgba(216,74,74,.9);background:rgba(216,74,74,.18);
+  color:#ffd9d2}
+.modal__btn--danger:focus-visible{outline:2px solid rgba(216,74,74,.7);outline-offset:2px}
+
+/* the ask-for-text field */
+.dlg__row{display:flex;flex-direction:column}
+.dlg__field{width:100%;background:var(--surface-inset,#0a0a0d);color:var(--text);
+  border:1px solid var(--line-2);padding:.6rem .75rem;font:inherit;font-size:.84rem;
+  line-height:1.55;border-radius:2px;resize:vertical}
+.dlg__field::placeholder{color:var(--muted-2)}
+.dlg__field:focus{outline:none;border-color:rgba(159,216,232,.65);
+  box-shadow:0 0 0 3px rgba(159,216,232,.12)}
+
 .modal__btn--quiet{margin-left:auto;background:transparent;border-color:transparent;color:var(--muted-2)}
 .modal__btn--quiet:hover{color:var(--text);background:rgba(255,255,255,.05);border-color:transparent}
 

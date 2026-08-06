@@ -19,6 +19,7 @@ import { AVATAR_MAX_B64 } from './avatar';
 import { uploadImage, mediaEnabled, AVATAR_ACCEPT } from '../cloud/media';
 import { urlFor } from './router';
 import { shareLink } from './share';
+import { confirmDialog, promptDialog } from './dialog';
 
 /** Resolves false when the preset's own capture could not be fetched. */
 type ApplyCloudPreset = (p: CloudPreset) => Promise<boolean>;
@@ -412,7 +413,16 @@ export class ProfileView {
       try {
         if (s.shared) { await setShared(s.id, false); toast('Taken off the feed.'); }
         else {
-          const desc = prompt('Say something about this sound (shows on the feed):', s.description || '') ?? '';
+          const desc = await promptDialog({
+            title: 'Share it on the feed',
+            body: 'Say what this sound is for. It shows under the name on your post.',
+            placeholder: 'big ambient clean for the pad section…',
+            value: s.description || '',
+            confirmLabel: 'SHARE',
+            multiline: true,
+            maxLength: 500,
+          });
+          if (desc === null) return;          // cancelled — leave it unshared
           await setShared(s.id, true, desc.slice(0, 500));
           toast('<b>Shared to the feed.</b>');
         }
@@ -420,7 +430,15 @@ export class ProfileView {
       } catch (err) { toast(`Share failed — ${(err as Error).message}`, 4500); }
     });
     c.querySelector('[data-a=del]')!.addEventListener('click', async () => {
-      if (!confirm(`Delete "${s.name}"? It goes from your profile and from this device's preset list.`)) return;
+      if (!await confirmDialog({
+        title: `Delete "${s.name}"?`,
+        body: 'It goes from your profile and from this device\u2019s preset list.',
+        note: s.shared
+          ? 'It is on the feed, so it disappears from there too — including for anyone who has loaded it.'
+          : undefined,
+        confirmLabel: 'DELETE',
+        danger: true,
+      })) return;
       try {
         await deletePreset(s.id);
         // A save writes to BOTH libraries, so a delete has to clear both.

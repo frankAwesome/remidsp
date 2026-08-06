@@ -13,6 +13,7 @@ import { makeMiniKnob, type MiniKnob } from './miniKnob';
 import { encodeWav24, downloadBlob } from './wav';
 import { toast } from './toast';
 import { ICONS } from './icons';
+import { confirmDialog } from './dialog';
 
 interface TrackLane {
   id: number;
@@ -87,8 +88,14 @@ export class LooperSection {
     this.playBtn.addEventListener('click', () => {
       engine.sendLooper({ cmd: this.state === 'play' ? 'pause' : 'play' });
     });
-    this.clearBtn.addEventListener('click', () => {
-      if (this.tracks.length && !confirm('Clear every looper track?')) return;
+    this.clearBtn.addEventListener('click', async () => {
+      if (this.tracks.length && !await confirmDialog({
+        title: 'Clear every looper track?',
+        body: `${this.tracks.length} layer${this.tracks.length === 1 ? '' : 's'} `
+          + 'will be erased. Download the loop first if you want to keep it.',
+        confirmLabel: 'CLEAR ALL',
+        danger: true,
+      })) return;
       engine.sendLooper({ cmd: 'clear' });
       this.tracks = [];
       this.lanes.innerHTML = '';
