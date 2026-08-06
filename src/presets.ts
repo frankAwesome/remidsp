@@ -248,6 +248,21 @@ export function saveUserPreset(p: Preset) {
   localStorage.setItem(LS_USER, JSON.stringify(all));
 }
 
+/** Remove the local preset at `index` in loadUserPresets() order.
+ *
+ *  Position, not matching. A name can be duplicated, re-cased or carry
+ *  whitespace, and a cloud id can be absent on anything saved by an older
+ *  build — so any delete that has to RECOGNISE the preset can miss it, and a
+ *  miss means the player is left with an entry they cannot remove. The caller
+ *  already knows exactly which row was clicked. */
+export function deleteUserPresetAt(index: number): Preset | null {
+  const all = loadUserPresets();
+  if (index < 0 || index >= all.length) return null;
+  const [gone] = all.splice(index, 1);
+  localStorage.setItem(LS_USER, JSON.stringify(all));
+  return gone ?? null;
+}
+
 /** Remove a local preset by cloud id, or by name for copies saved before ids
  *  were kept. Returns whether anything actually went. */
 export function deleteUserPreset(match: { name?: string; cloudId?: string }): boolean {

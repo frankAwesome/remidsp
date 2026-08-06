@@ -7,7 +7,7 @@ import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
 import {
   FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId,
-  deleteUserPreset, Preset,
+  deleteUserPresetAt, Preset,
 } from './presets';
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
 import { t3k, T3kError, type T3kFailure } from './tone3000';
@@ -1020,10 +1020,12 @@ function openPresetMenu() {
   const items: HTMLButtonElement[] = [];
   let lastGroup = '';
   list.forEach((p, i) => {
-    if (p.group !== lastGroup) {
-      lastGroup = p.group;
-      const cap = el('div', 'presetmenu__group', p.group);
-      menu.appendChild(cap);
+    // Same reason: a stored preset may carry no group at all, and a caption
+    // reading "undefined" is how you find that out in production.
+    const group = i < FACTORY_PRESETS.length ? (p.group || 'FACTORY') : 'YOUR SOUNDS';
+    if (group !== lastGroup) {
+      lastGroup = group;
+      menu.appendChild(el('div', 'presetmenu__group', group));
     }
     const item = el('button', 'presetmenu__item') as HTMLButtonElement;
     item.setAttribute('role', 'option');
@@ -1043,7 +1045,12 @@ function openPresetMenu() {
     // that existed had nothing left pointing at it, and no way out of the
     // list. A row is a row and a button is a button: the ✕ is a SIBLING, not
     // a button inside a button, so keyboard walking still sees one option.
-    if (p.group === 'USER') {
+    // Deletable if it came out of the LOCAL library, decided by where it sits
+    // rather than by what it claims. allPresets() is factory-then-local, so
+    // the index is a fact; p.group is a field on a stored object that can be
+    // absent or wrong on anything saved by an older build — and keying off it
+    // is why presets have stayed stuck with no way to remove them.
+    if (i >= FACTORY_PRESETS.length) {
       const row = el('div', 'presetmenu__row');
       const del = el('button', 'presetmenu__del', '✕') as HTMLButtonElement;
       del.type = 'button';
@@ -1052,7 +1059,7 @@ function openPresetMenu() {
       del.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (!confirm(`Delete "${p.name}" from your preset list?`)) return;
-        deleteUserPreset({ name: p.name, cloudId: p.cloudId });
+        deleteUserPresetAt(i - FACTORY_PRESETS.length);
         // Take the cloud copy with it when there is one and it is reachable.
         // A missing document is the expected case for an orphan, not a fault.
         if (p.cloudId && session.user) {
