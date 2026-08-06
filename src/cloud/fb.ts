@@ -90,9 +90,21 @@ const PROVIDERS: Record<string, () => AuthProvider> = {
   google: () => new GoogleAuthProvider(),
 };
 
+const PENDING = 'remi_auth_pending';
+
+/** Thrown when the redirect came back but the result never arrived. */
+export class RedirectLostError extends Error {
+  readonly code = 'auth/redirect-lost';
+  constructor(readonly provider: string) { super(`${provider} redirect returned no result`); }
+}
+
 export function signInWithProvider(key: string): Promise<never> {
   const make = PROVIDERS[key];
   if (!make) throw new Error(`unknown provider ${key}`);
+  // A breadcrumb that survives the round trip. Without it a failed sign-in is
+  // indistinguishable from never having tried: getRedirectResult resolves null
+  // either way, and the player lands back on the gate with no explanation.
+  sessionStorage.setItem(PENDING, key);
   return signInWithRedirect(auth, make());
 }
 
@@ -124,8 +136,17 @@ export function onUser(cb: (u: User | null) => void): void {
 
 /** Surface a provider redirect result (or its error) once per page load. */
 export async function consumeRedirect(): Promise<User | null> {
+  const pending = sessionStorage.getItem(PENDING);
+  sessionStorage.removeItem(PENDING);
   const res = await getRedirectResult(auth);
-  return res?.user ?? null;
+  if (res?.user) return res.user;
+  // Came back from a provider empty-handed. The usual cause is this page being
+  // cross-origin isolated: the rig needs COEP require-corp for the wasm audio
+  // engine, and under that policy the auth helper iframe on a DIFFERENT origin
+  // is blocked outright, so the result can never be read back. Say so instead
+  // of quietly showing the gate again.
+  if (pending) throw new RedirectLostError(pending);
+  return null;
 }
 
 /** Human message for the auth error codes players will actually hit. */
@@ -138,6 +159,10 @@ export function authErrorText(err: unknown): string {
     'auth/weak-password': 'password needs at least 6 characters',
     'auth/invalid-email': 'that email does not look right',
     'auth/unauthorized-domain': 'this domain is not authorized for sign-in',
+    'auth/redirect-lost': 'the browser blocked the sign-in handshake on the way back. '
+      + 'This page runs cross-origin isolated for the audio engine, and that blocks the '
+      + 'sign-in helper unless it is served from this same domain. Email sign-in works now, '
+      + 'and provider sign-in needs the redirect URI registered — see the console steps in fb.ts.',
   };
   return map[code] ?? (err as Error)?.message ?? 'sign-in failed';
 }
