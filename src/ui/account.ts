@@ -84,7 +84,7 @@ export class AccountUI {
       <div class="account-note">Keep your sounds against a profile and share them on the feed.
         Sign-up is optional — everything on the rig works without it.</div>
       <div class="account-providers">
-        ${['google', 'apple', 'github', 'facebook'].map((p) => `
+        ${Object.keys(BRAND_MARKS).map((p) => `
           <button data-p="${p}" type="button">
             <span class="provider__mark">${BRAND_MARKS[p]}</span>
             <span class="provider__label">${PROVIDER_LABEL[p]}</span>

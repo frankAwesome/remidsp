@@ -556,29 +556,21 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .account-chip__dot{width:8px;height:8px;border-radius:50%;background:var(--led)}
 .account-note{font-size:.74rem;color:var(--muted);line-height:1.65}
 .account-auth,.account-profile{display:flex;flex-direction:column;gap:.9rem}
-/* ── provider sign-in row ───────────────────────────────────────────────────
-   Every button carries the provider's own mark, so the row reads as logos
-   first and text second. Google takes the full width on white with its
-   full-colour mark (its brand guidance asks for exactly that); the other
-   three sit three-up beneath it, mark stacked over label. */
-.account-providers{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem}
+/* ── provider sign-in ───────────────────────────────────────────────────────
+   Google on white with its full-colour mark, which is what its brand
+   guidance asks for — the mark must not be recoloured to match the panel. */
+.account-providers{display:grid;gap:.45rem}
 .account-providers button{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.45rem;
-  font-size:.56rem;font-weight:700;letter-spacing:.13em;
-  padding:.7rem .4rem;border:1px solid var(--line-2);background:var(--panel);
-  color:var(--text);cursor:pointer;
-  transition:border-color .18s var(--ease),background .18s var(--ease),transform .12s var(--ease)}
-.account-providers button:hover{border-color:rgba(159,216,232,.6);background:var(--panel-2)}
+  display:flex;align-items:center;justify-content:center;gap:.6rem;
+  font-weight:700;font-size:.62rem;letter-spacing:.16em;
+  padding:.75rem .6rem;border:1px solid transparent;
+  background:var(--light-hi);color:#0a0d12;cursor:pointer;
+  transition:background .18s var(--ease),transform .12s var(--ease)}
+.account-providers button:hover{background:var(--light)}
 .account-providers button:active{transform:translateY(1px)}
-.provider__mark{display:grid;place-items:center;width:20px;height:20px;flex:none}
+.provider__mark{display:grid;place-items:center;width:18px;height:18px;flex:none}
 .provider__mark svg{width:100%;height:100%;display:block}
 .provider__label{white-space:nowrap}
-.account-providers button[data-p=google]{
-  grid-column:1/-1;flex-direction:row;gap:.6rem;
-  background:var(--light-hi);color:#0a0d12;border-color:transparent;
-  font-size:.62rem;letter-spacing:.16em;padding:.75rem .6rem}
-.account-providers button[data-p=google]:hover{background:var(--light);border-color:transparent}
-.account-providers button[data-p=google] .provider__mark{width:18px;height:18px}
 .account-rule{display:flex;align-items:center;gap:.7rem;color:var(--muted-2);
   font-size:.54rem;font-weight:600;letter-spacing:.34em}
 .account-rule::before,.account-rule::after{content:"";flex:1;height:1px;background:var(--line)}

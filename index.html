@@ -16,7 +16,16 @@
 
   <div class="gateway" id="gateway">
     <img class="gateway__logo" src="/assets/ui/brand_logo.png" alt="REMI DSP" />
-    <h1>Maine<small>REMI DSP · GUITAR SUITE · IN THE BROWSER</small></h1>
+    <!-- The <small> is display:block, so the wordmark and the tagline already
+         sit on separate lines. The gap has to exist in the MARKUP too: without
+         it the heading's text content — and so its accessible name — runs
+         together as "MaineREMI DSP…". The newline below is collapsed away at
+         the end of the line box, so nothing moves on screen. The aria-label
+         then gives the heading a properly punctuated name to announce. -->
+    <h1 aria-label="Maine — REMI DSP guitar suite, in the browser">
+      Maine
+      <small>REMI DSP · GUITAR SUITE · IN THE BROWSER</small>
+    </h1>
     <div class="gateway__load" id="assetLoad">
       <div class="gateway__load-head">
         <span>INITIALIZING UI ASSETS</span>

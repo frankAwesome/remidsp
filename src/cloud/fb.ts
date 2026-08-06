@@ -12,8 +12,8 @@ import { initializeApp } from 'firebase/app';
 import {
   initializeAuth, onAuthStateChanged, signOut as fbSignOut,
   indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence,
-  GoogleAuthProvider, OAuthProvider, GithubAuthProvider, FacebookAuthProvider,
-  signInWithRedirect, getRedirectResult,
+  GoogleAuthProvider,
+  signInWithRedirect, getRedirectResult, browserPopupRedirectResolver,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendPasswordResetEmail, updateProfile as updateAuthProfile,
   type User, type AuthProvider,
@@ -37,17 +37,27 @@ const app = initializeApp({
 // chain only picks a store at init, so a database that is healthy then and
 // broken later still takes sign-in down. A session token is a few hundred
 // bytes; synchronous localStorage carries it without that failure mode.
+//
+// The resolver has to be named explicitly. getAuth() quietly bundles
+// browserPopupRedirectResolver for you; initializeAuth() wires ONLY what it
+// is handed, and the redirect flow is not part of the default set. Leave it
+// out and every provider sign-in dies on `auth/argument-error` — on both
+// legs, because getRedirectResult needs the same dependency to read the
+// result back. Email/password never touches it, which is what made this look
+// like a Google-only problem.
 export const auth = initializeAuth(app, {
   persistence: [browserLocalPersistence, indexedDBLocalPersistence, inMemoryPersistence],
+  popupRedirectResolver: browserPopupRedirectResolver,
 });
 export const db = getFirestore(app);
 export type { User };
 
+// Google is the only federated provider. Apple, GitHub and Facebook each
+// carry their own console setup, review and (for Apple) a paid developer
+// account, and none of them was earning that upkeep — email/password covers
+// everyone who does not want a Google account.
 const PROVIDERS: Record<string, () => AuthProvider> = {
   google: () => new GoogleAuthProvider(),
-  apple: () => new OAuthProvider('apple.com'),
-  github: () => new GithubAuthProvider(),
-  facebook: () => new FacebookAuthProvider(),
 };
 
 export function signInWithProvider(key: string): Promise<never> {
