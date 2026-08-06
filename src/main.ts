@@ -1298,11 +1298,24 @@ function levelPct(v: number): number {
 /* ────────────────────────── assemble ────────────────────────── */
 
 function build() {
-  const openUserProfile = (uid: string) => { profileView.show(uid); setView('profile'); };
-  account = new AccountUI(() => { profileView.show(null); setView('profile'); });
+  /* Every one of these goes through navigate(), NEVER setView().
+   *
+   * setView paints; navigate paints AND moves the address. Calling setView
+   * from here left the hash saying one thing while the screen showed another,
+   * and the next navigation compared against the stale hash and did nothing —
+   * which is why, from the profile, RIG was dead until you went via FEED. */
+  const openUserProfile = (uid: string, username?: string) => {
+    // A handle gives a real, linkable address. Without one (an older feed
+    // card that carried no username) fall back to painting the page, which
+    // is still better than refusing to open it.
+    if (username) { navigate({ view: 'user', handle: username }); return; }
+    profileView.show(uid);
+    setView('profile');
+  };
+  account = new AccountUI(() => navigate({ view: 'profile' }));
   feedView = new FeedView(applyCloudPreset, () => account.open(), openUserProfile);
   profileView = new ProfileView(applyCloudPreset, () => account.open(), (p) => feedView.toneCard(p));
-  profileView.onSignedOut = () => setView('rig');
+  profileView.onSignedOut = () => navigate({ view: 'rig' });
   profileView.onProfileSaved = () => account.refreshChip();
   profileView.onLibraryChanged = () => resyncPresetStrip();
   account.onSessionChange = () => {

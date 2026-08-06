@@ -70,11 +70,19 @@ export function urlFor(r: Route): string {
  *  on, so a deep link is honoured on first paint and not only on later
  *  navigation. */
 export function onRoute(fn: (r: Route) => void): () => void {
-  const handler = () => fn(parseHash(location.hash));
-  window.addEventListener('hashchange', handler);
-  handler();
-  return () => window.removeEventListener('hashchange', handler);
+  handler = fn;
+  const onHash = () => fn(parseHash(location.hash));
+  window.addEventListener('hashchange', onHash);
+  onHash();
+  return () => {
+    window.removeEventListener('hashchange', onHash);
+    handler = null;
+  };
 }
+
+/** The live route handler, so go() can re-apply a route the address bar
+ *  already shows. See the comment in go(). */
+let handler: ((r: Route) => void) | null = null;
 
 /** Move to a route.
  *
@@ -83,7 +91,20 @@ export function onRoute(fn: (r: Route) => void): () => void {
  *  gets sent to the dead link again, and is corrected again forever. */
 export function go(r: Route, replace = false) {
   const h = hashFor(r);
-  if (location.hash === h) return;
+  if (location.hash === h) {
+    // The address already reads this — but that does NOT prove the screen
+    // does. Anything that paints a view without coming through here leaves
+    // the two disagreeing, and then this early return is a dead button:
+    // that is exactly how PROFILE -> RIG stopped working, because the
+    // profile was painted while the hash still said '#/', so asking for the
+    // rig looked like asking for where we already were.
+    //
+    // Setting location.hash to its current value fires no hashchange, so the
+    // route is re-applied directly instead. Reconciling here means the
+    // invariant holds even if some future caller forgets it.
+    handler?.(r);
+    return;
+  }
   if (replace) history.replaceState(null, '', h);
   else location.hash = h;
 }
