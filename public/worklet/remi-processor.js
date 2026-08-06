@@ -1443,6 +1443,8 @@ class Looper {
         this.retarget(t);
         this.post();
       }
+    } else if (m.cmd === 'export') {
+      this.exportMix();
     } else if (m.cmd === 'clear') {
       this.tracks = []; this.rec = null; this.len = 0;
       this.playPos = 0; this.state = 'idle'; this.armed = false;
@@ -1491,6 +1493,33 @@ class Looper {
     this.post();
   }
 
+  /** Bounce the stack to one stereo pair for download.
+   *
+   *  This is the mix the player hears, not the raw takes: each layer arrives
+   *  through its own LEVEL and PAN, muted layers are left out, and the sum
+   *  goes through the same soft limiter the live path uses — so the file is
+   *  the sound that was in the room rather than a hotter one that never was.
+   *  The buffers are transferred, not copied; they are throwaways built here. */
+  exportMix() {
+    if (!this.tracks.length || !this.len) {
+      this.port.postMessage({ type: 'export', empty: true });
+      return;
+    }
+    const n = this.len;
+    const L = new Float32Array(n), R = new Float32Array(n);
+    let used = 0;
+    for (const t of this.tracks) {
+      if (t.muted) continue;
+      used++;
+      for (let i = 0; i < n; i++) { L[i] += t.bufL[i] * t.tgtL; R[i] += t.bufR[i] * t.tgtR; }
+    }
+    for (let i = 0; i < n; i++) { L[i] = softLimit(L[i], 0.85); R[i] = softLimit(R[i], 0.85); }
+    this.port.postMessage(
+      { type: 'export', L, R, sampleRate: this.sr, bpm: this.bpm, bars: this.bars, tracks: used },
+      [L.buffer, R.buffer],
+    );
+  }
+
   /** Min/max pyramid of the mono sum, for the UI lane. */
   peaksOf(t) {
     const bins = 600;
@@ -1515,6 +1544,11 @@ class Looper {
       beat: this.beatIndex, beatsPerBar: this.beatsPerBar,
       countBeats: this.countBars * this.beatsPerBar,
       bars: this.bars, bpm: this.bpm,
+      // The tempo the loop is actually TURNING at, read off the frozen
+      // samples-per-beat rather than off this.bpm — which follows whatever
+      // the rig's tempo control says and stops describing the loop the
+      // moment a preset moves it.
+      loopBpm: this.spb ? 60 * this.sr / this.spb : this.bpm,
       tracks: this.tracks.map((t) => ({ id: t.id, muted: t.muted, gain: t.gain, pan: t.pan })),
       ...extra,
     });

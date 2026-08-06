@@ -10,6 +10,9 @@ import { engine, LooperMsg, Meters } from '../audio/engine';
 import { store } from '../params';
 import { meterBus } from './live';
 import { makeMiniKnob, type MiniKnob } from './miniKnob';
+import { encodeWav24, downloadBlob } from './wav';
+import { toast } from './toast';
+import { ICONS } from './icons';
 
 interface TrackLane {
   id: number;
@@ -28,6 +31,7 @@ export class LooperSection {
   private recBtn: HTMLButtonElement;
   private playBtn: HTMLButtonElement;
   private clearBtn: HTMLButtonElement;
+  private saveBtn!: HTMLButtonElement;
   private barsSel: HTMLSelectElement;
   private countSel: HTMLSelectElement;
   private metroBtn: HTMLButtonElement;
@@ -38,6 +42,9 @@ export class LooperSection {
   private countBeats = 8;
   private beatsPerBar = 4;
   private bars = 4;
+  /** The tempo the loop is turning at — not the rig's tempo control, which a
+   *  preset can move without the loop following it. */
+  private bpm = 120;
   private loopPos = 0;
   private metroOn = false;
   private tracks: TrackLane[] = [];
@@ -60,6 +67,7 @@ export class LooperSection {
           <input data-id="metroGain" type="range" min="0" max="1" step="0.01" value="0.7" title="click level" />
           <button class="looper__rec" data-id="rec" title="record / overdub">●</button>
           <button class="looper__btn" data-id="play" title="play / pause" disabled>▶</button>
+          <button class="looper__btn" data-id="save" title="download this loop as a 24-bit WAV" disabled>${ICONS.download}</button>
           <button class="looper__btn" data-id="clear" title="clear all tracks" disabled>✕</button>
         </div>
       </div>
@@ -86,6 +94,8 @@ export class LooperSection {
       this.lanes.innerHTML = '';
       this.syncUi();
     });
+    this.saveBtn = this.root.querySelector('[data-id=save]')!;
+    this.saveBtn.addEventListener('click', () => void this.download());
     this.metroBtn.addEventListener('click', () => {
       this.metroOn = !this.metroOn;
       this.metroBtn.classList.toggle('on', this.metroOn);
@@ -130,6 +140,7 @@ export class LooperSection {
     if (m.countBeats !== undefined) this.countBeats = m.countBeats;
     if (m.beatsPerBar) this.beatsPerBar = m.beatsPerBar;
     if (m.bars) this.bars = m.bars;
+    if (m.loopBpm) this.bpm = Math.round(m.loopBpm);
     if (m.tracks) this.syncTracks(m.tracks);
     this.syncUi();
   }
@@ -209,6 +220,34 @@ export class LooperSection {
     if (m.loopPos !== undefined) this.loopPos = m.loopPos;
   }
 
+  /** Is there a loop on the deck, and what tempo is it turning at? The rig
+   *  asks before it lets a preset change the tempo out from under it. */
+  hasLoop(): boolean { return this.tracks.length > 0; }
+  loopBpm(): number { return this.bpm; }
+  layerCount(): number { return this.tracks.length; }
+  clearLoop() {
+    engine.sendLooper({ cmd: 'clear' });
+    this.tracks = [];
+    this.lanes.innerHTML = '';
+    this.syncUi();
+  }
+
+  private async download() {
+    this.saveBtn.disabled = true;
+    try {
+      const mix = await engine.exportLoop();
+      if (!mix) { toast('Nothing to download — every layer is muted or empty.'); return; }
+      const secs = mix.L.length / mix.sampleRate;
+      const name = `remi-loop-${Math.round(mix.bpm)}bpm-${mix.bars}bar-${mix.tracks}x.wav`;
+      downloadBlob(encodeWav24(mix.L, mix.R, mix.sampleRate), name);
+      toast(`<b>${name}</b> — ${secs.toFixed(1)}s, ${mix.tracks} layer${mix.tracks === 1 ? '' : 's'}, 24-bit.`, 4500);
+    } catch (err) {
+      toast(`Could not bounce the loop — ${(err as Error).message}`, 5000);
+    } finally {
+      this.syncUi();
+    }
+  }
+
   private syncUi() {
     const s = this.state;
     const recording = s === 'rec';
@@ -218,6 +257,9 @@ export class LooperSection {
     this.playBtn.disabled = !this.tracks.length;
     this.playBtn.textContent = s === 'play' ? '❚❚' : '▶';
     this.clearBtn.disabled = !this.tracks.length;
+    // Nothing to bounce mid-take: the layer being played is not in the stack
+    // until it closes on the loop top.
+    this.saveBtn.disabled = !this.tracks.length || recording || counting;
     // the loop length is fixed by track 1 — lock the shape controls after that
     this.barsSel.disabled = this.tracks.length > 0;
     this.countSel.disabled = this.tracks.length > 0;

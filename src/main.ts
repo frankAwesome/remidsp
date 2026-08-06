@@ -11,6 +11,7 @@ import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
 import { openCabWarning } from './ui/cabWarning';
 import { ICONS, withIcon } from './ui/icons';
+import { openTempoClash } from './ui/tempoClash';
 import { DevicePicker, savedInputChoice, loadSaved } from './ui/devices';
 import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed, powerLed } from './ui/live';
 import { LooperSection } from './ui/looper';
@@ -58,6 +59,7 @@ let customIrName: string | null = null;
 let presetIdx = 0;
 let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: BOOT.voice, label: BOOT_LABEL };
 let account: AccountUI;
+let looper: LooperSection | null = null;
 let feedView: FeedView;
 let profileView: ProfileView;
 
@@ -863,8 +865,29 @@ function allPresets(): Preset[] { return [...FACTORY_PRESETS, ...loadUserPresets
 /** Applies a preset; resolves false when its own TONE3000 capture could not
  *  be fetched and the rig landed on the bundled fallback instead. */
 async function applyPreset(p: Preset): Promise<boolean> {
+  // A recorded loop outranks a preset's tempo. Its length is fixed in samples,
+  // so the bar line only lands right at the tempo it was cut at — let a preset
+  // move the tempo and the click and the delays walk off the take. Ask, then
+  // either hold the loop's tempo or drop the loop.
+  let holdTempo: number | null = null;
+  if (looper?.hasLoop()) {
+    const want = p.params.tempo ?? 120;
+    const have = looper.loopBpm();
+    if (Math.abs(want - have) >= 1) {
+      const choice = await openTempoClash({
+        presetName: p.name, presetBpm: want, loopBpm: have, layers: looper.layerCount(),
+      });
+      if (choice === 'cancel') return true;   // nothing changed, nothing failed
+      if (choice === 'keep') holdTempo = have;
+      else looper.clearLoop();
+    }
+  }
+
   const snap: Record<string, number> = { ...Object.fromEntries(
     [...store.values.keys()].map((k) => [k, paramById.get(k)?.def ?? 0])), ...p.params };
+  // Held before the load, so syncDelays derives the repeats from the loop's
+  // tempo rather than from the one the preset asked for.
+  if (holdTempo !== null) snap.tempo = holdTempo;
   // GLOBAL is the player's switch, never the preset's; with it on, the
   // current gate settings outrank whatever the preset says.
   snap.gate_global = store.get('gate_global');
@@ -1120,7 +1143,8 @@ function build() {
   app.appendChild(buildRibbon());
   stage.className = 'stage';
   app.appendChild(stage);
-  app.appendChild(new LooperSection().root);
+  looper = new LooperSection();
+  app.appendChild(looper.root);
   app.appendChild(feedView.root);
   app.appendChild(profileView.root);
   const foot = el('footer', 'foot');

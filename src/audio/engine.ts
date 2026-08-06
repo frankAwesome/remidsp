@@ -54,6 +54,16 @@ export interface InputChoice {
   channel?: number;
 }
 
+/** A bounced loop, straight from the worklet's buffers. */
+export interface LoopExport {
+  L: Float32Array;
+  R: Float32Array;
+  sampleRate: number;
+  bpm: number;
+  bars: number;
+  tracks: number;
+}
+
 export interface Meters {
   in: number; out: number; gr: number; gate: number; compGr: number;
   loopState: string; loopPos: number;
@@ -62,7 +72,7 @@ export interface LooperMsg {
   type: 'looper' | 'wave';
   state?: string; armed?: boolean;
   beat?: number; beatsPerBar?: number; countBeats?: number;
-  bars?: number; bpm?: number;
+  bars?: number; bpm?: number; loopBpm?: number;
   tracks?: { id: number; muted: boolean; gain?: number; pan?: number }[];
   trackId?: number; peaks?: Float32Array; bins?: number;
 }
@@ -95,6 +105,7 @@ export class RigEngine {
   inputLabel = '';
   private module: EmModule | null = null;
   private paramQueue: [string, number][] = [];
+  private exportWaiters: ((d: LoopExport | null) => void)[] = [];
 
   capture: CaptureInfo | null = null;
   cabOn = false;
@@ -177,7 +188,11 @@ export class RigEngine {
     const onMsg = (e: MessageEvent) => {
       const d = e.data;
       if (d?.type === 'meters') this.onMeters?.(d);
-      else if (d?.type === 'looper' || d?.type === 'wave') this.onLooper?.(d);
+      else if (d?.type === 'export') {
+        // splice(0) so a waiter cannot be settled twice, and so a second
+        // export starting mid-flight cannot inherit the first one's audio.
+        for (const done of this.exportWaiters.splice(0)) done(d.empty ? null : d as LoopExport);
+      } else if (d?.type === 'looper' || d?.type === 'wave') this.onLooper?.(d);
     };
     this.pre.port.onmessage = onMsg;
     this.post.port.onmessage = onMsg;
@@ -394,6 +409,16 @@ export class RigEngine {
 
   sendLooper(msg: Record<string, unknown>) {
     this.post?.port.postMessage({ type: 'looper-cmd', ...msg });
+  }
+
+  /** Bounce the loop stack to a stereo pair. Resolves null when there is
+   *  nothing recorded, or nothing left unmuted. */
+  exportLoop(): Promise<LoopExport | null> {
+    if (!this.post) return Promise.resolve(null);
+    return new Promise((res) => {
+      this.exportWaiters.push(res);
+      this.sendLooper({ cmd: 'export' });
+    });
   }
 
   sendParam(id: string, v: number) {
