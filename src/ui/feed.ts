@@ -16,6 +16,7 @@ import { toast } from './toast';
 import { DIVISIONS } from '../params';
 import { t3k } from '../tone3000';
 import { urlFor } from './router';
+import { shareLink } from './share';
 
 /** Resolves false when the preset's own capture could not be fetched and the
  *  rig fell back to a bundled voice — the caller must not claim success. */
@@ -420,31 +421,14 @@ export class FeedView {
   }
 }
 
-/** Send a tone somewhere.
- *
- *  The native share sheet where there is one — on a phone that is the whole
- *  point, it reaches WhatsApp and Messages directly — and the clipboard
- *  otherwise. A cancelled share sheet is a normal thing a person does, not an
- *  error to report, so AbortError is swallowed. */
+/** Send a tone somewhere. The mechanics live in ui/share.ts; this is just
+ *  the words that go with a rig. */
 export async function sharePreset(p: CloudPreset): Promise<void> {
-  const url = urlFor({ view: 'tone', id: p.id });
-  const title = `${p.name} — a rig by ${p.username}`;
-  const text = `${title}. Runs in your browser, nothing to install.`;
-  const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
-  if (nav.share) {
-    try { await nav.share({ title, text, url }); return; } catch (err) {
-      if ((err as Error).name === 'AbortError') return;
-      // fall through to the clipboard
-    }
-  }
-  try {
-    await navigator.clipboard.writeText(url);
-    toast(`<b>Link copied</b> — ${escape(url)}`, 4500);
-  } catch {
-    // Clipboard access can be refused outright. Showing the link is still a
-    // way to share it; leaving them with nothing is not.
-    toast(`Copy this link: ${escape(url)}`, 9000);
-  }
+  await shareLink(
+    urlFor({ view: 'tone', id: p.id }),
+    `${p.name} — a rig by ${p.username}`,
+    `${p.name} by ${p.username}. Runs in your browser, nothing to install.`,
+  );
 }
 
 function stat(label: string, value: string, unit: string): string {

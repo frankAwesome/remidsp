@@ -27,6 +27,17 @@ export interface Profile {
   isPublic?: boolean;
   followersCount?: number;
   followingCount?: number;
+  /** One link — a YouTube channel, a band page. For a guitarist this is the
+   *  proof-of-existence a bio cannot be. */
+  link?: string;
+  /** When this player showed up.
+   *
+   *  This exists to solve the empty profile. A new player's every social
+   *  number is zero, and a page of zeros reads as "nobody" rather than as
+   *  "new" — negative social proof, in the literature's terms. Tenure is the
+   *  one fact that can never be zero, which is why it is the thing to show
+   *  when everything else would be. */
+  createdAt?: Timestamp;
 }
 export interface ProfileHit extends Profile { uid: string }
 
@@ -232,10 +243,16 @@ export async function saveProfile(uid: string, p: Profile): Promise<void> {
   }
 
   // 2. PROFILE. The claim is committed, so the rule's get() can see it.
+  // createdAt is written ONLY when the document does not already have one.
+  // Re-stamping it on every save would reset the player's tenure — the single
+  // fact on the profile that is supposed to be immovable.
+  const existing = (await getDoc(profRef)).data();
   await setDoc(profRef,
     { username: p.username.trim(), bio: p.bio, avatarUrl: p.avatarUrl,
+      link: p.link ?? '',
       isPublic: p.isPublic !== false,
-      usernameLower: lower, updatedAt: serverTimestamp() },
+      usernameLower: lower, updatedAt: serverTimestamp(),
+      ...(existing?.createdAt ? {} : { createdAt: serverTimestamp() }) },
     { merge: true });
 
   // 3. RELEASE the old handle, last and best-effort. Failing here leaves a

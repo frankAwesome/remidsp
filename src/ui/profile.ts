@@ -16,6 +16,8 @@ import { session } from './account';
 import { renderCommentRow, timeAgo } from './feed';
 import { toast } from './toast';
 import { encodeAvatar, AVATAR_ACCEPT, AVATAR_MAX_B64 } from './avatar';
+import { urlFor } from './router';
+import { shareLink } from './share';
 
 /** Resolves false when the preset's own capture could not be fetched. */
 type ApplyCloudPreset = (p: CloudPreset) => Promise<boolean>;
@@ -268,11 +270,15 @@ export class ProfileView {
     const shared = sounds.filter((s) => s.shared).length;
     const likes = sounds.reduce((a, s) => a + (s.likesCount ?? 0), 0);
     const loads = sounds.reduce((a, s) => a + (s.downloadsCount ?? 0), 0);
+    // Usage before popularity: in a TOOL community what a player has made
+    // outranks who is watching. FOLLOWING is gone entirely — nobody has ever
+    // followed anyone because of their following count.
     this.root.querySelector('.profile__stats')!.innerHTML = [
-      tile(sounds.length, 'SOUNDS'), tile(shared, 'ON FEED'),
-      tile(likes, 'LIKES WON'), tile(loads, 'LOADS'),
-      tile(p.followersCount ?? 0, 'FOLLOWERS'), tile(p.followingCount ?? 0, 'FOLLOWING'),
-      tile(comments.length, 'COMMENTS'),
+      sinceTile(p.createdAt),
+      tile(loads, 'LOADS'),
+      tile(likes, 'LIKES'),
+      tile(shared, 'ON FEED'),
+      tile(p.followersCount ?? 0, 'FOLLOWERS', 5),
     ].join('');
 
     // sounds as owner cards
@@ -326,17 +332,23 @@ export class ProfileView {
         </div>
         <div class="profile__actions">
           <button class="t3k__pill profile__follow" data-a="follow">FOLLOW</button>
+          <button class="t3k__pill" data-a="share" title="copy a link to this profile">SHARE</button>
         </div>
       </header>
       <div class="profile__stats">
-        ${tile(p.followersCount ?? 0, 'FOLLOWERS')}
-        ${tile(p.followingCount ?? 0, 'FOLLOWING')}
-        ${tile(tones.length, 'TONES ON FEED')}
-        ${tile(likes, 'LIKES WON')}
+        ${sinceTile(p.createdAt)}
         ${tile(loads, 'LOADS')}
+        ${tile(likes, 'LIKES')}
+        ${tile(tones.length, 'TONES')}
+        ${tile(p.followersCount ?? 0, 'FOLLOWERS', 5)}
       </div>
       <div class="account-rule"><span>PUBLIC TONES</span></div>
       <div class="feed__list profile__tones"></div>`;
+
+    this.root.querySelector('[data-a=share]')!.addEventListener('click',
+      () => void shareLink(urlFor({ view: 'user', handle: p.username }),
+        `${p.username} on REMI DSP`,
+        `${p.username}'s guitar rigs — playable in a browser, nothing to install.`));
 
     const followBtn = this.root.querySelector<HTMLButtonElement>('[data-a=follow]')!;
     const me = session.user?.uid;
@@ -416,8 +428,34 @@ export class ProfileView {
   }
 }
 
-function tile(n: number, label: string): string {
-  return `<div class="profile-tile"><span class="led-text">${n}</span><i>${label}</i></div>`;
+/* ── the numbers ──────────────────────────────────────────────────────────
+ *
+ * Two rules, both learned the expensive way by everyone else in this
+ * category:
+ *
+ * ZEROS ARE WORSE THAN NOTHING. "0 FOLLOWERS · 0 LIKES · 0 LOADS" is negative
+ * social proof: it does not read as a new player, it reads as a rejected one.
+ * The fix is thresholding rather than removal — a player with 300 loads must
+ * still see 300, because hiding counts outright measurably costs engagement.
+ * So a tile below its floor renders as nothing and the row collapses.
+ *
+ * DSEG7 IS THE MACHINE'S TYPEFACE. Seven-segment numerals are a promise that
+ * something is being measured live — a delay time, a gain reduction. On a
+ * follower count they are a category error, and on a zero they make the
+ * emptiest fact on the page the brightest object on it. Social counts get
+ * ordinary tabular figures; the rig keeps DSEG7. */
+function tile(n: number, label: string, floor = 1): string {
+  if (n < floor) return '';
+  return `<div class="profile-tile"><span class="profile-tile__n">${n.toLocaleString()}</span><i>${label}</i></div>`;
+}
+
+/** Tenure — the one stat that can never be zero, which is exactly why it is
+ *  here. It makes a brand-new player read as NEW instead of as NOBODY. */
+function sinceTile(createdAt?: { toMillis(): number }): string {
+  const ms = createdAt?.toMillis();
+  const d = ms ? new Date(ms) : new Date();
+  const when = d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }).toUpperCase();
+  return `<div class="profile-tile profile-tile--since"><span class="profile-tile__n">${escape(when)}</span><i>PLAYING SINCE</i></div>`;
 }
 function escape(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
