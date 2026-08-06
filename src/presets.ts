@@ -33,6 +33,11 @@ export interface Preset {
   /** What was actually on the amp when this was saved. A TONE3000 model is
    *  re-fetched on recall; absent (older presets) means the bundled voice. */
   capture?: CaptureRefDoc | null;
+  /** The cloud document this local copy mirrors, when there is one. A save
+   *  writes to both libraries, so a delete has to be able to find the twin —
+   *  otherwise the sound disappears from the profile and stays in the preset
+   *  strip, which is what it did before this existed. */
+  cloudId?: string;
 }
 
 const P = (name: string, group: Preset['group'], amp: string, voice: string,
@@ -240,5 +245,27 @@ export function loadUserPresets(): Preset[] {
 export function saveUserPreset(p: Preset) {
   const all = loadUserPresets().filter((x) => x.name !== p.name);
   all.push(p);
+  localStorage.setItem(LS_USER, JSON.stringify(all));
+}
+
+/** Remove a local preset by cloud id, or by name for copies saved before ids
+ *  were kept. Returns whether anything actually went. */
+export function deleteUserPreset(match: { name?: string; cloudId?: string }): boolean {
+  const all = loadUserPresets();
+  const keep = all.filter((p) => !(
+    (match.cloudId !== undefined && p.cloudId === match.cloudId)
+    || (match.name !== undefined && p.name === match.name)));
+  if (keep.length === all.length) return false;
+  localStorage.setItem(LS_USER, JSON.stringify(keep));
+  return true;
+}
+
+/** Point a just-saved local copy at the cloud document it became, so a later
+ *  delete can match on the id rather than hoping the names still line up. */
+export function tagUserPresetCloudId(name: string, cloudId: string) {
+  const all = loadUserPresets();
+  const hit = all.find((p) => p.name === name);
+  if (!hit) return;
+  hit.cloudId = cloudId;
   localStorage.setItem(LS_USER, JSON.stringify(all));
 }

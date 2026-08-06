@@ -10,6 +10,7 @@ import {
   setShared, deletePreset, isFollowing, setFollowing,
   type Profile, type CloudPreset, type CommentDoc,
 } from '../cloud/store';
+import { deleteUserPreset } from '../presets';
 import { session } from './account';
 import { renderCommentRow, timeAgo } from './feed';
 import { toast } from './toast';
@@ -31,6 +32,9 @@ export class ProfileView {
   private viewUid: string | null = null; // null = your own profile
   onSignedOut: (() => void) | null = null;
   onProfileSaved: (() => void) | null = null;
+  /** Fired when the local preset library changed under the rig's feet, so the
+   *  preset strip can re-sync instead of pointing at something deleted. */
+  onLibraryChanged: (() => void) | null = null;
 
   constructor(applyPreset: ApplyCloudPreset, openAuth: () => void, renderToneCard: RenderToneCard) {
     this.applyPreset = applyPreset;
@@ -339,9 +343,18 @@ export class ProfileView {
       } catch (err) { toast(`Share failed — ${(err as Error).message}`, 4500); }
     });
     c.querySelector('[data-a=del]')!.addEventListener('click', async () => {
-      if (!confirm(`Delete "${s.name}" from your cloud library?`)) return;
-      await deletePreset(s.id);
-      void this.refresh();
+      if (!confirm(`Delete "${s.name}"? It goes from your profile and from this device's preset list.`)) return;
+      try {
+        await deletePreset(s.id);
+        // A save writes to BOTH libraries, so a delete has to clear both.
+        // Removing only the cloud document is what left deleted sounds sitting
+        // in the preset strip with nothing to remove them.
+        const local = deleteUserPreset({ name: s.name, cloudId: s.id });
+        this.onLibraryChanged?.();
+        toast(local ? `<b>${s.name}</b> deleted — profile and preset list.`
+                    : `<b>${s.name}</b> deleted.`);
+        void this.refresh();
+      } catch (err) { toast(`Delete failed — ${(err as Error).message}`, 4500); }
     });
     return c;
   }

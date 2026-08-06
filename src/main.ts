@@ -5,7 +5,7 @@ import { AMP_FACES, PEDAL_FACES, STUDIO_FACE, delayFace, FaceDef } from './geome
 import { makeKnob, placeKnob } from './ui/knob';
 import { T3kBrowser } from './ui/t3kBrowser';
 import { toast } from './ui/toast';
-import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, Preset } from './presets';
+import { FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId, Preset } from './presets';
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
 import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
@@ -16,7 +16,7 @@ import { DevicePicker, savedInputChoice, loadSaved } from './ui/devices';
 import { meterBus, gateMeter, compGrStrip, vuNeedle, sauceScope, delayLamp, pilotLed, powerLed } from './ui/live';
 import { LooperSection } from './ui/looper';
 import { preloadAssets } from './ui/preload';
-import { AccountUI } from './ui/account';
+import { AccountUI, session } from './ui/account';
 import { FeedView } from './ui/feed';
 import { ProfileView } from './ui/profile';
 import { openSaveDialog } from './ui/saveDialog';
@@ -233,6 +233,10 @@ function buildHeader(): HTMLElement {
         name: n, group: 'USER', amp: currentAmp, voice: currentVoice,
         params: store.snapshot(), capture: currentCaptureRef,
       }),
+      borrowedFrom(),
+      // Remember which cloud document the local copy became, so deleting it
+      // from the profile can find and remove its twin here.
+      (n, cloudId) => { tagUserPresetCloudId(n, cloudId); resyncPresetStrip(); },
     );
   });
 
@@ -862,6 +866,46 @@ function studioPanel(): HTMLElement {
 
 function allPresets(): Preset[] { return [...FACTORY_PRESETS, ...loadUserPresets()]; }
 
+/* Somebody else's sound, on this rig.
+ *
+ * Loading a tone off the feed is the point of the feed — but posting it back
+ * untouched is putting your name on their work. So a borrowed sound can
+ * always be kept privately, and can only be shared once it has actually been
+ * changed. The exact state it arrived in is held here, and the moment the
+ * player moves anything away from it, it stops being theirs and starts being
+ * a new sound. */
+let borrowed: {
+  username: string;
+  snapshot: Record<string, number>;
+  amp: string;
+  voice: string;
+  capture: string;
+} | null = null;
+
+const captureIdOf = (c: CaptureRefDoc | null | undefined) =>
+  c ? `${c.source}:${c.modelId ?? c.stem ?? c.label}` : '';
+
+/** Who this sound still belongs to, or null once it has been changed enough
+ *  to be the player's own. */
+function borrowedFrom(): string | null {
+  if (!borrowed) return null;
+  if (currentAmp !== borrowed.amp || currentVoice !== borrowed.voice) return null;
+  if (captureIdOf(currentCaptureRef) !== borrowed.capture) return null;
+  const now = store.snapshot();
+  for (const [k, v] of Object.entries(borrowed.snapshot)) {
+    if (Math.abs((now[k] ?? 0) - v) > 1e-6) return null;
+  }
+  return borrowed.username;
+}
+
+/** Re-point the preset strip after the local library changed underneath it. */
+function resyncPresetStrip() {
+  const list = allPresets();
+  const shown = document.querySelector('#presetName .preset__label')?.textContent ?? '';
+  const at = list.findIndex((p) => p.name === shown);
+  presetIdx = at >= 0 ? at : Math.min(presetIdx, list.length - 1);
+}
+
 /** Applies a preset; resolves false when its own TONE3000 capture could not
  *  be fetched and the rig landed on the bundled fallback instead. */
 async function applyPreset(p: Preset): Promise<boolean> {
@@ -869,6 +913,9 @@ async function applyPreset(p: Preset): Promise<boolean> {
   // so the bar line only lands right at the tempo it was cut at — let a preset
   // move the tempo and the click and the delays walk off the take. Ask, then
   // either hold the loop's tempo or drop the loop.
+  // A patch change is a clean slate: whatever was borrowed is gone. The one
+  // caller that IS loading somebody's sound re-marks it after this returns.
+  borrowed = null;
   let holdTempo: number | null = null;
   if (looper?.hasLoop()) {
     const want = p.params.tempo ?? 120;
@@ -1135,6 +1182,7 @@ function build() {
   profileView = new ProfileView(applyCloudPreset, () => account.open(), (p) => feedView.toneCard(p));
   profileView.onSignedOut = () => setView('rig');
   profileView.onProfileSaved = () => account.refreshChip();
+  profileView.onLibraryChanged = () => resyncPresetStrip();
   account.onSessionChange = () => {
     if (currentView === 'feed') void feedView.refresh();
     if (currentView === 'profile') void profileView.refresh();
@@ -1219,6 +1267,13 @@ async function applyCloudPreset(p: CloudPreset): Promise<boolean> {
     name: p.name, group: 'USER', amp: p.amp, voice: p.voice,
     params: p.params, capture: p.capture,
   });
+  // Mark it as borrowed only if it is somebody else's. Reloading your own
+  // sound leaves you free to post it, which you always were.
+  borrowed = p.uid && p.uid === session.user?.uid ? null : {
+    username: p.username || 'another player',
+    snapshot: store.snapshot(),
+    amp: currentAmp, voice: currentVoice, capture: captureIdOf(currentCaptureRef),
+  };
   setFeedMode(false);
   return whole;
 }

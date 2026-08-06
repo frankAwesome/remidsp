@@ -685,6 +685,12 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .account-chip__ava{width:20px;height:20px;border-radius:50%;object-fit:cover}
 .account-chip__dot{width:8px;height:8px;border-radius:50%;background:var(--led)}
 .account-note{font-size:.74rem;color:var(--muted);line-height:1.65}
+/* somebody else's sound, still theirs */
+.save-borrowed{font-size:.74rem;color:var(--muted);line-height:1.7;
+  border:1px solid rgba(224,160,74,.28);border-left-width:2px;border-radius:9px;
+  background:rgba(224,160,74,.06);padding:.7rem .85rem}
+.save-borrowed b{display:block;color:#e5bb72;font-weight:600;margin-bottom:.3rem}
+.save-borrowed i{display:block;margin-top:.45rem;font-style:normal;color:var(--muted-2);font-size:.7rem}
 .account-auth,.account-profile{display:flex;flex-direction:column;gap:.9rem}
 /* ── provider sign-in ───────────────────────────────────────────────────────
    Google on white with its full-colour mark, which is what its brand
