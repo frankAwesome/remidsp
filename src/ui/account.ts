@@ -4,7 +4,7 @@
  * profile (avatar · username · bio) and MY SOUNDS, the cloud preset library. */
 
 import {
-  onUser, consumeRedirect, signInWithProvider, emailSignIn, emailSignUp,
+  onUser, signInWithProvider, emailSignIn, emailSignUp,
   resetPassword, signOut, authErrorText, type User,
 } from '../cloud/fb';
 import { ensureProfile, saveProfile, type Profile } from '../cloud/store';
@@ -51,9 +51,11 @@ export class AccountUI {
       if (this.root.classList.contains('open')) this.render();
       this.onSessionChange?.();
     });
-    consumeRedirect()
-      .then((u) => { if (u) toast(`Signed in as <b>${escape(u.displayName ?? u.email ?? '')}</b>`); })
-      .catch((err) => toast(`Sign-in failed — ${authErrorText(err)}`, 5000));
+    // No getRedirectResult here on purpose. Provider sign-in finishes on
+    // /signin.html and leaves the session in localStorage, so the onUser
+    // listener above already has the player. Calling it from this page would
+    // only spin up Firebase's helper iframe, which cross-origin isolation
+    // blocks — a guaranteed failure, on every single load, for nothing.
   }
 
   open() { this.root.classList.add('open'); this.render(); }
