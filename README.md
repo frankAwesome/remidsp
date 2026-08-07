@@ -67,6 +67,29 @@ Pick your audio interface as the browser "microphone" (echo cancellation / noise
 suppression / AGC are all disabled). Use 48 kHz output if you can — captures are
 48 kHz-native and the engine runs at the device rate.
 
+## The tuner
+
+`TUNER` in the header opens the chromatic tuner — a port of the desktop suite's
+`TunerOverlay`, down to the ±5-cent lock window and the smoothing constants, so
+the two behave the same under the hands.
+
+**It mutes the rig while it is open**, like a tuner pedal: a gain ramp on the
+last node before the speakers (`src/audio/engine.ts` → `setMuted`), not a
+disconnect, so the meters, the looper's clock and the spectrum all keep running.
+To be clear about what that buys — it is silence, not speed. The chain still
+costs its one render quantum whether or not the final gain is at zero. What it
+does fix is a laptop with an open mic hearing its own speakers, which is the
+difference between locking onto a note and chasing one.
+
+Pitch detection (`src/dsp/pitch.ts`) is the desktop's YIN — same band-pass, same
+0.13 threshold, same descend-to-the-valley rule — but **coarse-to-fine**, because
+a full-rate search is ~2.7 M inner iterations and this one runs on the thread
+that paints the page. It searches at ~12 kHz to find *which* period, then
+re-measures that one period at the device rate. About a twelfth of the work, and
+the final reading keeps the desktop's precision: measured against injected
+tones, within **±0.8 cents from E2 to E5**, at a steady 60 fps with zero long
+tasks.
+
 ## Two doors, and addresses
 
 The gate offers **LISTEN FIRST** and **PLUG IN**. Listen First boots the same

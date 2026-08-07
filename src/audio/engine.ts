@@ -113,6 +113,27 @@ export class RigEngine {
   private namIn: GainNode | null = null;
   private namOut: GainNode | null = null;
   private ampBypass: GainNode | null = null;
+  /* ── the input bus ────────────────────────────────────────────────────
+   * One node that every source connects to instead of connecting to `pre`
+   * directly — the mic, the DI loop, the test tone. It exists so there is a
+   * single place to listen to the raw guitar from, which is what the tuner
+   * needs, and so that adding a fourth source later cannot quietly forget to
+   * tell the tuner about itself.
+   *
+   * It carries `pre`'s exact channel settings (1 / explicit / discrete). That
+   * is not tidiness: it is what makes `split.connect(bus, ch)` take the ONE
+   * interface channel the player picked instead of down-mixing the other
+   * input's noise floor in with it, exactly as connecting to `pre` used to.
+   *
+   * A GainNode costs no latency — it is a multiply inside the same render
+   * quantum — so the one-quantum claim on the box is still true. */
+  private inputBus: GainNode | null = null;
+  /** The last thing before the speakers, so the tuner can mute the rig
+   *  without disconnecting anything. */
+  private outGain: GainNode | null = null;
+  /** Time-domain tap on the raw input, ahead of the whole chain: the tuner
+   *  reads the guitar, not the amp's distortion of it. */
+  tunerTap: AnalyserNode | null = null;
   private micSource: MediaStreamAudioSourceNode | null = null;
   private micStream: MediaStream | null = null;
   private micSplit: ChannelSplitterNode | null = null;
@@ -219,6 +240,22 @@ export class RigEngine {
     this.cabWet.gain.value = 0;
     this.cabDry.gain.value = 1;
 
+    // Every source lands here; `pre` and the tuner both listen to it.
+    this.inputBus = ctx.createGain();
+    this.inputBus.channelCount = 1;
+    this.inputBus.channelCountMode = 'explicit';
+    this.inputBus.channelInterpretation = 'discrete';
+    this.inputBus.connect(this.pre);
+
+    // A window long enough for one period of the lowest note the tuner
+    // chases, with room for YIN's comparison window on top: ~85 ms.
+    this.tunerTap = ctx.createAnalyser();
+    this.tunerTap.fftSize = ctx.sampleRate > 60000 ? 8192 : 4096;
+    this.tunerTap.smoothingTimeConstant = 0;   // time-domain tap, nothing to smooth
+    this.inputBus.connect(this.tunerTap);
+
+    this.outGain = ctx.createGain();
+
     this.pre.connect(this.namIn);
     this.namIn.connect(node);
     node.connect(this.namOut);
@@ -230,7 +267,8 @@ export class RigEngine {
     cabSum.connect(this.cabDry);
     this.cabWet.connect(this.post);
     this.cabDry.connect(this.post);
-    this.post.connect(ctx.destination);
+    this.post.connect(this.outGain);
+    this.outGain.connect(ctx.destination);
 
     const onMsg = (e: MessageEvent) => {
       const d = e.data;
@@ -337,7 +375,7 @@ export class RigEngine {
     const g = ctx.createGain();
     g.gain.value = 0.08;
     osc.connect(g);
-    g.connect(this.pre!);
+    g.connect(this.inputBus!);
     osc.start();
     return () => { osc.stop(); osc.disconnect(); g.disconnect(); };
   }
@@ -370,14 +408,14 @@ export class RigEngine {
     this.micSource = ctx.createMediaStreamSource(this.micStream);
 
     if (this.inputChannels > 1 && typeof choice.channel === 'number') {
-      // pre is channelCount 1 / explicit / discrete, so it takes the one
+      // inputBus is channelCount 1 / explicit / discrete, so it takes the one
       // channel the splitter hands it and never mixes the other in.
       const split = ctx.createChannelSplitter(this.inputChannels);
       this.micSource.connect(split);
-      split.connect(this.pre!, Math.min(choice.channel, this.inputChannels - 1));
+      split.connect(this.inputBus!, Math.min(choice.channel, this.inputChannels - 1));
       this.micSplit = split;
     } else {
-      this.micSource.connect(this.pre!);
+      this.micSource.connect(this.inputBus!);
     }
     this.inputLabel = track?.label ?? '';
   }
@@ -411,7 +449,7 @@ export class RigEngine {
   /** (Re)start the loop. An AudioBufferSourceNode is single-use by spec, so
    *  every start builds a new one — reusing one silently does nothing. */
   private restartDi() {
-    if (!this.ctx || !this.diBuffer || !this.pre) return;
+    if (!this.ctx || !this.diBuffer || !this.inputBus) return;
     this.stopDi();
     const ctx = this.ctx;
     this.diGain = ctx.createGain();
@@ -420,7 +458,7 @@ export class RigEngine {
     this.diNode.buffer = this.diBuffer;
     this.diNode.loop = true;
     this.diNode.connect(this.diGain);
-    this.diGain.connect(this.pre);
+    this.diGain.connect(this.inputBus);
     this.diNode.start();
   }
 
@@ -593,6 +631,46 @@ export class RigEngine {
     // Both stages share one processor class — each ignores ids it doesn't own.
     this.pre.port.postMessage(msg);
     this.post.port.postMessage(msg);
+  }
+
+  /* ────────────────────────── the tuner ────────────────────────── */
+
+  /** Is the rig currently silenced? */
+  muted = false;
+
+  /**
+   * Silence the rig without taking it apart.
+   *
+   * A GAIN RAMP, not a disconnect. Dropping the last edge of the graph would
+   * stop the post worklet being pulled, which resets nothing but does stop the
+   * meters, the looper's clock and the spectrum — and reconnecting mid-render
+   * lands wherever it lands and clicks. Twenty-five milliseconds of ramp is
+   * below the threshold of "I heard that" and above the threshold of a step
+   * discontinuity, and everything upstream keeps running exactly as it was.
+   *
+   * The mute sits AFTER the whole chain on purpose. Muting the input instead
+   * would be the obvious reading of "mute the guitar", and it would also mute
+   * the guitar the tuner is trying to hear.
+   */
+  setMuted(on: boolean) {
+    this.muted = on;
+    const g = this.outGain?.gain;
+    if (!g || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(on ? 0 : 1, t + 0.025);
+  }
+
+  /** How many samples readTunerWindow() will hand back. */
+  get tunerWindowSize(): number { return this.tunerTap?.fftSize ?? 0; }
+
+  /** Copy the most recent input samples into `dest`, which must be
+   *  tunerWindowSize long. False when there is no graph to read. */
+  readTunerWindow(dest: Float32Array<ArrayBuffer>): boolean {
+    if (!this.tunerTap || dest.length < this.tunerTap.fftSize) return false;
+    this.tunerTap.getFloatTimeDomainData(dest);
+    return true;
   }
 
   latencyMs(): { base: number; output: number; quantum: number } | null {

@@ -39,6 +39,8 @@ export const ICONS = {
   check: svg(`<path d="m5 12.5 4.5 4.5L19 7.5"/>`),
   /** take it with you */
   download: svg(`<path d="M12 3.5v11M7.5 10 12 14.5 16.5 10"/><path d="M4.5 17.5v1.6a1.4 1.4 0 0 0 1.4 1.4h12.2a1.4 1.4 0 0 0 1.4-1.4v-1.6"/>`),
+  /** the tuner — a tuning fork, the one object that means only this */
+  tuner: svg(`<path d="M8 3v8a4 4 0 0 0 8 0V3"/><path d="M12 15v6"/>`),
 } as const;
 
 export type IconName = keyof typeof ICONS;

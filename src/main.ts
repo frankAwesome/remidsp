@@ -30,6 +30,7 @@ import { deletePreset, myPresets, uidForHandle, getSharedPreset, countDownload,
   type CloudPreset, type CaptureRefDoc } from './cloud/store';
 import { onRoute, go, setAddress, type Route } from './ui/router';
 import { initGate } from './ui/gate';
+import { Tuner } from './ui/tuner';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -108,6 +109,10 @@ landing.className = 'landing';
 landing.hidden = true;
 const meters: Record<string, HTMLElement> = {};
 let t3kBrowser: T3kBrowser;
+/* The tuner is built at module load rather than in build(), because the header
+ * key wires itself to tuner.onToggle while it is being constructed. It shows
+ * nothing and costs nothing until somebody opens it. */
+const tuner = new Tuner();
 
 /* ────────────────────────── helpers ────────────────────────── */
 
@@ -295,6 +300,22 @@ function buildHeader(): HTMLElement {
   cap.append(capBtn, el('div', 'hdr__caption', 'TONE3000'));
   h.appendChild(cap);
   capBtn.addEventListener('click', () => t3kBrowser.open());
+
+  // tuner — a latching key, lit while the overlay is up
+  const tn = el('div', 'hdr__group');
+  const tunerBtn = el('button', 'hdr__btn hdr__btn--ico', '');
+  tunerBtn.innerHTML = withIcon('tuner', 'TUNER');
+  tunerBtn.title = 'chromatic tuner — the rig mutes while it is open';
+  tunerBtn.setAttribute('aria-pressed', 'false');
+  tn.append(tunerBtn, el('div', 'hdr__caption', 'TUNE'));
+  h.appendChild(tn);
+  tunerBtn.addEventListener('click', () => tuner.toggle());
+  // The key follows the overlay rather than the click, so ESC and a click on
+  // the scrim leave it in the right state too.
+  tuner.onToggle = (open) => {
+    tunerBtn.classList.toggle('hdr__btn--lit', open);
+    tunerBtn.setAttribute('aria-pressed', String(open));
+  };
 
   // view switch: RIG | FEED — the lit side is where you are.
   const fg = el('div', 'hdr__group hdr__group--always');
@@ -1370,8 +1391,13 @@ async function boot(source: BootSource = 'mic') {
   } else {
     toast(`<b>${BOOT.name}</b> on the amp — play.`);
   }
-  // Space stops and starts the demo loop, like any transport.
-  window.addEventListener('keydown', (e) => { inputSwitch?.handleKey(e); });
+  // Space stops and starts the demo loop, like any transport — unless the
+  // tuner has the screen, where it owns ESC and swallows space (see its
+  // handleKey for why silently restarting a muted loop would be a surprise).
+  window.addEventListener('keydown', (e) => {
+    if (tuner.handleKey(e)) return;
+    inputSwitch?.handleKey(e);
+  });
 
   // A link asked for a tone before there was a rig to put it on. There is now.
   if (pendingTone) {
@@ -1434,6 +1460,10 @@ function build() {
     <a href="https://github.com/sdatkinson/NeuralAmpModelerCore" target="_blank" rel="noreferrer">NAM core (MIT)</a>
     <span class="mono" id="cpuNote">WASM SIMD · AUDIOWORKLET · 128-SAMPLE QUANTUM</span>`;
   app.appendChild(foot);
+  // Outside the app's flow: it is a full-screen mode over everything, and
+  // sitting in `app` would put it inside the view switch's hidden/shown
+  // sections and take it down with whichever one it landed in.
+  document.body.appendChild(tuner.root);
   t3kBrowser = new T3kBrowser((buf, name) => {
     engine.setCabIr(buf);
     customIrName = name;
@@ -1500,6 +1530,10 @@ function navigate(r: Route) { go(r); }
 function setView(v: View) {
   currentView = v;
   const rig = v === 'rig';
+  // Leaving the rig closes the tuner — and, more to the point, un-mutes. A
+  // muted rig with no visible reason for it is indistinguishable from a broken
+  // one, and the tuner is the only thing that knows to put the gain back.
+  if (!rig) tuner.hide();
   document.querySelector<HTMLElement>('.ribbon')!.hidden = !rig;
   stage.hidden = !rig;
   document.querySelector<HTMLElement>('.looper')!.hidden = !rig;
