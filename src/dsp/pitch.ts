@@ -193,10 +193,19 @@ export function detectPitch(raw: Float32Array, sr: number): number {
   return hz >= MIN_HZ && hz <= MAX_HZ ? hz : NO_PITCH;
 }
 
-const NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+/* ASCII '#', not U+266F, and the reason is the display face. Oswald has no
+ * musical sharp — measured, not assumed: '#' advances 40.9 at 80px, '♯'
+ * advances 80, the same as a CJK character, which is the fallback box. So a
+ * real sharp in the hero note is drawn by whatever the OS offers next, at a
+ * weight and width that do not match the Oswald cap beside it.
+ *
+ * The desktop names its notes the same way for the same reason. The ruler's
+ * ♭ and ♯ ARE the real glyphs, because those are set in the mono stack, which
+ * has them. Screen readers get the word — see the tuner's aria-label. */
+const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 export interface Note {
-  /** e.g. "F♯" — the sharp is the real glyph, not an ASCII hash. */
+  /** e.g. "F#". Display text — say it out loud with spokenName(). */
   name: string;
   /** Scientific pitch notation octave: A4 = 440 Hz. */
   octave: number;
@@ -213,4 +222,10 @@ export function noteFor(hz: number): Note {
     octave: Math.floor(nearest / 12) - 1,
     cents: (midi - nearest) * 100,
   };
+}
+
+/** The note said out loud. "G#4" read from the screen comes out as "G hash
+ *  four", which is not a note anybody has ever played. */
+export function spokenName(n: Note): string {
+  return `${n.name.replace('#', ' sharp')} ${n.octave}`;
 }

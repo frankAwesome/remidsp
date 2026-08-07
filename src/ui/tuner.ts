@@ -27,7 +27,7 @@
  */
 
 import { engine } from '../audio/engine';
-import { detectPitch, noteFor, NO_PITCH } from '../dsp/pitch';
+import { detectPitch, noteFor, spokenName, NO_PITCH } from '../dsp/pitch';
 
 const el = (tag: string, cls = '', text = '') => {
   const n = document.createElement(tag);
@@ -266,8 +266,9 @@ export class Tuner {
       // beside the lane already says which way. Same call as the desktop.
       this.cents.textContent =
         (this.centsOff < 0 ? '-' : '') + Math.abs(this.centsOff).toFixed(1);
+      const off = Math.round(this.centsOff);
       this.read.setAttribute('aria-label',
-        `${n.name}${n.octave}, ${Math.round(this.centsOff)} cents`);
+        `${spokenName(n)}, ${Math.abs(off)} cents ${off < 0 ? 'flat' : 'sharp'}`);
     } else {
       this.hz.textContent = '---';
       this.cents.textContent = '--';
