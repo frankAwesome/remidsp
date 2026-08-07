@@ -84,6 +84,25 @@ export function onRoute(fn: (r: Route) => void): () => void {
  *  already shows. See the comment in go(). */
 let handler: ((r: Route) => void) | null = null;
 
+/**
+ * Point the address bar at a route WITHOUT acting on it.
+ *
+ * For when the screen already shows the thing and only the URL is behind —
+ * loading a tone from a feed card, say. go() would re-dispatch the route and
+ * load it a second time; this just tells the truth about where you are.
+ *
+ * It matters more than it sounds. Copying the address bar is how most people
+ * share a page, and while the bar said '#/feed' the honest answer to "send me
+ * that tone" was the feed — which is precisely what it did.
+ */
+export function setAddress(r: Route) {
+  const h = hashFor(r);
+  if (location.hash === h) return;
+  // replaceState rather than assigning location.hash: assigning fires
+  // hashchange, and the router would then reload what is already loaded.
+  history.replaceState(null, '', h);
+}
+
 /** Move to a route.
  *
  *  `replace` is for corrections the player did not ask for — landing on a

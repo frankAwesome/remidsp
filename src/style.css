@@ -613,6 +613,15 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .landing .feed-card__foot [data-a=comments]{display:none}
 .landing__cta{margin-top:.3rem}
 
+/* The tone title IS the tone's address — a real anchor, so right-click →
+   Copy Link Address, middle-click and cmd-click all behave the way a link is
+   supposed to. It was a <div>, which meant the ONLY way to get a tone's URL
+   was to notice a small SHARE button. */
+.feed-card__title{display:block;color:inherit;text-decoration:none;
+  transition:color .18s var(--ease)}
+a.feed-card__title:hover{color:var(--tone,#9fd8e8)}
+a.feed-card__title:focus-visible{outline:2px solid var(--tone,#9fd8e8);outline-offset:3px}
+
 /* ── share ────────────────────────────────────────────────────────────────── */
 .feed-card__share{cursor:pointer;background:transparent;border:1px solid var(--line);
   color:var(--muted-2);transition:color .2s var(--ease),border-color .2s var(--ease)}

@@ -404,12 +404,23 @@ export class ProfileView {
         </div>
         <div class="profile-sound__acts">
           <button class="tone-card__load" data-a="load">LOAD</button>
-          <button class="t3k__pill ${s.shared ? 'on' : ''}" data-a="share">${s.shared ? 'UNSHARE' : 'SHARE'}</button>
+          <!-- "SHARE" used to sit here meaning PUT ON THE FEED, while the same
+               word on a feed card means COPY A LINK. Two different actions
+               under one label is a good way to be told sharing is broken. -->
+          <button class="t3k__pill ${s.shared ? 'on' : ''}" data-a="feed">${s.shared ? 'ON FEED' : 'PUT ON FEED'}</button>
+          ${s.shared ? `<button class="t3k__pill" data-a="copy" title="copy a link to this tone">COPY LINK</button>` : ''}
           <button class="looper__btn" data-a="del" title="delete">✕</button>
         </div>
       </div>`;
     c.querySelector('[data-a=load]')!.addEventListener('click', () => void this.applyPreset(s));
-    c.querySelector('[data-a=share]')!.addEventListener('click', async () => {
+    // Only a tone that is ON the feed has a public page — a link to a private
+    // one would 404 for everybody the owner sent it to.
+    c.querySelector('[data-a=copy]')?.addEventListener('click', () => void shareLink(
+      urlFor({ view: 'tone', id: s.id }),
+      `${s.name} — a rig by ${session.profile?.username ?? 'me'}`,
+      `${s.name}. Runs in your browser, nothing to install.`));
+
+    c.querySelector('[data-a=feed]')!.addEventListener('click', async () => {
       try {
         if (s.shared) { await setShared(s.id, false); toast('Taken off the feed.'); }
         else {

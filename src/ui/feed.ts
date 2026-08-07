@@ -15,7 +15,7 @@ import { session } from './account';
 import { toast } from './toast';
 import { DIVISIONS } from '../params';
 import { t3k } from '../tone3000';
-import { urlFor } from './router';
+import { urlFor, hashFor } from './router';
 import { shareLink } from './share';
 
 /** Resolves false when the preset's own capture could not be fetched and the
@@ -140,7 +140,15 @@ export class FeedView {
     return this.followingIds;
   }
 
+  /** Bumped per refresh; a late response whose token is stale is dropped.
+   *  Two refreshes can easily overlap — the router paints the feed and the
+   *  auth listener refreshes it a moment later — and without this the slower
+   *  one lands on top of the faster one's DOM, briefly showing every card
+   *  twice. */
+  private refreshSeq = 0;
+
   async refresh() {
+    const seq = ++this.refreshSeq;
     this.list.innerHTML = `<div class="t3k__note">Loading the feed…</div>`;
     try {
       const [kind, val] = this.amp ? this.amp.split(':') : ['', ''];
@@ -166,6 +174,7 @@ export class FeedView {
         items = await feed(this.sort, serverAmp);
       }
 
+      if (seq !== this.refreshSeq) return;     // a newer refresh owns the list
       this.rememberCaptures(items);
       items = items.filter((p) => this.matches(p, kind, val));
 
@@ -183,7 +192,8 @@ export class FeedView {
         }
       }
     } catch (err) {
-      this.list.innerHTML = `<div class="t3k__note">Feed unavailable — ${(err as Error).message}</div>`;
+      if (seq !== this.refreshSeq) return;
+      this.list.innerHTML = `<div class="t3k__note">Feed unavailable — ${escape((err as Error).message)}</div>`;
     }
   }
 
@@ -334,7 +344,8 @@ export class FeedView {
                ${escape(p.capture!.label.toUpperCase())}</span>`
           : `<span class="feed-card__ampbadge" title="the bundled ${escape(p.amp)} amp">${escape(p.amp.toUpperCase())}</span>`}
       </header>
-      <div class="feed-card__title">${escape(p.name)}</div>
+      <a class="feed-card__title" href="${escape(hashFor({ view: 'tone', id: p.id }))}"
+         title="open this tone on its own page">${escape(p.name)}</a>
       ${p.description ? `<p class="feed-card__desc">${escape(p.description)}</p>` : ''}
       <div class="feed-card__rig">
         <div class="feed-card__chain">${chips}</div>

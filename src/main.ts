@@ -28,7 +28,7 @@ import { ProfileView } from './ui/profile';
 import { openSaveDialog } from './ui/saveDialog';
 import { deletePreset, myPresets, uidForHandle, getSharedPreset, countDownload,
   type CloudPreset, type CaptureRefDoc } from './cloud/store';
-import { onRoute, go, type Route } from './ui/router';
+import { onRoute, go, setAddress, type Route } from './ui/router';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -67,6 +67,16 @@ let customIrName: string | null = null;
 let presetIdx = 0;
 let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: BOOT.voice, label: BOOT_LABEL };
 let account: AccountUI;
+type View = 'rig' | 'feed' | 'profile' | 'landing';
+/* Declared HERE, with the other module state, and not next to setView().
+ *
+ * It used to sit below the call to startRouter(), which meant a cold load
+ * straight into #/feed ran setView() while `currentView` was still in its
+ * temporal dead zone and threw — leaving the page blank with the feed hidden.
+ * The tone route escaped it only by accident: it awaits Firestore first, and
+ * that await let module evaluation finish before setView() was reached. A bug
+ * that hid from the very path it broke. */
+let currentView: View = 'rig';
 let inputSwitch: InputSwitch | null = null;
 /* ── demo mode ─────────────────────────────────────────────────────────────
  * The demo DI is a real performance cut to exactly 8 bars at 90 BPM, so while
@@ -1450,8 +1460,6 @@ window.addEventListener('remi:capture-loaded', () => {
 
 /* ── rig / feed / profile view switch + cloud preset apply ── */
 
-type View = 'rig' | 'feed' | 'profile' | 'landing';
-let currentView: View = 'rig';
 
 /** Change the view AND the address, so every view is somewhere you can link
  *  to and Back behaves the way a browser is supposed to. */
@@ -1591,7 +1599,14 @@ async function applyCloudPreset(p: CloudPreset, opts: { fromLink?: boolean } = {
       + `turn anything and it becomes yours.`, 7000);
     void countDownload(p.id);
   } else {
-    setFeedMode(false);
+    // Show the rig, and say in the address bar WHICH tone the rig now is.
+    //
+    // This used to be setFeedMode(false), which navigates to '#/' — so after
+    // loading somebody's sound the bar read '#/', and copying it handed over
+    // the bare app. setAddress rather than go(): the tone is already loaded,
+    // and routing to it would load it a second time.
+    setView('rig');
+    setAddress({ view: 'tone', id: p.id });
   }
   return whole;
 }
