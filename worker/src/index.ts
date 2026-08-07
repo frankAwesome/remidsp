@@ -326,7 +326,10 @@ export default {
         description: String(prof.bio || '').trim()
           || `${prof.username} shares guitar rigs you can play in a browser tab.`,
         canonical: `${url.origin}/u/${encodeURIComponent(handle)}`,
-        image: `${url.origin}/og/u/${encodeURIComponent(handle)}.svg`,
+        // Was /og/u/<handle>.svg, a route this Worker never implemented — so
+        // every shared profile linked a 404 and unfurled with no picture at
+        // all. The house card until there is a real per-player one.
+        image: `${env.RIG_ORIGIN}/assets/og-card.jpg?v=2`,
         openInRig: `${env.RIG_ORIGIN}/#/u/${encodeURIComponent(handle)}`,
         body: `<h1>${esc(prof.username)}</h1>
           ${prof.bio ? `<p class="desc">${esc(prof.bio)}</p>` : ''}

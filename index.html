@@ -12,18 +12,32 @@
        The reverb's in-rig name stays on the rig; out here it is described by
        what it does, because a name nobody has heard yet sells nothing. -->
   <meta name="description" content="A full guitar rig in a browser tab — no install, no account. Dual-engine delay with tape bloom and >100% feedback, a stereo shimmer reverb, a multitrack looper and a studio strip. Plays any NAM capture. Zero added latency." />
-  <link rel="icon" href="/assets/app_icon_256.png" />
+  <!-- The site's own favicon, so a tab of the web rig and a tab of
+       remidsp.com are recognisably the same product. -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/assets/icon-512.png" />
+  <link rel="apple-touch-icon" href="/assets/icon-512.png" />
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://remidsp-maine.web.app/" />
   <meta property="og:site_name" content="REMI DSP · Maine" />
   <meta property="og:title" content="A full guitar rig that runs in a browser tab. No install." />
   <meta property="og:description" content="Dual-engine delay with tape bloom and >100% feedback. A stereo shimmer reverb. A multitrack looper and a studio strip. Plays any NAM capture — and there is nothing to download." />
-  <meta property="og:image" content="https://remidsp-maine.web.app/assets/app_icon_256.png" />
+  <!-- 1200x630, rendered by tools/render-og.mjs from tools/og-card.html —
+       the same Portland head and layout remidsp.com uses, so the two links
+       preview as one product. Bump ?v= after re-rendering: Slack, X, iMessage
+       and Facebook cache a scraped card hard and will keep serving the old
+       picture otherwise. -->
+  <meta property="og:image" content="https://remidsp-maine.web.app/assets/og-card.jpg?v=2" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Portland — a black tolex amplifier head with a gold control plate and brass corners. Three amps. In a browser tab." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="A full guitar rig that runs in a browser tab. No install." />
   <meta name="twitter:description" content="Dual-engine delay with tape bloom and >100% feedback. A stereo shimmer reverb. A multitrack looper and a studio strip. Plays any NAM capture — and there is nothing to download." />
-  <meta name="twitter:image" content="https://remidsp-maine.web.app/assets/app_icon_256.png" />
+  <meta name="twitter:image" content="https://remidsp-maine.web.app/assets/og-card.jpg?v=2" />
+  <meta name="twitter:image:alt" content="Portland — a black tolex amplifier head with a gold control plate and brass corners. Three amps. In a browser tab." />
 </head>
 <body>
   <div class="bg"><div class="bg__grain"></div></div>
