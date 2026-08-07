@@ -622,6 +622,12 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 a.feed-card__title:hover{color:var(--tone,#9fd8e8)}
 a.feed-card__title:focus-visible{outline:2px solid var(--tone,#9fd8e8);outline-offset:3px}
 
+/* The url inside a toast — wraps instead of overflowing, and reads as a url
+   rather than as prose, so it can be selected by hand when the clipboard is
+   refused. */
+.toast__url{display:inline-block;margin-top:.25rem;font-family:var(--font-mono);
+  font-size:.68rem;color:var(--ice);word-break:break-all;line-height:1.4}
+
 /* ── share ────────────────────────────────────────────────────────────────── */
 .feed-card__share{cursor:pointer;background:transparent;border:1px solid var(--line);
   color:var(--muted-2);transition:color .2s var(--ease),border-color .2s var(--ease)}
