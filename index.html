@@ -17,6 +17,15 @@
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" href="/assets/icon-512.png" />
   <link rel="apple-touch-icon" href="/assets/icon-512.png" />
+  <meta name="theme-color" content="#050506" />
+
+  <!-- The hero is one photograph-sized render and the page is worth nothing
+       until it lands, so the FIRST head is fetched at high priority alongside
+       the two faces the headline is set in. The other two heads are lazy —
+       they are behind a 4.5s rotation nobody has reached yet. -->
+  <link rel="preload" href="/assets/site/amp-head-camden.webp" as="image" type="image/webp" fetchpriority="high" />
+  <link rel="preload" href="/assets/fonts/OswaldBold.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preload" href="/assets/fonts/SpaceGroteskMedium.ttf" as="font" type="font/ttf" crossorigin />
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://remidsp-maine.web.app/" />
@@ -46,72 +55,376 @@
     <i class="hud__corner hud__corner--bl"></i><i class="hud__corner hud__corner--br"></i>
   </div>
 
+  <!-- ░░ THE GATE — a landing page that happens to be a boot screen ░░
+       Everything here lives inside #gateway, which is a fixed, scrolling
+       overlay that main.ts hides the moment an engine exists. So the page
+       scrolls INSIDE this element, not on <body> — every scroll-driven effect
+       in ui/gate.ts observes with root:#gateway for that reason. -->
   <div class="gateway" id="gateway">
-    <img class="gateway__logo" src="/assets/ui/brand_logo.png" alt="REMI DSP" />
-    <!-- The <small> is display:block, so the wordmark and the tagline already
-         sit on separate lines. The gap has to exist in the MARKUP too: without
-         it the heading's text content — and so its accessible name — runs
-         together as "MaineREMI DSP…". The newline below is collapsed away at
-         the end of the line box, so nothing moves on screen. The aria-label
-         then gives the heading a properly punctuated name to announce. -->
-    <h1 aria-label="Maine — REMI DSP guitar suite">
-      Maine
-      <small>REMI DSP · GUITAR SUITE</small>
-    </h1>
+    <span class="gate__progress" aria-hidden="true"><i id="gateProgress"></i></span>
 
-    <!-- The loudest thing on the gate. Every competitor at this tier costs a
-         download, an installer, a license and a plugin host; this one costs a
-         click. That is the pitch, so it gets the biggest type. -->
-    <p class="gateway__hook">Runs in the&nbsp;browser.<br /><b>No install.</b></p>
+    <!-- sticky chrome: brand left, live boot readout right -->
+    <header class="gate__bar">
+      <span class="gate__brand">
+        <img src="/assets/site/logo-mark.png" width="42" height="34" alt="" />
+        <span class="gate__brandword">REMI DSP</span>
+      </span>
+      <span class="gate__barmeta mono">MAINE&nbsp;·&nbsp;WEB&nbsp;SUITE</span>
+      <span class="gate__barload">
+        <span class="mono">BOOT</span>
+        <span class="gate__barbar"><i id="gateBarFill"></i></span>
+        <span class="led-text" id="gateBarPct">0</span>
+      </span>
+    </header>
 
-    <!-- Rig first, amp second: the capture engine is a library anyone can
-         npm install, the effects are not. -->
-    <ul class="gateway__rig">
-      <li><b>Dual-engine delay</b><span>tape bloom, ducking, feedback past 100%</span></li>
-      <li><b>Stereo reverb</b><span>8-line FDN with granular shimmer</span></li>
-      <li><b>Multitrack looper</b><span>count-in, overdubs, per-layer level and pan</span></li>
-      <li><b>Studio strip</b><span>console EQ, FET compressor, cab IRs</span></li>
-    </ul>
+    <!-- ░░ HERO ░░ -->
+    <section class="gate-hero" id="gateHero">
+      <span class="gate-hero__glow" aria-hidden="true"></span>
 
-    <div class="gateway__load" id="assetLoad">
-      <div class="gateway__load-head">
-        <span>INITIALIZING UI ASSETS</span>
-        <span class="led-text" id="assetPct">0</span><span class="gateway__load-unit">%</span>
+      <div class="gate-hero__copy">
+        <p class="gate-hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;MAINE&nbsp;·&nbsp;WEB&nbsp;GUITAR&nbsp;SUITE</p>
+
+        <!-- The h1 has to carry the product's name for anything that reads the
+             page as a document rather than a picture, and the visible lines
+             are a claim, not a name — hence the aria-label. -->
+        <h1 class="gate-hero__title" aria-label="Maine — the REMI DSP web guitar suite. Three amps, one tab.">
+          <span class="gate-hero__line"><span data-reveal-line style="--d:.04s">Three amps.</span></span>
+          <span class="gate-hero__line"><span class="gate-hero__shine" data-reveal-line style="--d:.13s">One tab.</span></span>
+        </h1>
+
+        <p class="gate-hero__lede" data-reveal style="--d:.24s">
+          The whole rig runs <b>on this page</b> — three captured heads, a dual-engine
+          delay, a stereo shimmer reverb, a multitrack looper and a studio strip.
+          Nothing to download. Nobody to sign up to.
+        </p>
+
+        <!-- TWO DOORS, and the wide one is deliberately first.
+             The rig used to open exactly one way: a microphone permission prompt
+             before the visitor had heard a single note. Most people do not have a
+             guitar plugged into the machine they are reading this on, and asking
+             a stranger for their microphone to prove that a website makes sound
+             is the whole reason they leave. LISTEN FIRST boots the identical rig
+             with a demo track running through it and never calls getUserMedia. -->
+        <!-- data-door, not the id, is what main.ts binds and disables — the
+             same two doors appear again at the foot of the page, and a
+             stranger who scrolled the whole thing should not have to come back
+             up here to press one. -->
+        <div class="gateway__doors" data-reveal style="--d:.32s">
+          <button class="gateway__cta gateway__cta--demo" id="demoBtn" data-door="di">
+            <span class="gateway__cta-main">Listen First</span>
+            <span class="gateway__cta-sub">no guitar · no mic · no account</span>
+          </button>
+          <button class="gateway__cta gateway__cta--plug" id="startBtn" data-door="mic">
+            <span class="gateway__cta-main">Plug In</span>
+            <span class="gateway__cta-sub">my guitar is connected</span>
+          </button>
+        </div>
+
+        <div class="gateway__load" id="assetLoad" data-reveal style="--d:.38s">
+          <div class="gateway__load-head">
+            <span>INITIALIZING UI ASSETS</span>
+            <span class="led-text" id="assetPct">0</span><span class="gateway__load-unit">%</span>
+          </div>
+          <div class="gateway__bar"><i id="assetBar"></i></div>
+        </div>
+
+        <!-- Devices are chosen here, before launch, so the rig opens on the right
+             interface instead of whatever the OS calls default. Folded away: it is
+             meaningless to the demo path and it is the most intimidating thing on
+             the page to someone who just arrived. -->
+        <details class="gateway__devices" id="devicePickerWrap">
+          <summary>Choose an audio interface</summary>
+          <div id="devicePicker"></div>
+        </details>
+
+        <div class="gateway__status" id="bootStatus"></div>
       </div>
-      <div class="gateway__bar"><i id="assetBar"></i></div>
-    </div>
 
-    <!-- TWO DOORS, and the wide one is deliberately first.
-         The rig used to open exactly one way: a microphone permission prompt
-         before the visitor had heard a single note. Most people do not have a
-         guitar plugged into the machine they are reading this on, and asking
-         a stranger for their microphone to prove that a website makes sound
-         is the whole reason they leave. LISTEN FIRST boots the identical rig
-         with a demo track running through it and never calls getUserMedia. -->
-    <div class="gateway__doors">
-      <button class="gateway__cta gateway__cta--demo" id="demoBtn">
-        <span class="gateway__cta-main">Listen First</span>
-        <span class="gateway__cta-sub">no guitar · no mic · no account</span>
-      </button>
-      <button class="gateway__cta gateway__cta--plug" id="startBtn">
-        <span class="gateway__cta-main">Plug In</span>
-        <span class="gateway__cta-sub">my guitar is connected</span>
-      </button>
-    </div>
+      <!-- The heads carry real alpha, so they sit straight on the black with no
+           card, no halo and no seam. Nothing hard-edged may go behind them:
+           alpha = max(r,g,b), so every dark pixel is part-transparent and any
+           type back there reads straight through the cabinet. -->
+      <div class="gate-rig" id="gateRig">
+        <div class="gate-rig__amps">
+          <img class="gate-rig__amp is-active" src="/assets/site/amp-head-camden.webp"
+               width="1672" height="941" fetchpriority="high"
+               alt="Camden — a cream-and-gold amplifier head with a stained-glass front panel" />
+          <img class="gate-rig__amp" src="/assets/site/amp-head-portland.webp"
+               width="1672" height="941" loading="lazy"
+               alt="Portland — a black tolex amplifier head with a gold control plate and brass corners" />
+          <img class="gate-rig__amp" src="/assets/site/amp-head-katahdin.webp"
+               width="1672" height="941" loading="lazy"
+               alt="Katahdin — an amplifier head carved with baroque cherubs playing lutes" />
+          <span class="gate-rig__sheen" aria-hidden="true"></span>
+        </div>
 
-    <!-- Devices are chosen here, before launch, so the rig opens on the right
-         interface instead of whatever the OS calls default. Hidden until PLUG
-         IN is the chosen door: it is meaningless to the demo path and it is
-         the most intimidating thing on the page to someone who just arrived. -->
-    <details class="gateway__devices" id="devicePickerWrap">
-      <summary>Choose an audio interface</summary>
-      <div id="devicePicker"></div>
-    </details>
+        <div class="gate-rig__sel">
+          <ul class="gate-rig__tabs" id="gateRigTabs" role="tablist" aria-label="Amplifiers">
+            <li><button type="button" data-goto="0" class="is-active" role="tab" aria-selected="true">CAMDEN</button></li>
+            <li><button type="button" data-goto="1" role="tab" aria-selected="false">PORTLAND</button></li>
+            <li><button type="button" data-goto="2" role="tab" aria-selected="false">KATAHDIN</button></li>
+          </ul>
+          <div class="gate-rig__voices" id="gateRigVoices">
+            <div class="gate-rig__voiceset is-active"><span>CLEAN</span><span>DRIVEN</span><span>MAX</span></div>
+            <div class="gate-rig__voiceset"><span>BLOOM</span><span>PUSHED</span></div>
+            <div class="gate-rig__voiceset"><span>RED</span></div>
+          </div>
+          <p class="gate-rig__cap mono">3&nbsp;HEADS&nbsp;·&nbsp;6&nbsp;VOICES&nbsp;·&nbsp;CAPTURED&nbsp;FROM&nbsp;REAL&nbsp;RIGS</p>
+        </div>
+      </div>
 
-    <p class="gateway__note">Plays any <b>NAM</b> capture — the bundled amps, or anything from
-      TONE3000. Echo cancellation, noise suppression and auto-gain are all forced off, and the
-      chain adds zero latency beyond one 128-sample quantum.</p>
-    <div class="gateway__status" id="bootStatus"></div>
+      <a class="gate-hero__cue" href="#gateRigSection" aria-label="Scroll down">
+        <span class="mono">SCROLL</span><i></i>
+      </a>
+    </section>
+
+    <!-- ░░ MARQUEE ░░ -->
+    <section class="gate-marquee" aria-hidden="true">
+      <div class="gate-marquee__band">
+        <div class="gate-marquee__track">
+          <span>No Install</span><i>✦</i><span>No Account</span><i>✦</i><span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Zero Added Latency</span><i>✦</i><span>Plays Any NAM Capture</span><i>✦</i>
+        </div>
+        <div class="gate-marquee__track">
+          <span>No Install</span><i>✦</i><span>No Account</span><i>✦</i><span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Zero Added Latency</span><i>✦</i><span>Plays Any NAM Capture</span><i>✦</i>
+        </div>
+      </div>
+    </section>
+
+    <!-- ░░ 01 · THE RIG ░░ -->
+    <section class="gate-sec" id="gateRigSection">
+      <header class="gate-shead" data-reveal>
+        <span class="gate-shead__no led-text">01</span>
+        <p class="gate-kicker">The Rig</p>
+        <span class="gate-shead__meta mono">10&nbsp;MODULES&nbsp;·&nbsp;ANY&nbsp;ORDER</span>
+      </header>
+
+      <div class="gate-sec__head">
+        <h2 data-reveal>Everything<br>in the chain.</h2>
+        <div class="gate-sec__lede" data-reveal style="--d:.08s">
+          <p>Gate, compressor, drive, the capture amp, the cab, Sauce, the studio
+             strip, chorus, delay and reverb — all of it on one render thread,
+             all of it reorderable.</p>
+          <p>The same DSP as the desktop suite, compiled for the web.</p>
+        </div>
+      </div>
+
+      <div class="gate-cards">
+        <article class="gcard gcard--wide" style="--tint:#3fa8a8" data-reveal data-tilt>
+          <div class="gcard__shot">
+            <img src="/assets/site/delay.webp" width="1920" height="907" loading="lazy"
+                 alt="The Maine delay — tape-warm echo with astronaut artwork" />
+          </div>
+          <div class="gcard__meta">
+            <span class="gcard__no led-text">01</span>
+            <h3>Dual-engine delay</h3>
+            <p class="gcard__tag mono">TAPE BLOOM · A/B ENGINES</p>
+            <p>Two engines in series or parallel, tempo-synced, with in-loop
+               saturation and compounding HF loss so repeats decay the way tape
+               does. Wow, flutter, diffusion smear, ducking — and feedback that
+               goes past 100&nbsp;% and blooms instead of screaming.</p>
+          </div>
+        </article>
+
+        <article class="gcard gcard--wide" style="--tint:#5b8fd4;--d:.08s" data-reveal data-tilt>
+          <div class="gcard__shot">
+            <img src="/assets/site/reverb.webp" width="1920" height="907" loading="lazy"
+                 alt="The Maine reverb — astronaut on the moon artwork" />
+          </div>
+          <div class="gcard__meta">
+            <span class="gcard__no led-text">02</span>
+            <h3>Stereo reverb</h3>
+            <p class="gcard__tag mono">8-LINE FDN · GRANULAR SHIMMER</p>
+            <p>A modulated eight-line feedback delay network with a granular
+               shimmer riding on top — three-dimensional tails that actually
+               bloom, opt-in ducking, and wet-only filters to shape the space
+               without touching the note.</p>
+          </div>
+        </article>
+
+        <!-- No render exists for the looper, and a stock photo of a pedal that
+             is not this one would be a lie. Drawn instead, from the same
+             hairline language as the rig's own meters. -->
+        <article class="gcard" style="--tint:#5fe08a" data-reveal data-tilt>
+          <div class="gcard__shot gcard__shot--drawn">
+            <span class="gloop">
+              <i class="gloop__lane" style="--w:100%;--o:1"></i>
+              <i class="gloop__lane" style="--w:82%;--o:.75"></i>
+              <i class="gloop__lane" style="--w:64%;--o:.5"></i>
+              <i class="gloop__lane" style="--w:46%;--o:.3"></i>
+              <b class="gloop__head"></b>
+            </span>
+          </div>
+          <div class="gcard__meta">
+            <span class="gcard__no led-text">03</span>
+            <h3>Multitrack looper</h3>
+            <p class="gcard__tag mono">COUNT-IN · OVERDUBS</p>
+            <p>Stack layers against a count-in, then ride each one — level and
+               pan per layer, and every take lands on the grid.</p>
+          </div>
+        </article>
+
+        <article class="gcard" style="--tint:#57b083" data-reveal data-tilt>
+          <div class="gcard__shot">
+            <img src="/assets/site/studio.webp" width="1920" height="1208" loading="lazy"
+                 alt="The Maine studio strip — REMI 4000 console EQ and 2026 FET compressor" />
+          </div>
+          <div class="gcard__meta">
+            <span class="gcard__no led-text">04</span>
+            <h3>Studio strip</h3>
+            <p class="gcard__tag mono">CONSOLE EQ · FET COMP</p>
+            <p>A REMI&nbsp;4000 console EQ into a 2026 FET compressor with a live
+               VU needle. Your tone lands finished, not raw.</p>
+          </div>
+        </article>
+
+        <article class="gcard" style="--tint:#a9814f" data-reveal data-tilt>
+          <div class="gcard__shot">
+            <img src="/assets/site/cab.webp" width="1600" height="857" loading="lazy"
+                 alt="The Maine cab — impulse-response loader with a blue-grey grille cabinet" />
+          </div>
+          <div class="gcard__meta">
+            <span class="gcard__no led-text">05</span>
+            <h3>Amp &amp; cab</h3>
+            <p class="gcard__tag mono">NAM CAPTURES · IR LOADER</p>
+            <p>The capture engine runs in WebAssembly. Bring any <b>NAM</b> file
+               or anything from TONE3000, then drop in your own IR.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ░░ 02 · THE FEED — the thing a desktop plugin structurally cannot do ░░ -->
+    <section class="gate-sec gate-feed" id="gateFeed">
+      <div class="gate-feed__copy">
+        <header class="gate-shead" data-reveal>
+          <span class="gate-shead__no led-text">02</span>
+          <p class="gate-kicker">The Feed</p>
+        </header>
+        <h2 data-reveal style="--d:.06s">Send a tone.<br>They just press play.</h2>
+        <p data-reveal style="--d:.12s">
+          Post a sound and it gets a link. Whoever opens it lands on the rig with
+          your patch already loaded and the capture already on the amp — no
+          install, no account, no matching plugin versions. Turn one knob and it
+          is theirs.
+        </p>
+        <p class="gate-feed__fine mono" data-reveal style="--d:.18s">
+          SHARED&nbsp;TONES&nbsp;·&nbsp;PROFILES&nbsp;·&nbsp;ONE&nbsp;URL&nbsp;PER&nbsp;SOUND
+        </p>
+      </div>
+
+      <!-- A drawing of the thing, not a screenshot of it: the real card is built
+           by ui/feed.ts and would drift out of date the day it changes. -->
+      <div class="gate-feed__card" data-reveal style="--d:.1s" data-tilt>
+        <div class="gtone">
+          <div class="gtone__top">
+            <span class="gtone__avatar" aria-hidden="true">R</span>
+            <span class="gtone__who"><b>@remi</b><i>Portland · Pushed</i></span>
+            <span class="gtone__live mono">LIVE</span>
+          </div>
+          <div class="gtone__name">Bloom On The Edge</div>
+          <div class="gtone__wave" aria-hidden="true">
+            <i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:88%"></i><i style="--h:71%"></i>
+            <i style="--h:96%"></i><i style="--h:52%"></i><i style="--h:78%"></i><i style="--h:41%"></i>
+            <i style="--h:84%"></i><i style="--h:63%"></i><i style="--h:92%"></i><i style="--h:35%"></i>
+            <i style="--h:70%"></i><i style="--h:49%"></i><i style="--h:81%"></i><i style="--h:28%"></i>
+          </div>
+          <div class="gtone__chips">
+            <span class="gtone__chip mono">DELAY 3/16</span>
+            <span class="gtone__chip mono">FDN 8</span>
+            <span class="gtone__chip mono">FET 4:1</span>
+          </div>
+          <div class="gtone__link mono">remidsp-maine.web.app/#/t/…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ░░ 03 · THE NUMBERS ░░ -->
+    <section class="gate-sec gate-specs">
+      <header class="gate-shead" data-reveal>
+        <span class="gate-shead__no led-text">03</span>
+        <p class="gate-kicker">The Numbers</p>
+        <span class="gate-shead__meta mono">CHROME&nbsp;/&nbsp;EDGE&nbsp;RECOMMENDED</span>
+      </header>
+
+      <ul class="gate-tally" data-reveal>
+        <li><b class="led-text">3</b><span>captured heads</span></li>
+        <li><b class="led-text">6</b><span>amp voices</span></li>
+        <li><b class="led-text">10</b><span>chain modules</span></li>
+        <li><b class="led-text">0</b><span>installs</span></li>
+      </ul>
+
+      <dl class="gate-spectable" data-reveal style="--d:.06s">
+        <div class="gate-specrow">
+          <dt>Latency</dt>
+          <dd>No lookahead and no internal buffering anywhere in the chain — one
+              128-sample render quantum (~2.7&nbsp;ms at 48&nbsp;kHz) plus whatever
+              your device I/O costs. That is the whole budget.</dd>
+        </div>
+        <div class="gate-specrow">
+          <dt>Engine</dt>
+          <dd>The NAM capture model runs as SIMD WebAssembly inside an
+              AudioWorklet; the rest of the rig is hand-rolled DSP in a second
+              worklet on the same render thread.</dd>
+        </div>
+        <div class="gate-specrow">
+          <dt>Input</dt>
+          <dd>Echo cancellation, noise suppression and auto-gain are all forced
+              off. Pick your interface before you open the rig, or press
+              <b>Listen First</b> and never be asked for a microphone at all.</dd>
+        </div>
+        <div class="gate-specrow">
+          <dt>Captures</dt>
+          <dd>Plays any <b>NAM</b> file — the bundled amps, or the whole TONE3000
+              catalog. Cab IRs load into a zero-latency convolver.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- ░░ CLOSE ░░ -->
+    <section class="gate-close">
+      <span class="gate-close__ghost" aria-hidden="true">PLAY</span>
+      <!-- This is the SUITE's own window, not a screenshot of the browser
+           build — same faceplates, same chain, same patch. The caption says so
+           rather than letting the picture imply a screenshot it is not. -->
+      <figure class="gate-close__shot" data-reveal data-tilt>
+        <span class="gate-close__frame">
+          <img src="/assets/site/amp-window-portland.webp" width="1920" height="1208" loading="lazy"
+               alt="The Maine rig on its Pushed patch — the Portland head, the effects chain along the top and the voice selector below" />
+          <span class="gate-close__glare" aria-hidden="true"></span>
+        </span>
+        <!-- plain spaces, not &nbsp;: this is the one caption long enough to
+             need to wrap on a phone, and an unbreakable line is clipped there
+             rather than reflowed. -->
+        <figcaption class="mono">MAINE&nbsp;·&nbsp;PORTLAND&nbsp;PUSHED — THE SAME RIG ON THE DESKTOP AND IN THE TAB</figcaption>
+      </figure>
+      <div class="gate-close__copy" data-reveal style="--d:.08s">
+        <h2>It is already<br>loaded.</h2>
+        <p class="gateway__note">The rig finished downloading while you read this page.
+          Press either door and it opens in this tab.</p>
+        <div class="gateway__doors">
+          <button class="gateway__cta gateway__cta--demo" data-door="di">
+            <span class="gateway__cta-main">Listen First</span>
+            <span class="gateway__cta-sub">no guitar · no mic · no account</span>
+          </button>
+          <button class="gateway__cta gateway__cta--plug" data-door="mic">
+            <span class="gateway__cta-main">Plug In</span>
+            <span class="gateway__cta-sub">my guitar is connected</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="gate-foot">
+      <span class="gate__brand">
+        <img src="/assets/site/logo-mark.png" width="42" height="34" alt="" />
+        <span class="gate__brandword">REMI DSP</span>
+      </span>
+      <p class="gate-foot__tag">Maine — the guitar rig that runs in a browser tab.</p>
+      <p class="gate-foot__legal">
+        Want it in your DAW? <a href="https://remidsp.com" target="_blank" rel="noopener">The desktop
+        plugin lives at remidsp.com</a> — VST3, AU, AAX and standalone, also free of accounts.
+      </p>
+    </footer>
   </div>
 
   <main class="app" id="app" hidden></main>

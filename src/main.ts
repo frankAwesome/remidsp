@@ -29,6 +29,7 @@ import { openSaveDialog } from './ui/saveDialog';
 import { deletePreset, myPresets, uidForHandle, getSharedPreset, countDownload,
   type CloudPreset, type CaptureRefDoc } from './cloud/store';
 import { onRoute, go, setAddress, type Route } from './ui/router';
+import { initGate } from './ui/gate';
 
 /* ────────────────────────── app state ────────────────────────── */
 
@@ -1235,6 +1236,13 @@ const assetsWarm = preloadAssets((done, total) => {
   const pctEl = document.getElementById('assetPct');
   if (bar) bar.style.width = `${pct}%`;
   if (pctEl) pctEl.textContent = String(pct);
+  // The same readout again in the gate's sticky bar, because the hero's copy
+  // scrolls away and the claim "it is already loaded" at the foot of the page
+  // has to be something the visitor watched happen.
+  const barTop = document.getElementById('gateBarFill');
+  const pctTop = document.getElementById('gateBarPct');
+  if (barTop) barTop.style.width = `${pct}%`;
+  if (pctTop) pctTop.textContent = String(pct);
   if (done === total) document.getElementById('assetLoad')?.classList.add('done');
 });
 
@@ -1269,12 +1277,29 @@ function setDemoMode(on: boolean) {
 /** How the rig was entered. 'di' never touches getUserMedia. */
 export type BootSource = 'mic' | 'di';
 
+/** Every door on the gate. There are two pairs — one in the hero and one at
+ *  the foot of the landing page — and a press has to lock all of them, not
+ *  just the pair that was pressed. */
+const gateDoors = () =>
+  Array.from(document.querySelectorAll<HTMLButtonElement>('#gateway [data-door]'));
+
+/** Hand the page over from the landing to the app.
+ *
+ *  The scroll reset is not cosmetic. The gate is a scrolling page and its
+ *  second pair of doors is four screens down, so somebody who read the whole
+ *  thing presses PLAY at scrollY ≈ 3800. Hiding the gate takes it out of flow,
+ *  the document collapses to the rig's height, and the browser clamps the
+ *  scroll to whatever still fits — which left the rig open a few hundred
+ *  pixels down, with its own header and transport off the top of the screen. */
+function hideGateway() {
+  document.getElementById('gateway')!.classList.add('hidden');
+  window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+}
+
 async function boot(source: BootSource = 'mic') {
   const status = document.getElementById('bootStatus')!;
-  const startBtn = document.getElementById('startBtn') as HTMLButtonElement;
-  const demoBtn = document.getElementById('demoBtn') as HTMLButtonElement | null;
-  startBtn.disabled = true;
-  if (demoBtn) demoBtn.disabled = true;
+  const doors = gateDoors();
+  for (const d of doors) d.disabled = true;
   engine.onStateChange = (s, detail) => { status.textContent = detail ?? s; };
   try {
     // Boot straight into the first patch in the bank — its voice on the amp,
@@ -1288,8 +1313,7 @@ async function boot(source: BootSource = 'mic') {
     lastCaptureJson = await (await fetch(bootUrl)).text();
   } catch (err) {
     status.textContent = `failed: ${(err as Error).message}`;
-    startBtn.disabled = false;
-    if (demoBtn) demoBtn.disabled = false;
+    for (const d of doors) d.disabled = false;
     return;
   }
 
@@ -1323,7 +1347,7 @@ async function boot(source: BootSource = 'mic') {
   const savedOut = loadSaved().output;
   if (savedOut !== 'default') void engine.setOutput(savedOut);
 
-  document.getElementById('gateway')!.classList.add('hidden');
+  hideGateway();
   app.hidden = false;
   // The header was built at module load, before the engine had an input at
   // all, so it is still showing the default. start() picks the source without
@@ -1445,8 +1469,13 @@ if (import.meta.env.DEV) {
 // tone to someone who has not pressed a door yet and may never press one —
 // the feed and the profiles are readable with no audio at all.
 startRouter();
-document.getElementById('startBtn')!.addEventListener('click', () => void boot('mic'));
-document.getElementById('demoBtn')?.addEventListener('click', () => void boot('di'));
+for (const door of gateDoors()) {
+  door.addEventListener('click', () => void boot(door.dataset.door as BootSource));
+}
+// The landing page's own motion — reveals, the head rotator, the sheen. Purely
+// decorative, and deliberately the last thing wired: nothing above it depends
+// on this having run.
+initGate();
 // A TONE3000 load lands in the CAPTURE menu's recents — refresh the drawer
 // and remember it as the current capture for cloud saves.
 window.addEventListener('remi:capture-loaded', () => {
@@ -1508,12 +1537,14 @@ let pendingTone: CloudPreset | null = null;
 
 /** Reveal the app chrome without an engine. */
 function revealShell() {
-  document.getElementById('gateway')!.classList.add('hidden');
+  hideGateway();
   app.hidden = false;
 }
 function showGateway() {
   document.getElementById('gateway')!.classList.remove('hidden');
   app.hidden = true;
+  // Coming back to the gate lands on the hero, not four screens into it.
+  window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
 }
 
 function startRouter() {
