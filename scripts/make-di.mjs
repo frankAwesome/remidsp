@@ -1,6 +1,11 @@
 /* Generates the bundled demo DI loop.
  *
- * WHY THIS EXISTS: a visitor with no guitar and no interface still has to hear
+ * SUPERSEDED — the shipped demo DI is now a real recorded performance,
+ * public/assets/di/DI Remi 90bpm.wav (8 bars of 4/4 at 90 BPM). This is kept
+ * because it still generates a licence-free stand-in from nothing, which is
+ * useful for a second house DI or for anyone forking the repo without one.
+ *
+ * WHY IT EXISTED: a visitor with no guitar and no interface still has to hear
  * the rig respond to real playing, or the whole product is a picture of an amp.
  * That needs a dry instrument signal we own outright — no sample licence, no
  * third-party clip, and reproducible from source rather than a binary someone

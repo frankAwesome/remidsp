@@ -68,6 +68,18 @@ let presetIdx = 0;
 let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: BOOT.voice, label: BOOT_LABEL };
 let account: AccountUI;
 let inputSwitch: InputSwitch | null = null;
+/* ── demo mode ─────────────────────────────────────────────────────────────
+ * The demo DI is a real performance cut to exactly 8 bars at 90 BPM, so while
+ * it plays the rig runs at 90 and the looper is held. A loop's bar line is
+ * fixed in samples at the tempo it was cut at, so a take recorded at any other
+ * tempo simply cannot line up with the demo — and delays synced to a tempo the
+ * DI is not playing land between the notes rather than on them.
+ *
+ * Nothing is destroyed by this. The tempo the player had is remembered and put
+ * back, and their loop layers are parked rather than cleared. */
+let tempoBeforeDemo: number | null = null;
+/** True while the demo track owns the tempo. wireTempo consults this. */
+let demoOwnsTempo = false;
 let looper: LooperSection | null = null;
 let feedView: FeedView;
 let profileView: ProfileView;
@@ -326,13 +338,29 @@ function buildHeader(): HTMLElement {
   return h;
 }
 
+/** Repaints of the tempo readout's locked state, registered by wireTempo. */
+const tempoLockPainters = new Set<() => void>();
+
 function wireTempo(tval: HTMLElement, tap: HTMLElement) {
   const render = () => (tval.textContent = store.get('tempo').toFixed(1));
   store.subscribe((id) => { if (id === 'tempo' || id === '*') render(); });
   render();
   let drag: { y: number; v: number } | null = null;
-  tval.style.cursor = 'ns-resize';
+  const sync = () => {
+    // Pinned, not merely set: if the readout could still be dragged, "the
+    // demo runs at 90" would only be true until somebody touched it.
+    tval.style.cursor = demoOwnsTempo ? 'not-allowed' : 'ns-resize';
+    tval.title = demoOwnsTempo
+      ? `Held at ${DEFAULT_DI.bpm} BPM so the rig stays in time with the demo track — `
+        + 'switch INPUT to GUITAR to take it back'
+      : 'drag to change the tempo';
+    tval.classList.toggle('tempo__val--locked', demoOwnsTempo);
+    tap.toggleAttribute('disabled', demoOwnsTempo);
+  };
+  tempoLockPainters.add(sync);
+  sync();
   tval.addEventListener('pointerdown', (e) => {
+    if (demoOwnsTempo) return;
     drag = { y: (e as PointerEvent).clientY, v: store.get('tempo') };
     (tval as HTMLElement & { setPointerCapture(id: number): void }).setPointerCapture((e as PointerEvent).pointerId);
   });
@@ -342,6 +370,7 @@ function wireTempo(tval: HTMLElement, tap: HTMLElement) {
   tval.addEventListener('pointerup', () => (drag = null));
   const taps: number[] = [];
   tap.addEventListener('click', () => {
+    if (demoOwnsTempo) return;
     const now = performance.now();
     if (taps.length && now - taps[taps.length - 1] > 2000) taps.length = 0;
     taps.push(now);
@@ -1199,6 +1228,34 @@ const assetsWarm = preloadAssets((done, total) => {
   if (done === total) document.getElementById('assetLoad')?.classList.add('done');
 });
 
+/**
+ * Enter or leave demo mode.
+ *
+ * Called from ONE place — the engine's input-source hook — so the rig can
+ * never disagree with what is actually feeding it. Whether the switch was
+ * flipped in the header, or the rig booted straight into the demo, or a mic
+ * request was refused and it fell back, this runs and the state matches.
+ */
+function setDemoMode(on: boolean) {
+  if (on === demoOwnsTempo) return;
+
+  if (on) {
+    // Remember what the player had BEFORE overwriting it. Reading this after
+    // the write would remember 90 and hand back the wrong tempo forever.
+    tempoBeforeDemo = store.get('tempo');
+    demoOwnsTempo = true;
+    store.set('tempo', DEFAULT_DI.bpm);
+  } else {
+    demoOwnsTempo = false;
+    if (tempoBeforeDemo !== null) {
+      store.set('tempo', tempoBeforeDemo);
+      tempoBeforeDemo = null;
+    }
+  }
+  looper?.setDemoLocked(on);
+  for (const paint of tempoLockPainters) paint();
+}
+
 /** How the rig was entered. 'di' never touches getUserMedia. */
 export type BootSource = 'mic' | 'di';
 
@@ -1262,14 +1319,10 @@ async function boot(source: BootSource = 'mic') {
   // all, so it is still showing the default. start() picks the source without
   // going through setInputSource(), which is what fires the change hook.
   inputSwitch?.sync();
-  if (engine.inputSource === 'di') {
-    // Put the rig in the loop's time. The boot preset carries its own tempo
-    // (176 on Dublin Jangle) and the demo track runs at 92, so every
-    // tempo-synced delay would land between the notes — which is exactly the
-    // smeared, out-of-time first impression this door exists to avoid. A
-    // player who plugs a guitar in has their own tempo; a listener does not.
-    store.set('tempo', DEFAULT_DI.bpm);
-  }
+  // One hook, so every route into and out of demo mode lands here — the
+  // header switch, this boot, and a refused microphone falling back.
+  engine.inputSourceHooks.add((src) => setDemoMode(src === 'di'));
+  setDemoMode(engine.inputSource === 'di');
   if (engine.inputSource === 'di') {
     // Nobody has been asked for a microphone and nobody is going to be until
     // they ask for it. Say what is playing and what the knobs will do to it.

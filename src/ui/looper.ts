@@ -48,6 +48,14 @@ export class LooperSection {
   private bpm = 120;
   private loopPos = 0;
   private metroOn = false;
+  /* The demo track runs at a fixed 90 BPM and the loop's bar line is fixed in
+   * samples at whatever tempo it was cut at. Those two cannot both be true, so
+   * while the demo plays the looper is held: existing layers are kept but
+   * silenced, and nothing new can be recorded over a track it would not line
+   * up with. Leaving demo mode gives it all back untouched. */
+  private demoLocked = false;
+  /** Was the loop rolling when the lock came down? Restored on release. */
+  private wasPlaying = false;
   private tracks: TrackLane[] = [];
   private pendingPeaks = new Map<number, Float32Array>();
 
@@ -227,6 +235,31 @@ export class LooperSection {
     if (m.loopPos !== undefined) this.loopPos = m.loopPos;
   }
 
+  /** Hold or release the looper for demo mode.
+   *
+   *  Deliberately NOT a clear: the layers a player has recorded are their
+   *  work, and demo mode is a thing they may be passing through. They are
+   *  parked, not destroyed, and come back exactly as they were. */
+  setDemoLocked(on: boolean) {
+    if (this.demoLocked === on) return;
+    this.demoLocked = on;
+    if (on) {
+      // Anything mid-flight has to stop: an armed take would start recording
+      // the demo track, and a rolling loop would play at the wrong tempo over
+      // a 90 BPM performance.
+      this.wasPlaying = this.state === 'play';
+      if (this.state === 'count' || this.state === 'rec' || this.armed) {
+        engine.sendLooper({ cmd: 'stop' });
+      }
+      if (this.state === 'play') engine.sendLooper({ cmd: 'pause' });
+    } else if (this.wasPlaying && this.tracks.length) {
+      engine.sendLooper({ cmd: 'play' });
+      this.wasPlaying = false;
+    }
+    this.root.classList.toggle('looper--locked', on);
+    this.syncUi();
+  }
+
   /** Is there a loop on the deck, and what tempo is it turning at? The rig
    *  asks before it lets a preset change the tempo out from under it. */
   hasLoop(): boolean { return this.tracks.length > 0; }
@@ -259,17 +292,31 @@ export class LooperSection {
     const s = this.state;
     const recording = s === 'rec';
     const counting = s === 'count';
-    this.recBtn.classList.toggle('armed', counting || this.armed);
-    this.recBtn.classList.toggle('rec', recording);
-    this.playBtn.disabled = !this.tracks.length;
+    const lock = this.demoLocked;
+    this.recBtn.classList.toggle('armed', !lock && (counting || this.armed));
+    this.recBtn.classList.toggle('rec', !lock && recording);
+    this.recBtn.disabled = lock;
+    this.playBtn.disabled = lock || !this.tracks.length;
     this.playBtn.textContent = s === 'play' ? '❚❚' : '▶';
-    this.clearBtn.disabled = !this.tracks.length;
+    this.clearBtn.disabled = lock || !this.tracks.length;
     // Nothing to bounce mid-take: the layer being played is not in the stack
-    // until it closes on the loop top.
+    // until it closes on the loop top. The bounce stays available under the
+    // lock though — a player who is about to try the demo should still be
+    // able to save the work they already have.
     this.saveBtn.disabled = !this.tracks.length || recording || counting;
     // the loop length is fixed by track 1 — lock the shape controls after that
-    this.barsSel.disabled = this.tracks.length > 0;
-    this.countSel.disabled = this.tracks.length > 0;
+    this.barsSel.disabled = lock || this.tracks.length > 0;
+    this.countSel.disabled = lock || this.tracks.length > 0;
+    this.metroBtn.disabled = lock;
+
+    if (lock) {
+      this.status.textContent = 'DEMO';
+      this.hint.textContent = this.tracks.length
+        ? `HELD WHILE THE DEMO TRACK PLAYS · ${this.tracks.length} TAKE`
+          + `${this.tracks.length === 1 ? '' : 'S'} KEPT · SWITCH INPUT TO GUITAR TO GET THEM BACK`
+        : 'THE DEMO TRACK RUNS AT A FIXED 90 BPM · SWITCH INPUT TO GUITAR TO RECORD';
+      return;
+    }
 
     if (counting) this.status.textContent = `CNT ${Math.max(0, this.countBeats - this.beat)}`;
     else if (recording) {

@@ -81,16 +81,24 @@ type EngineState = 'idle' | 'booting' | 'running' | 'error';
 
 const num = (v: number) => v;
 
-/** The bundled demo DI.
+/** The bundled demo DI — a real performance, cut to the grid.
  *
- *  Synthesised from `scripts/make-di.mjs` so it is ours outright and carries
- *  no sample licence. It is a starting point, not the destination: the house
- *  DI library lives on R2 and this is what plays before one is chosen. */
+ *  Mono 44.1 kHz, 21.333 s, which is exactly 8 bars of 4/4 at 90 BPM. That
+ *  exactness is load-bearing: the rig pins its tempo to this while the demo
+ *  plays, so tempo-synced delays land on the notes instead of between them.
+ *  (scripts/make-di.mjs still generates the older synthesised stand-in; this
+ *  replaces it as the shipped default.) */
 export const DEFAULT_DI = {
-  id: 'house/ambient-dmaj-92',
-  url: '/assets/di/ambient_dmaj_92.wav',
-  label: 'AMBIENT · D MAJOR',
-  bpm: 92,
+  id: 'house/di-remi-90',
+  // The space is real — it is the filename as delivered — so it is encoded
+  // here rather than the file being renamed. Renaming would mean the next
+  // drop-in replacement under the original name silently 404s.
+  url: '/assets/di/DI%20Remi%2090bpm.wav',
+  label: 'REMI DI',
+  bpm: 90,
+  /** 21.333 s is exactly 8 bars of 4/4 at 90 — the loop is cut to the grid,
+   *  which is the whole reason the rig pins its tempo while this plays. */
+  bars: 8,
 };
 
 export class RigEngine {
@@ -118,7 +126,16 @@ export class RigEngine {
   private diBuffer: AudioBuffer | null = null;
   /** Which of the two is currently feeding the chain. */
   inputSource: 'mic' | 'di' = 'mic';
-  onInputSourceChange: ((s: 'mic' | 'di') => void) | null = null;
+  /* Who wants to know which input is feeding the rig.
+   *
+   * A SET rather than one slot: the header switch repaints itself, and the
+   * rig locks the looper and the tempo when the demo track is on. Neither of
+   * those should have to know the other exists, and with a single callback
+   * whichever registered second would silently erase the first. */
+  readonly inputSourceHooks = new Set<(s: 'mic' | 'di') => void>();
+  private fireInputSource() {
+    for (const h of this.inputSourceHooks) h(this.inputSource);
+  }
   /** Which device/channel the rig listens to. Settable before launch. */
   input: InputChoice = {};
   output = 'default';
@@ -430,14 +447,14 @@ export class RigEngine {
   pauseDi() {
     if (this.inputSource !== 'di') return;
     this.stopDi();
-    this.onInputSourceChange?.('di');
+    this.fireInputSource();
   }
 
   /** Start it again from the top. */
   resumeDi() {
     if (this.inputSource !== 'di' || this.diNode) return;
     this.restartDi();
-    this.onInputSourceChange?.('di');
+    this.fireInputSource();
   }
 
   /** Flip it, returning whether it is now playing. */
@@ -458,7 +475,7 @@ export class RigEngine {
       this.closeMic();
       this.inputSource = 'di';
       try { await this.startDi(); } catch { return false; }
-      this.onInputSourceChange?.('di');
+      this.fireInputSource();
       return true;
     }
     try {
@@ -470,7 +487,7 @@ export class RigEngine {
     this.stopDi();
     this.inputSource = 'mic';
     this.micError = null;
-    this.onInputSourceChange?.('mic');
+    this.fireInputSource();
     return true;
   }
 

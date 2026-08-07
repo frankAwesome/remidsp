@@ -47,7 +47,7 @@ export class InputSwitch {
     this.demo.addEventListener('click', () => void this.pick('di'));
     this.live.addEventListener('click', () => void this.pick('mic'));
 
-    engine.onInputSourceChange = () => this.sync();
+    engine.inputSourceHooks.add(() => this.sync());
     this.sync();
   }
 

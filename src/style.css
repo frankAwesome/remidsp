@@ -618,6 +618,19 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   color:var(--muted-2);transition:color .2s var(--ease),border-color .2s var(--ease)}
 .feed-card__share:hover{color:var(--text);border-color:rgba(159,216,232,.6)}
 
+/* The tempo readout while the demo track owns it — dimmed and un-draggable,
+   so "held at 90" is visible rather than only true. */
+.tempo__val--locked{opacity:.55;text-shadow:none}
+.tempo__tap[disabled]{opacity:.35;cursor:not-allowed}
+
+/* The looper, held while the demo plays. Not hidden — a player needs to see
+   that their takes are still there, which is the whole reason they are parked
+   rather than cleared. */
+.looper--locked{opacity:.55;transition:opacity .2s var(--ease)}
+.looper--locked .looper__status{color:var(--ice)}
+.looper--locked .looper-lane{filter:grayscale(.7)}
+.looper--locked button:disabled,.looper--locked select:disabled{cursor:not-allowed}
+
 /* ── input switch ──────────────────────────────────────────────────────────
    Two states, one lit. The demo side is lit on arrival for anyone who came in
    through LISTEN FIRST, so what is making the noise is never a mystery. */
