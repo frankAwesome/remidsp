@@ -67,6 +67,44 @@ Pick your audio interface as the browser "microphone" (echo cancellation / noise
 suppression / AGC are all disabled). Use 48 kHz output if you can — captures are
 48 kHz-native and the engine runs at the device rate.
 
+## Why a loop lands late, and the ALIGN control
+
+The looper's clock is sample-exact — the count-in hands over on the very sample
+the downbeat is generated — and takes still came back late, because that is not
+where the delay lives.
+
+Follow one note. The downbeat click is generated in the worklet at time `T`. The
+player hears it at `T + outputLatency`, once it has been through the device
+buffer and the converter. They play in response, perfectly, at
+`T + outputLatency`. That note goes down the cable, through their interface's
+buffer, and back into the worklet at `T + outputLatency + inputLatency`. So a
+flawlessly timed note is recorded a **round trip** past the beat it belongs on,
+and every overdub inherits the shift again.
+
+Nothing in a browser can remove that delay — it is the price of real hardware —
+but it is a constant, so the looper takes it back out on the way to the
+speakers: the loop is read `ALIGN` milliseconds ahead of the grid.
+
+Two things follow from doing it on playback rather than on the way in. The takes
+on disk stay exactly what came off the guitar, and **the figure can be changed
+after the fact** — nudging ALIGN slides every layer already recorded, live, so
+it is dialled in by ear (and by eye, against the lane's gridlines) instead of by
+re-recording. And every take **over-records a 250 ms tail** past the loop top,
+because reading ahead means the end of the cycle comes from after the grid ended;
+with no tail it would wrap to the count-in and swallow the attack of a note
+played on the final beat.
+
+ALIGN seeds itself from the device the first time record is pressed — Web Audio
+reports the output side, and Chrome reports the input side on the track — then
+remembers whatever the player settles on, because it is a property of their
+interface and not of the rig. `AUTO` puts the measured figure back. On the demo
+track it is zero, and that is exact rather than approximate: the DI is a buffer
+inside the graph and has been through no converter at either end.
+
+Verified against an irregular pulse train driven into the input bus, bounced at
+each setting and cross-correlated: **sample-exact from −20 ms to the +250 ms
+tail ceiling**, clamping correctly beyond it, with whole-loop energy unchanged.
+
 ## The tuner
 
 `TUNER` in the header opens the chromatic tuner — a port of the desktop suite's

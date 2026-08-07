@@ -73,6 +73,9 @@ export interface LooperMsg {
   state?: string; armed?: boolean;
   beat?: number; beatsPerBar?: number; countBeats?: number;
   bars?: number; bpm?: number; loopBpm?: number;
+  /** The alignment the worklet settled on, and the cycle it is a slice of —
+   *  both in samples, so the lane can slide its waveform to match the audio. */
+  align?: number; len?: number; tail?: number;
   tracks?: { id: number; muted: boolean; gain?: number; pan?: number }[];
   trackId?: number; peaks?: Float32Array; bins?: number;
 }
@@ -405,6 +408,12 @@ export class RigEngine {
     const ctx = this.ctx!;
     const track = this.micStream.getAudioTracks()[0];
     this.inputChannels = track?.getSettings().channelCount ?? 1;
+    // Web Audio exposes the OUTPUT side of the round trip and nothing at all
+    // about the input, so take the device's own figure when the browser offers
+    // it. Chrome reports `latency` in seconds on an audio track; Firefox and
+    // Safari do not, and the looper's alignment falls back to an estimate.
+    const lat = (track?.getSettings() as MediaTrackSettings & { latency?: number })?.latency;
+    this.inputLatency = typeof lat === 'number' && lat > 0 && lat < 1 ? lat : null;
     this.micSource = ctx.createMediaStreamSource(this.micStream);
 
     if (this.inputChannels > 1 && typeof choice.channel === 'number') {
@@ -537,6 +546,8 @@ export class RigEngine {
     this.micSplit = null;
     this.micSource = null;
     this.micStream = null;
+    // The figure belonged to that device. The next one gets its own.
+    this.inputLatency = null;
   }
 
   /** Point the rig at a different input, or a different channel of the same
@@ -680,6 +691,38 @@ export class RigEngine {
       output: ((this.ctx as AudioContext & { outputLatency?: number }).outputLatency ?? 0) * 1000,
       quantum: (128 / this.ctx.sampleRate) * 1000,
     };
+  }
+
+  /** What the device reported for the input side, in seconds — null when the
+   *  browser does not say. Only Chrome does, so far. */
+  inputLatency: number | null = null;
+
+  /**
+   * The looper's starting alignment: the best estimate of the round trip a
+   * played note makes before it reaches the recorder — out of the speakers,
+   * through the air or the cable, and back in.
+   *
+   * READ FRESH, NEVER CACHED AT BOOT. `outputLatency` is 0 until the device
+   * has actually started pushing audio, so the figure taken while the rig was
+   * still opening is not the figure that matters; the header's round-trip chip
+   * is stamped once at boot for exactly that reason and reads low.
+   *
+   * On the DI path this is ZERO, and that is not an approximation. The demo
+   * track is a buffer inside the graph — it reaches the recorder on the sample
+   * it was scheduled for, having been through no converter at either end.
+   * Compensating a path with no delay in it would only push the loop early.
+   *
+   * The input term is a guess whenever the browser will not say (everything
+   * but Chrome). Interfaces are near enough symmetric that the output figure
+   * is the right shape of guess, but it IS a guess, which is the whole reason
+   * the control it seeds stays adjustable and remembers what it was told.
+   */
+  suggestedAlignMs(): number {
+    if (!this.ctx || this.inputSource === 'di') return 0;
+    const c = this.ctx as AudioContext & { outputLatency?: number };
+    const out = (c.outputLatency ?? 0) + c.baseLatency;
+    const inp = this.inputLatency ?? (c.outputLatency ?? c.baseLatency);
+    return (out + inp) * 1000;
   }
 
   sampleRate(): number | null { return this.ctx?.sampleRate ?? null; }

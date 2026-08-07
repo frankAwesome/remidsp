@@ -1353,6 +1353,40 @@ class Metronome {
 // The metronome rides the count-in and the record passes (and can run free
 // for practice) but is mixed in AFTER the capture tap, so clicks are never
 // printed into a track.
+//
+// ── ALIGNMENT, and why a take lands late ───────────────────────────────────
+//
+// This clock is sample-exact and always was: the count-in hands over to `rec`
+// on the very sample the downbeat is generated, and the loop length is a whole
+// number of samples per beat. And takes still came back late, because none of
+// that is where the delay lives.
+//
+// Follow one note. The metronome click for the downbeat is generated HERE, at
+// worklet time T. The player does not hear it at T — they hear it at
+// T + outputLatency, once it has been through the device buffer and the
+// converter. They play in response, perfectly, at T + outputLatency. That note
+// goes down the cable, through their interface's own buffer and back up into
+// this worklet, arriving at T + outputLatency + inputLatency. So a flawlessly
+// timed note is written `roundTrip` samples past the downbeat it belongs on,
+// and every overdub inherits the same shift again.
+//
+// Nothing in the browser can remove that delay — it is the price of the round
+// trip through real hardware. But it is a CONSTANT, so it can be taken back
+// out on the way to the speakers: the loop is read `align` samples ahead of
+// the grid, which puts the note back on the beat the player meant.
+//
+// Two consequences shape the code below.
+//
+// It is applied on PLAYBACK, not on the way in, so the takes on disk stay
+// exactly what came off the guitar and the figure can be changed — and heard —
+// after the fact. A player nudging it until the loop locks is adjusting every
+// layer they have already recorded, live, not re-recording them.
+//
+// And every take over-records a TAIL past the loop top. Reading ahead means
+// the last `align` samples of the cycle come from after the grid ended; with
+// no tail they would wrap round to the count-in and swallow the attack of a
+// note played right on the final beat.
+
 class Looper {
   constructor(sr, port) {
     this.sr = sr;
@@ -1379,6 +1413,49 @@ class Looper {
     // ~15 ms one-pole toward the LEVEL/PAN targets — fast enough to feel
     // instant on the knob, slow enough that no step is ever audible.
     this.mixSm = 1 - Math.exp(-1 / (0.015 * sr));
+    // How far ahead of the grid playback reads, to take the round trip back
+    // out. Set from the main thread; 0 until somebody says otherwise.
+    this.align = 0;
+    // How far past the loop top every take keeps recording, so reading ahead
+    // has real audio to read. 250 ms covers any round trip a browser will
+    // ever see and costs ~3 % of a four-bar buffer.
+    this.tail = Math.round(sr * 0.25);
+    this.tailN = this.tail;   // sized to the loop by sizeTail()
+  }
+
+  /** Clamp an alignment to what the recorded tail can actually serve. */
+  setAlign(samples) {
+    const s = Math.round(samples) | 0;
+    this.align = clamp(s, -this.tailN, this.tailN);
+  }
+
+  /** Fix the tail to this loop length. Never more than half a cycle: a tail
+   *  longer than the loop it hangs off could be read past a whole cycle, and
+   *  a take would still be taking it when the next one is due to start. */
+  sizeTail() {
+    this.tailN = this.len > 0 ? Math.min(this.tail, this.len >> 1) : this.tail;
+    this.setAlign(this.align);   // re-clamp: the ceiling may have just dropped
+  }
+
+  /** The loop seam, as a gain on the CYCLE position rather than something
+   *  baked into each buffer. It has to be this way round now: the read offset
+   *  moves where a buffer's own edges land, so a fade multiplied in at record
+   *  time would slide into the middle of the loop and dip there instead. */
+  seamGain(p) {
+    const f = Math.min(this.fade, this.len >> 1);
+    if (f < 1) return 1;
+    if (p < f) return p / f;
+    const j = this.len - 1 - p;
+    return j < f ? j / f : 1;
+  }
+
+  /** Where in a take's buffer the cycle position `p` reads from. */
+  readAt(p) {
+    let i = p + this.align;
+    // Behind the start wraps to the previous cycle, which is real recorded
+    // audio. Ahead of the end lands in the tail, which is why it exists.
+    if (i < 0) i += this.len;
+    return i;
   }
 
   setOpt(id, v) {
@@ -1406,18 +1483,22 @@ class Looper {
       } else {
         this.spb = Math.round(this.sr * 60 / this.bpm);
         this.len = this.bars * this.beatsPerBar * this.spb;
+        this.sizeTail();
         this.openTrack();
-        this.recPos = 0;
         this.beatSample = 0;
         this.beatIndex = -1;
         this.state = this.countBars > 0 ? 'count' : 'rec';
         this.post();
       }
+    } else if (m.cmd === 'align') {
+      // Live: every layer already recorded slides with it, which is the whole
+      // point — the figure is dialled in by ear against takes that exist.
+      this.setAlign(m.samples || 0);
+      this.post();
     } else if (m.cmd === 'stop') {
       // cancel whatever is pending / in progress, keep finished tracks
       this.armed = false;
-      if (this.state === 'rec' && this.rec) this.closeTrack(true);
-      this.rec = null;
+      if (this.rec) this.closeTrack();
       this.state = this.tracks.length ? 'play' : 'idle';
       this.post();
     } else if (m.cmd === 'play') {
@@ -1425,6 +1506,10 @@ class Looper {
     } else if (m.cmd === 'pause') {
       if (this.state === 'play') { this.state = 'idle'; this.post(); }
     } else if (m.cmd === 'delete') {
+      // A take still collecting its tail is in `tracks` AND in `rec`; dropping
+      // it from one without the other leaves the record head writing into a
+      // buffer nothing will ever play.
+      if (this.rec && this.rec.id === m.id) this.rec = null;
       this.tracks = this.tracks.filter((t) => t.id !== m.id);
       if (!this.tracks.length) { this.len = 0; this.playPos = 0; this.state = 'idle'; this.armed = false; }
       this.post();
@@ -1452,10 +1537,13 @@ class Looper {
     }
   }
 
+  /** len + tail: the extra is what a read-ahead alignment lands in. */
   openTrack() {
-    this.rec = { id: this.nextId++, bufL: new Float32Array(this.len),
-                 bufR: new Float32Array(this.len), gain: 1, pan: 0, muted: false,
+    const n = this.len + this.tailN;
+    this.rec = { id: this.nextId++, bufL: new Float32Array(n),
+                 bufR: new Float32Array(n), gain: 1, pan: 0, muted: false,
                  tgtL: 1, tgtR: 1, gL: 1, gR: 1 };
+    this.recPos = 0;
   }
 
   /** Fold LEVEL and PAN into the two side gains the mixer reads.
@@ -1471,24 +1559,45 @@ class Looper {
     t.tgtR = t.gain * Math.min(1, 1 + t.pan);
   }
 
-  /** Close the take: seam-fade the join, publish its waveform, keep it. */
-  closeTrack(partial) {
+  /** The grid has come round: the take becomes a layer and starts turning.
+   *
+   *  It is NOT finished — `this.rec` still points at it and it keeps taking
+   *  its tail for another `tail` samples. Publishing here rather than when the
+   *  buffer is full is what keeps the loop locked to the metronome: the cycle
+   *  has to start on the grid, not a quarter of a second after it. Nothing is
+   *  read from the tail region until a whole cycle later, so it is always
+   *  written long before anything asks for it. */
+  publishTake() {
+    const t = this.rec;
+    if (!t) return;
+    this.tracks.push(t);
+    this.state = 'play';
+    this.post();
+  }
+
+  /** The tail is in. Publish the waveform and let go of the take. */
+  finishTake() {
     const t = this.rec;
     this.rec = null;
     if (!t) return;
-    if (partial) { // a cancelled overdub still gets whatever it captured
-      for (let i = this.recPos; i < this.len; i++) { t.bufL[i] = 0; t.bufR[i] = 0; }
+    this.port.postMessage({ type: 'wave', trackId: t.id, ...this.peaksOf(t) }, []);
+    this.post();
+  }
+
+  /** Abandon a take mid-flight. Whatever it caught is kept — a cancelled pass
+   *  is still a pass somebody played — with the rest left silent. */
+  closeTrack() {
+    const t = this.rec;
+    if (!t) return;
+    // Only a take cut short of a full cycle needs silencing. One stopped while
+    // it was collecting its tail is a COMPLETE take — blanking what it already
+    // has would punch a hole in the end of a loop that is otherwise finished.
+    if (this.recPos < this.len) {
+      for (let i = this.recPos; i < t.bufL.length; i++) { t.bufL[i] = 0; t.bufR[i] = 0; }
     }
-    const f = Math.min(this.fade, this.len >> 1);
-    for (let i = 0; i < f; i++) {   // crossfade the loop seam so it never ticks
-      const g = i / f;
-      t.bufL[i] *= g; t.bufR[i] *= g;
-      const j = this.len - 1 - i;
-      t.bufL[j] *= g; t.bufR[j] *= g;
-    }
-    this.tracks.push(t);
-    this.port.postMessage({ type: 'wave', trackId: t.id, ...this.peaksOf(t) },
-                          []);
+    if (!this.tracks.includes(t)) this.tracks.push(t);
+    this.rec = null;
+    this.port.postMessage({ type: 'wave', trackId: t.id, ...this.peaksOf(t) }, []);
     this.state = 'play';
     this.post();
   }
@@ -1511,16 +1620,31 @@ class Looper {
     for (const t of this.tracks) {
       if (t.muted) continue;
       used++;
-      for (let i = 0; i < n; i++) { L[i] += t.bufL[i] * t.tgtL; R[i] += t.bufR[i] * t.tgtR; }
+      // Through the same read offset the speakers get, or the file would be
+      // the take that sounded late rather than the loop that sounded right.
+      for (let i = 0; i < n; i++) {
+        const j = this.readAt(i);
+        L[i] += t.bufL[j] * t.tgtL;
+        R[i] += t.bufR[j] * t.tgtR;
+      }
     }
-    for (let i = 0; i < n; i++) { L[i] = softLimit(L[i], 0.85); R[i] = softLimit(R[i], 0.85); }
+    for (let i = 0; i < n; i++) {
+      const s = this.seamGain(i);
+      L[i] = softLimit(L[i], 0.85) * s;
+      R[i] = softLimit(R[i], 0.85) * s;
+    }
     this.port.postMessage(
       { type: 'export', L, R, sampleRate: this.sr, bpm: this.bpm, bars: this.bars, tracks: used },
       [L.buffer, R.buffer],
     );
   }
 
-  /** Min/max pyramid of the mono sum, for the UI lane. */
+  /** Min/max pyramid of the mono sum, for the UI lane.
+   *
+   *  The RAW take over one cycle, with no alignment applied — the lane slides
+   *  the picture by the same offset on its own. Re-binning here on every drag
+   *  of the align control would be hundreds of thousands of samples per track
+   *  on the audio thread, which is exactly where that work must not happen. */
   peaksOf(t) {
     const bins = 600;
     const peaks = new Float32Array(bins * 2);
@@ -1549,6 +1673,9 @@ class Looper {
       // the rig's tempo control says and stops describing the loop the
       // moment a preset moves it.
       loopBpm: this.spb ? 60 * this.sr / this.spb : this.bpm,
+      // The alignment the worklet actually settled on, and the cycle it is a
+      // fraction of — the lane needs both to slide its waveform to match.
+      align: this.align, len: this.len, tail: this.tailN,
       tracks: this.tracks.map((t) => ({ id: t.id, muted: t.muted, gain: t.gain, pan: t.pan })),
       ...extra,
     });
@@ -1578,17 +1705,32 @@ class Looper {
       }
 
       // ── capture the finished rig sound ─────────────────────────
-      if (this.state === 'rec' && this.rec) {
+      // Driven off `this.rec`, not off the state: a take stays open past the
+      // loop top to collect its tail, by which point the state is 'play'.
+      if (this.rec) {
         this.rec.bufL[this.recPos] = L[i];
         this.rec.bufR[this.recPos] = R[i];
-        if (++this.recPos >= this.len) {
-          this.closeTrack(false);
-          this.playPos = 0;   // the take ends exactly on the loop top
+        this.recPos++;
+        if (this.recPos === this.len) {
+          // Only the FIRST take starts the cycle. On an overdub the loop is
+          // already turning and playPos is already 0 — reassigning it here
+          // would land before the playback block on the same sample and make
+          // the cycle read index 0 twice, dropping its last sample every pass.
+          const first = this.tracks.length === 0;
+          this.publishTake();
+          if (first) this.playPos = 0;
+        } else if (this.recPos >= this.len + this.tailN) {
+          this.finishTake();
         }
       }
 
       // ── stacked playback ───────────────────────────────────────
       if ((this.state === 'play' || this.state === 'rec') && this.tracks.length && this.len) {
+        // Read ahead of the grid by the alignment, so what the player meant to
+        // land on this beat does. One index and one seam gain for the whole
+        // stack — every layer shares the cycle.
+        const idx = this.readAt(this.playPos);
+        const seam = this.seamGain(this.playPos);
         let sl = 0, sr2 = 0;
         for (let k = 0; k < this.tracks.length; k++) {
           const t = this.tracks[k];
@@ -1598,19 +1740,24 @@ class Looper {
           t.gL += (wantL - t.gL) * this.mixSm;
           t.gR += (wantR - t.gR) * this.mixSm;
           if (t.gL < 1e-5 && t.gR < 1e-5) continue;
-          sl += t.bufL[this.playPos] * t.gL;
-          sr2 += t.bufR[this.playPos] * t.gR;
+          sl += t.bufL[idx] * t.gL;
+          sr2 += t.bufR[idx] * t.gR;
         }
         // Layers sum; ride the stack so eight passes never wreck the mix.
-        L[i] += softLimit(sl, 0.85);
-        R[i] += softLimit(sr2, 0.85);
+        L[i] += softLimit(sl, 0.85) * seam;
+        R[i] += softLimit(sr2, 0.85) * seam;
         if (++this.playPos >= this.len) {
           this.playPos = 0;
           // top of the loop: a queued overdub starts here, sample-exact
           if (this.armed) {
             this.armed = false;
+            // The previous take may still be collecting its tail. It gives up
+            // the rest of it rather than pushing the overdub back a whole
+            // cycle — "starts on the next top" is the promise the looper makes
+            // and it outranks the last few milliseconds of a tail nobody has
+            // asked to hear yet.
+            if (this.rec) this.finishTake();
             this.openTrack();
-            this.recPos = 0;
             this.state = 'rec';
             this.post();
           }

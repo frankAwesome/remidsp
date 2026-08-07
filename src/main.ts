@@ -1368,6 +1368,11 @@ async function boot(source: BootSource = 'mic') {
   const savedOut = loadSaved().output;
   if (savedOut !== 'default') void engine.setOutput(savedOut);
 
+  // Whatever loop alignment this browser was told last. Only a restore — the
+  // first-time figure is taken from the device when record is first pressed,
+  // because outputLatency reads 0 until audio is genuinely flowing.
+  looper?.restoreAlign();
+
   hideGateway();
   app.hidden = false;
   // The header was built at module load, before the engine had an input at
@@ -1493,7 +1498,11 @@ build();
  * while building it — so it can be summoned with a made-up one. */
 if (import.meta.env.DEV) {
   (window as unknown as { __dev: unknown }).__dev =
-    { showToneLanding, setView, boot, engine, store, confirmDialog, promptDialog };
+    { showToneLanding, setView, boot, engine, store, confirmDialog, promptDialog,
+      // The looper is here so its timing can be checked without a guitar in
+      // the room: drive a known signal into the bus, bounce the loop twice at
+      // two alignments, and the difference should be exactly the delta.
+      get looper() { return looper; }, tuner };
 }
 // The router runs BEFORE the engine, on purpose. A deep link must show its
 // tone to someone who has not pressed a door yet and may never press one —

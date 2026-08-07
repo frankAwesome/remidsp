@@ -58,6 +58,20 @@ export class LooperSection {
   private wasPlaying = false;
   private tracks: TrackLane[] = [];
   private pendingPeaks = new Map<number, Float32Array>();
+  /* ── alignment ─────────────────────────────────────────────────────────
+   * How far ahead of the grid the loop is read, in milliseconds, to cancel the
+   * round trip a played note makes on its way to the recorder. See the long
+   * note above the Looper class in the worklet for why a take lands late.
+   *
+   * Remembered per browser, because it is a property of the player's INTERFACE
+   * and not of anything in the rig: whatever they dial in tonight is still
+   * true tomorrow on the same box, and asking them to find it again every
+   * session would make the control worse than useless. */
+  private alignMs = 0;
+  private alignInput!: HTMLInputElement;
+  /** The cycle length in samples the worklet reports, so the lane can turn an
+   *  alignment in milliseconds into a fraction of the loop. */
+  private loopLen = 0;
 
   constructor() {
     this.root = document.createElement('section');
@@ -74,6 +88,15 @@ export class LooperSection {
             <select data-id="count"><option value="0">OFF</option><option value="1">1 BAR</option><option value="2" selected>2 BARS</option></select></label>
           <button class="tab" data-id="metro">METRO</button>
           <input data-id="metroGain" type="range" min="0" max="1" step="0.01" value="0.7" title="click level" />
+          <label class="looper__field looper__field--align"><span>ALIGN</span>
+            <span class="looper__align">
+              <button class="looper__nudge" data-id="alignDown" title="less — takes sit later">−</button>
+              <input data-id="align" type="number" min="-250" max="250" step="0.5" value="0"
+                     title="How much lateness to cancel. A note you play on the beat reaches the recorder a round trip late — out through your speakers, back in through your interface — so the loop is read this far ahead of the grid. Raise it if takes still land late." />
+              <span class="looper__unit">MS</span>
+              <button class="looper__nudge" data-id="alignUp" title="more — takes land earlier">+</button>
+              <button class="looper__nudge looper__nudge--auto" data-id="alignAuto" title="back to this device's measured round trip">AUTO</button>
+            </span></label>
           <button class="looper__rec" data-id="rec" title="record / overdub">●</button>
           <button class="looper__btn" data-id="play" title="play / pause" disabled>▶</button>
           <button class="looper__btn" data-id="save" title="download this loop as a 24-bit WAV" disabled>${ICONS.download}</button>
@@ -119,6 +142,17 @@ export class LooperSection {
     this.root.querySelector<HTMLInputElement>('[data-id=metroGain]')!
       .addEventListener('input', (e) => engine.sendParam('metro_gain', Number((e.target as HTMLInputElement).value)));
 
+    this.alignInput = this.root.querySelector('[data-id=align]')!;
+    // `input`, not `change`: the point of the control is that a player can
+    // hold an arrow down and hear the loop walk onto the beat.
+    this.alignInput.addEventListener('input', () => this.setAlign(Number(this.alignInput.value)));
+    this.root.querySelector('[data-id=alignDown]')!
+      .addEventListener('click', () => this.setAlign(this.alignMs - 0.5));
+    this.root.querySelector('[data-id=alignUp]')!
+      .addEventListener('click', () => this.setAlign(this.alignMs + 0.5));
+    this.root.querySelector('[data-id=alignAuto]')!
+      .addEventListener('click', () => this.setAlign(engine.suggestedAlignMs(), true));
+
     engine.onLooper = (m) => this.onMsg(m);
     meterBus.hooks.add((m) => this.onMeters(m));
     store.subscribe((id, v) => { if (id === 'tempo') engine.sendParam('metro_bpm', v); });
@@ -128,7 +162,67 @@ export class LooperSection {
     this.syncUi();
   }
 
+  /* ── alignment ───────────────────────────────────────────────────────── */
+
+  private static readonly LS_ALIGN = 'remi_loop_align_ms';
+
+  /** Adopt an alignment: push it to the worklet, show it, remember it.
+   *
+   *  `announce` is for the AUTO button, which is the one route where the value
+   *  arrives without the player having typed it and so is the one place that
+   *  owes them a word about where the number came from. */
+  private setAlign(ms: number, announce = false) {
+    if (!Number.isFinite(ms)) return;
+    this.alignMs = Math.max(-250, Math.min(250, Math.round(ms * 2) / 2));
+    if (this.alignInput.value !== String(this.alignMs)) {
+      this.alignInput.value = String(this.alignMs);
+    }
+    const sr = engine.sampleRate() ?? 48000;
+    engine.sendLooper({ cmd: 'align', samples: Math.round((this.alignMs / 1000) * sr) });
+    try { localStorage.setItem(LooperSection.LS_ALIGN, String(this.alignMs)); } catch { /* private mode */ }
+    if (announce) {
+      toast(this.alignMs > 0
+        ? `Loop alignment set to <b>${this.alignMs} ms</b> — this device's measured round trip. `
+          + 'Trim it by ear if takes still land early or late.'
+        : 'No round trip to cancel on the demo track — it never leaves the browser. '
+          + 'Switch to your guitar and press AUTO again.', 6000);
+    }
+  }
+
+  /** Whatever this browser was told last. Null the first time. */
+  restoreAlign() {
+    let saved: number | null = null;
+    try {
+      const v = localStorage.getItem(LooperSection.LS_ALIGN);
+      if (v !== null && Number.isFinite(Number(v))) saved = Number(v);
+    } catch { /* private mode */ }
+    if (saved !== null) { this.alignSeeded = true; this.setAlign(saved); }
+  }
+
+  /** Has a figure been chosen for this browser — by the player, or by the
+   *  first press of record? */
+  private alignSeeded = false;
+
+  /**
+   * Seed the alignment from the device, at the last possible moment.
+   *
+   * Deliberately not at boot. `outputLatency` reads 0 until the device has
+   * actually begun pushing audio, so a figure taken while the rig was still
+   * opening is a figure taken too early — and it is only worth taking at all
+   * once somebody has decided to record something on a real guitar.
+   */
+  private seedAlign() {
+    if (this.alignSeeded || engine.inputSource !== 'mic') return;
+    this.alignSeeded = true;
+    const ms = engine.suggestedAlignMs();
+    if (ms <= 0) return;
+    this.setAlign(ms);
+    toast(`Loop alignment started at <b>${this.alignMs} ms</b> — what this device reports for the `
+      + 'round trip out to your ears and back in. If takes still land late, nudge <b>ALIGN</b> up.', 7000);
+  }
+
   private onRec() {
+    this.seedAlign();
     if (this.state === 'count' || this.state === 'rec' || this.armed) {
       engine.sendLooper({ cmd: 'stop' });
       return;
@@ -156,6 +250,7 @@ export class LooperSection {
     if (m.beatsPerBar) this.beatsPerBar = m.beatsPerBar;
     if (m.bars) this.bars = m.bars;
     if (m.loopBpm) this.bpm = Math.round(m.loopBpm);
+    if (m.len !== undefined) this.loopLen = m.len;
     if (m.tracks) this.syncTracks(m.tracks);
     this.syncUi();
   }
@@ -363,6 +458,18 @@ export class LooperSection {
 
     if (lane.peaks) {
       const bins = lane.peaks.length / 2;
+      /* Slide the picture by the same amount the audio is slid by, so the
+       * waveform under the gridlines IS what comes out of the speakers and
+       * the player can dial the alignment by eye as well as by ear.
+       *
+       * Done here rather than by re-binning in the worklet because that would
+       * be a few hundred thousand samples per track on the AUDIO THREAD, on
+       * every step of a drag. This is one number added to an x.
+       *
+       * The wrap is the one approximation on screen: the far right of the lane
+       * redraws the head of the same take, where the audio reads the recorded
+       * tail. Different milliseconds, same performance, and only the picture. */
+      const shift = this.loopLen > 0 ? -(this.alignMs / 1000) * (engine.sampleRate() ?? 48000) / this.loopLen : 0;
       const grad = g.createLinearGradient(0, 0, 0, H);
       if (lane.muted) {
         grad.addColorStop(0, 'rgba(120,130,140,.45)');
@@ -375,10 +482,14 @@ export class LooperSection {
       g.fillStyle = grad;
       if (!lane.muted) { g.shadowColor = 'rgba(159,216,232,.3)'; g.shadowBlur = 5; }
       const bw = W / bins;
+      const dx = shift * W;
       for (let b = 0; b < bins; b++) {
         const lo = lane.peaks[b * 2], hi = lane.peaks[b * 2 + 1];
         const y0 = mid - hi * mid * 0.9, y1 = mid - lo * mid * 0.9;
-        g.fillRect(b * bw, y0, Math.max(1, bw * 0.85), Math.max(1, y1 - y0));
+        let x = b * bw + dx;
+        if (x < -bw) x += W;
+        else if (x > W) x -= W;
+        g.fillRect(x, y0, Math.max(1, bw * 0.85), Math.max(1, y1 - y0));
       }
       g.shadowBlur = 0;
     }
