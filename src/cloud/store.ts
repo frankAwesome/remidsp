@@ -230,7 +230,24 @@ export async function saveProfile(uid: string, p: Profile): Promise<void> {
   //    protect it. The transaction is still what makes the claim safe: two
   //    players racing for the same free handle both read "free", and the
   //    loser's commit is rejected and retried into the taken branch.
-  if (!prev || prev !== lower) {
+  // Claim unless the claim is ALREADY HELD BY THIS PLAYER.
+  //
+  // This used to key off "did the handle change?" (`prev !== lower`), which
+  // cannot repair the one state that actually needs repairing: a profile whose
+  // usernameLower is set but whose claim document is missing. There is at
+  // least one such account in production. The handle has not changed, so the
+  // claim step is skipped — and then the profile write is refused, because the
+  // rule verifies the claim with holdsHandle(). ensureProfile() DETECTS the
+  // missing claim and calls this to fix it, and this skipped the fix for the
+  // same reason. A dead end that repaired itself into itself: the profile
+  // could never be saved again, and /u/<handle> could never resolve.
+  //
+  // Asking "do I hold it?" instead of "did it change?" makes the next save
+  // self-heal. The extra read is one document, on a path that already reads
+  // and writes several.
+  const alreadyHeld = prev === lower
+    && (await getDoc(doc(db, 'usernames', lower))).data()?.uid === uid;
+  if (!alreadyHeld) {
     await runTransaction(db, async (tx) => {
       const claimRef = doc(db, 'usernames', lower);
       const claim = await tx.get(claimRef);
