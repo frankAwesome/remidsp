@@ -131,6 +131,33 @@ service cloud.firestore {
         && request.auth.token.email in ['sheepdeklerk@gmail.com'];
     }
 
+    // ── the public summary ───────────────────────────────────────────────
+    //
+    // One document, world-readable, holding the aggregated numbers the public
+    // dashboard draws: totals, per-day series, countries, referrers, map
+    // points. It exists for two reasons, and cost is the blunter one.
+    //
+    // Reading the raw collections costs one read per document per visitor.
+    // At ~800 rows that is ~800 reads a page load, and the free tier's 50k/day
+    // budget is gone after about sixty visitors — a public dashboard would
+    // break precisely when it got popular. This is one read instead.
+    //
+    // The other reason is that aggregates are the right thing to publish.
+    // The raw rows carry a user agent, a city and a timestamp for every real
+    // visitor; those people did not choose to be on a public page. Nothing
+    // per-visitor goes in here — see publishable() in js/dash.js, which drops
+    // the download log before writing.
+    //
+    // Writing stays restricted to the dashboard account. A world-writable
+    // document on a public endpoint is a free billboard for whoever finds it.
+    match /public/{doc} {
+      allow read: if true;
+      allow write: if dashboardReader()
+        && request.resource.data.keys().hasOnly(['json', 'generated', 'schema'])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 900000;   // doc limit is 1 MiB
+    }
+
     match /pageviews/{id} {
       allow create: if createOnly()
         && request.resource.data.keys().hasOnly(
