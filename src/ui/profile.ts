@@ -30,32 +30,33 @@ const AMP_ACCENT: Record<string, string> = {
   camden: '#8fd8cf', portland: '#e9b765', katahdin: '#c25a52',
 };
 
-/* The banner decks — drawn in CSS, stored as 'deck:<key>', so a profile can
- * wear a cover with no media origin configured at all. Each is one of the
- * suite's own lights: the three amps', the ice of the TONE3000 accent, and
- * the blackout room itself. */
-const DECKS: { key: string; label: string }[] = [
-  { key: 'blackout', label: 'Blackout' },
-  { key: 'aurora', label: 'Aurora — Camden teal' },
-  { key: 'brass', label: 'Brass — Portland gold' },
-  { key: 'ember', label: 'Ember — Katahdin red' },
-  { key: 'ice', label: 'Ice — capture blue' },
-  { key: 'grid', label: 'The grid' },
-];
+/* The banner. A player's own image when they have set one (an https URL —
+ * there is no media store yet, so a pasted link is what exists, and a link
+ * that will not load falls back), otherwise the house banner: tubes glowing
+ * over a waveform, shipped with the app so the default is never an empty
+ * rectangle. 'deck:' values from the short-lived colour-deck design render
+ * as the house banner too. */
+const HOUSE_BANNER = '/assets/site/banner-default.webp';
 
-/** The cover strip's markup for whatever coverUrl holds — a drawn deck, a
- *  hosted picture, or (default) the quiet blackout deck. */
 function coverHtml(coverUrl?: string): string {
   const c = (coverUrl ?? '').trim();
-  if (c.startsWith('deck:')) {
-    const key = c.slice(5);
-    const known = DECKS.some((d) => d.key === key) ? key : 'blackout';
-    return `<div class="profile__cover profile__cover--deck cover-deck--${known}"><i></i></div>`;
-  }
-  if (c.startsWith('https://')) {
-    return `<div class="profile__cover"><img crossorigin="anonymous" src="${escape(c)}" alt=""></div>`;
-  }
-  return `<div class="profile__cover profile__cover--deck cover-deck--blackout"><i></i></div>`;
+  return `<div class="profile__cover">
+    ${c.startsWith('https://')
+      ? `<img crossorigin="anonymous" src="${escape(c)}" data-cover alt="">`
+      : `<img src="${HOUSE_BANNER}" alt="">`}
+  </div>`;
+}
+
+/** A pasted banner that cannot load (dead link, a host that refuses CORS —
+ *  this page is COEP-isolated, so cross-origin images must play along)
+ *  quietly becomes the house banner instead of a broken strip. */
+function wireCoverFallback(root: HTMLElement) {
+  const img = root.querySelector<HTMLImageElement>('.profile__cover img[data-cover]');
+  img?.addEventListener('error', () => {
+    img.removeAttribute('crossorigin');
+    img.removeAttribute('data-cover');
+    img.src = HOUSE_BANNER;
+  });
 }
 
 /** One wall post — a person saying a thing, maybe pointing at a tone. */
@@ -220,14 +221,12 @@ export class ProfileView {
         <textarea name="bio" maxlength="400" rows="3" placeholder="bio — amps, bands, worship team, whatever">${escape(p.bio)}</textarea>
         <input name="link" maxlength="200" placeholder="https:// — one link: your channel, your band"
           value="${escape(p.link ?? '')}" autocapitalize="off" autocorrect="off" spellcheck="false" />
-        <div class="cover-pick">
-          <span class="cover-pick__head">BANNER</span>
-          <div class="cover-pick__row" data-el="coverRow">
-            ${DECKS.map((d) => `<button type="button" class="cover-swatch cover-deck--${d.key}${
-              (p.coverUrl ?? 'deck:blackout') === `deck:${d.key}` ? ' on' : ''}"
-              data-deck="deck:${d.key}" title="${escape(d.label)}"><i></i></button>`).join('')}
-          </div>
-        </div>
+        <input name="coverUrl" maxlength="500"
+          placeholder="https:// — a banner image of your own"
+          value="${escape((p.coverUrl ?? '').startsWith('https://') ? p.coverUrl! : '')}"
+          autocapitalize="off" autocorrect="off" spellcheck="false" />
+        <div class="handle-note">The banner sits behind your name, cropped to a wide strip.
+          Leave it empty and you get the house banner — the tubes.</div>
         <label class="profile__vis">
           <span class="profile__vis__head">PROFILE PAGE</span>
           <select name="isPublic">
@@ -269,18 +268,9 @@ export class ProfileView {
     // edit toggle + save
     const form = this.root.querySelector<HTMLFormElement>('.profile__edit')!;
     this.wireHandleField(form, p.username);
+    wireCoverFallback(this.root);
     this.root.querySelector('[data-a=edit]')!.addEventListener('click', () => { form.hidden = !form.hidden; });
     this.root.querySelector('[data-a=cancel]')!.addEventListener('click', () => { form.hidden = true; });
-
-    // Banner picker — the chosen deck rides the form until SAVE commits it.
-    form.dataset.cover = p.coverUrl ?? 'deck:blackout';
-    for (const sw of form.querySelectorAll<HTMLButtonElement>('[data-deck]')) {
-      sw.addEventListener('click', () => {
-        form.dataset.cover = sw.dataset.deck!;
-        form.querySelectorAll('[data-deck]').forEach((x) => x.classList.remove('on'));
-        sw.classList.add('on');
-      });
-    }
 
     // Picture upload. The encoded image goes straight into the avatarUrl
     // field, so one code path saves it whether it was uploaded or pasted.
@@ -340,10 +330,14 @@ export class ProfileView {
         toast('The link needs to start with <b>https://</b>');
         return;
       }
+      const coverUrl = v('coverUrl');
+      if (coverUrl && !coverUrl.startsWith('https://')) {
+        toast('The banner needs an <b>https://</b> image URL — or leave it empty for the house banner.');
+        return;
+      }
       const next: Profile = {
         username: v('username'), bio: v('bio'), avatarUrl, isPublic,
-        link, coverUrl: form.dataset.cover ?? p.coverUrl ?? '',
-        pinnedId: p.pinnedId ?? '',
+        link, coverUrl, pinnedId: p.pinnedId ?? '',
       };
       try {
         await saveProfile(user.uid, next);
@@ -501,6 +495,7 @@ export class ProfileView {
       <div class="account-rule"><span>PUBLIC TONES</span></div>
       <div class="feed__list profile__tones"></div>`;
 
+    wireCoverFallback(this.root);
     const wall = this.root.querySelector<HTMLElement>('.profile__wall');
     if (wall) for (const post of posts) wall.appendChild(postRow(post, false));
 

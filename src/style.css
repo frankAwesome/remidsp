@@ -1852,45 +1852,23 @@ span.feed-comment__ava--blank{display:grid;place-items:center;background:#14161c
 /* ── the profile banner ─────────────────────────────────────────────────── */
 .profile__cover{position:relative;height:clamp(120px,18vw,190px);overflow:hidden;
   border:1px solid var(--surface-line);border-bottom:0;border-radius:3px 3px 0 0}
-.profile__cover img{width:100%;height:100%;object-fit:cover}
-.profile__cover--deck i{position:absolute;inset:0;display:block}
-/* every deck ends in the page's own black, so the header underneath reads as
-   one object with the banner rather than a card taped below a picture */
-.profile__cover--deck::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg,transparent 30%,rgba(5,5,6,.82) 96%)}
-.cover-deck--blackout i{background:
-  radial-gradient(120% 130% at 18% -20%, rgba(238,241,246,.12), transparent 55%),
-  linear-gradient(180deg,#17171c,#0a0a0d)}
-.cover-deck--aurora i{background:
-  radial-gradient(90% 140% at 80% -30%, rgba(143,216,207,.5), transparent 60%),
-  radial-gradient(70% 120% at 15% -10%, rgba(74,143,150,.42), transparent 65%),
-  linear-gradient(180deg,#10171a,#0a0a0d)}
-.cover-deck--brass i{background:
-  radial-gradient(90% 140% at 78% -30%, rgba(233,183,101,.44), transparent 62%),
-  radial-gradient(60% 110% at 12% -15%, rgba(138,106,42,.4), transparent 60%),
-  linear-gradient(180deg,#191410,#0a0a0d)}
-.cover-deck--ember i{background:
-  radial-gradient(90% 140% at 76% -30%, rgba(194,90,82,.46), transparent 62%),
-  radial-gradient(60% 110% at 14% -10%, rgba(138,52,42,.4), transparent 62%),
-  linear-gradient(180deg,#191010,#0a0a0d)}
-.cover-deck--ice i{background:
-  radial-gradient(90% 140% at 80% -30%, rgba(159,216,232,.42), transparent 62%),
-  radial-gradient(60% 110% at 15% -12%, rgba(91,143,212,.36), transparent 62%),
-  linear-gradient(180deg,#10141a,#0a0a0d)}
-.cover-deck--grid i{background-image:
-  linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
-  linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px),
-  radial-gradient(100% 130% at 50% -30%, rgba(159,216,232,.14), transparent 60%),
-  linear-gradient(180deg,#101014,#0a0a0d);
-  background-size:34px 34px,34px 34px,100% 100%,100% 100%}
-/* the same grain the rest of the room wears */
-.profile__cover--deck i::after{content:"";position:absolute;inset:0;opacity:.07;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* object-position rides a little high: the house banner's tubes and waveform
+   live in the upper-middle band, and a pasted landscape usually keeps its
+   subject there too. */
+.profile__cover img{width:100%;height:100%;object-fit:cover;object-position:center 38%}
+/* Every banner ends in the page's own black, so the header underneath reads
+   as one object with the picture rather than a card taped below it. */
+.profile__cover::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 40%,rgba(5,5,6,.78) 97%)}
 /* The banner and the header are ONE object — the header tucks up under the
    cover, cancelling the page's flex gap, and the avatar climbs the seam. */
 .profile__head--covered{border-radius:0 0 3px 3px;margin-top:-1.1rem}
-.profile__head--covered .profile__ava{margin-top:calc(clamp(120px,18vw,190px) * -.38);
-  border:2px solid #0c0c0f;box-shadow:0 12px 34px rgba(0,0,0,.65)}
+/* position + z-index are load-bearing, not decoration: the cover's scrim is
+   absolutely positioned, and positioned boxes paint ABOVE static ones — so a
+   static avatar climbing the seam got its top sliced off by the scrim. */
+.profile__head--covered .profile__ava{position:relative;z-index:2;
+  margin-top:calc(clamp(120px,18vw,190px) * -.42);
+  border:3px solid #0c0c0f;box-shadow:0 12px 34px rgba(0,0,0,.65)}
 
 .profile__link{display:inline-flex;align-items:center;gap:.35rem;margin-top:.4rem;
   font-size:.7rem;letter-spacing:.04em;color:var(--ice);text-decoration:none;
@@ -1900,17 +1878,6 @@ span.feed-comment__ava--blank{display:grid;place-items:center;background:#14161c
   transition:border-color .2s var(--ease),background .2s var(--ease)}
 .profile__link::before{content:"↗";font-size:.66rem;color:var(--muted-2)}
 .profile__link:hover{border-color:var(--ice);background:rgba(159,216,232,.08)}
-
-/* ── the banner picker ──────────────────────────────────────────────────── */
-.cover-pick{display:flex;flex-direction:column;gap:.35rem}
-.cover-pick__head{font-size:.5rem;font-weight:600;letter-spacing:.22em;color:var(--muted-2)}
-.cover-pick__row{display:flex;gap:.4rem;flex-wrap:wrap}
-.cover-swatch{position:relative;width:64px;height:36px;border-radius:3px;overflow:hidden;
-  border:1px solid var(--line-2);padding:0;cursor:pointer;
-  transition:border-color .2s var(--ease),transform .15s var(--ease)}
-.cover-swatch i{position:absolute;inset:0;display:block}
-.cover-swatch:hover{transform:translateY(-1px);border-color:var(--line-2)}
-.cover-swatch.on{border-color:var(--ice);box-shadow:0 0 0 1px var(--ice),0 0 14px rgba(159,216,232,.35)}
 
 /* ── the wall ───────────────────────────────────────────────────────────── */
 .wall-compose{display:flex;flex-direction:column;gap:.45rem}
