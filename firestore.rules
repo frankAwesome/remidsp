@@ -300,11 +300,21 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usernames/$(h)).data.uid == uid;
     }
 
+    /* A cover is a banner: a hosted https URL, or one of the suite's own
+     * drawn decks — 'deck:<name>', rendered entirely in CSS so it costs no
+     * storage and no media origin. Never inline: 0 inline bytes allowed is
+     * the whole point — a 200 kB data URI on a document this heavily
+     * denormalised would be a disaster. */
+    function coverOk(v) {
+      return pictureOk(v, 0)
+        || (v is string && v.size() <= 40 && v[0:5] == 'deck:');
+    }
+
     function profileShapeOk() {
       let d = request.resource.data;
       return d.keys().hasOnly(
                ['username', 'usernameLower', 'bio', 'avatarUrl', 'coverUrl',
-                'link', 'isPublic',
+                'link', 'isPublic', 'pinnedId',
                 'followersCount', 'followingCount', 'createdAt', 'updatedAt'])
         && d.username is string
         && d.username.size() >= 3 && d.username.size() <= 20
@@ -313,12 +323,11 @@ service cloud.firestore {
         && sOrNull(d.get('bio', null), 400)
         && (d.get('isPublic', true) is bool)
         && avatarOk(d.get('avatarUrl', null))
-        // A cover is a banner: it is only ever a hosted URL, never inline.
-        // 0 inline bytes allowed is the whole point — a 200 kB data URI on a
-        // document this heavily denormalised would be a disaster.
-        && pictureOk(d.get('coverUrl', null), 0)
+        && coverOk(d.get('coverUrl', null))
         && httpsOrNull(d.get('link', null))
-        && sOrNull(d.get('link', null), 200);
+        && sOrNull(d.get('link', null), 200)
+        // The tone pinned to the top of the profile — an id, not a copy.
+        && sOrNull(d.get('pinnedId', null), 40);
     }
     // Follow/unfollow rides a batched write that also creates/deletes the
     // follower's edge doc — the counter may move by exactly one.
@@ -371,6 +380,131 @@ service cloud.firestore {
         allow read: if true;
         allow create, delete: if signedIn() && request.auth.uid == uid;
         allow update: if false;
+      }
+
+      /* ── notifications ─────────────────────────────────────────────────
+       * "Somebody liked / commented / followed" — written by the ACTOR at
+       * the moment they act, readable only by the player it is about. The
+       * actor pin (actorUid == auth.uid) is what stops impersonation, and
+       * kind is an enum so this can never become a general message channel:
+       * messages have their own collection with their own gates. */
+      match /notes/{noteId} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn()
+          && request.auth.uid != uid
+          && request.resource.data.keys().hasOnly(
+               ['kind', 'actorUid', 'actorName', 'toneId', 'toneName',
+                'read', 'createdAt'])
+          && request.resource.data.kind in ['like', 'comment', 'follow']
+          && request.resource.data.actorUid == request.auth.uid
+          && request.resource.data.actorName is string
+          && request.resource.data.actorName.size() >= 1
+          && request.resource.data.actorName.size() <= 40
+          && sOrNull(request.resource.data.get('toneId', null), 40)
+          && sOrNull(request.resource.data.get('toneName', null), 60)
+          && request.resource.data.read == false;
+        // The owner may flip `read` and nothing else — a notification is a
+        // record of something that happened, not an editable document.
+        allow update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+
+      /* Who {uid} refuses messages from. Owner-only in every direction —
+       * the blocked player is never told; their sends just stop landing.
+       * (Rules' own exists() reads these server-side regardless.) */
+      match /blocks/{blockedUid} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow create, delete: if signedIn() && request.auth.uid == uid;
+        allow update: if false;
+      }
+    }
+
+    /* ── wall posts ────────────────────────────────────────────────────────
+     * Words on a profile that are not a preset: a question, a small win, a
+     * "back after two weeks". A post may POINT AT one of the author's shared
+     * tones (toneId), but it is never a copy of one — the wall is for the
+     * person, the feed is for the sounds. Same posture as comments:
+     * world-readable, author-deletable, never editable. */
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(
+             ['uid', 'username', 'avatarUrl', 'text', 'toneId', 'toneName',
+              'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.username is string
+        && request.resource.data.username.size() >= 1
+        && request.resource.data.username.size() <= 40
+        && avatarOk(request.resource.data.get('avatarUrl', null))
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 600
+        && sOrNull(request.resource.data.get('toneId', null), 40)
+        && sOrNull(request.resource.data.get('toneName', null), 60);
+      allow update: if false;
+      allow delete: if signedIn() && request.auth.uid == resource.data.uid;
+    }
+
+    /* ── messages ──────────────────────────────────────────────────────────
+     * 1:1 only, and GATED ON MUTUAL FOLLOW: a thread can only be opened
+     * between two players who each follow the other. That single rule is
+     * most of the moderation story — a stranger cannot open your inbox, and
+     * unfollowing closes the door to new threads. Blocks close it harder:
+     * a message create checks the recipient's block list server-side.
+     *
+     * The thread id IS the membership: '<uidA>_<uidB>' with A < B, enforced
+     * at create, so one pair of players can only ever have one thread and a
+     * crafted id cannot claim members it does not name. */
+    function follows(a, b) {
+      return exists(/databases/$(database)/documents/profiles/$(a)/following/$(b));
+    }
+    function dmOther(threadId) {
+      let parts = threadId.split('_');
+      return parts[0] == request.auth.uid ? parts[1] : parts[0];
+    }
+
+    match /dms/{threadId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(
+             ['members', 'names', 'avatars', 'lastText', 'lastUid', 'lastAt',
+              'reads', 'createdAt'])
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && request.auth.uid in request.resource.data.members
+        && request.resource.data.members[0] < request.resource.data.members[1]
+        && threadId == request.resource.data.members[0] + '_' + request.resource.data.members[1]
+        && follows(request.resource.data.members[0], request.resource.data.members[1])
+        && follows(request.resource.data.members[1], request.resource.data.members[0])
+        && !exists(/databases/$(database)/documents/profiles/$(dmOther(threadId))/blocks/$(request.auth.uid))
+        && request.resource.data.names is map
+        && request.resource.data.avatars is map
+        && request.resource.data.get('lastText', '') is string
+        && request.resource.data.get('lastText', '').size() <= 200
+        && request.resource.data.reads is map;
+      // Members may move the conversation surface — last line, read marks,
+      // refreshed bylines — but membership itself is immutable.
+      allow update: if signedIn() && request.auth.uid in resource.data.members
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['lastText', 'lastUid', 'lastAt', 'reads', 'names', 'avatars'])
+        && request.resource.data.get('lastText', '') is string
+        && request.resource.data.get('lastText', '').size() <= 200;
+      allow delete: if false;
+
+      match /messages/{msgId} {
+        allow read: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/dms/$(threadId)).data.members;
+        allow create: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/dms/$(threadId)).data.members
+          && request.resource.data.keys().hasOnly(['uid', 'text', 'createdAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 1000
+          && !exists(/databases/$(database)/documents/profiles/$(dmOther(threadId))/blocks/$(request.auth.uid));
+        allow update: if false;
+        allow delete: if signedIn() && request.auth.uid == resource.data.uid;
       }
     }
 

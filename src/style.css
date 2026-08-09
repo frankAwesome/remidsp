@@ -240,8 +240,17 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .stage{position:relative;border:1px solid var(--line);border-top:0;background:var(--ink-2);
   padding:clamp(.8rem,2.5vw,2rem);display:flex;flex-direction:column;align-items:center;gap:1rem;
   min-height:420px}
+/* The stage light carries the SELECTED module's own tint (set by renderStage
+   from the same palette the landing cards use), so walking the chain relights
+   the room instead of restyling it. Quiet on purpose: the wash tops out
+   around 6% — continuity you feel, not a colour you could name. */
 .stage__glow{position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(60% 45% at 50% 30%, rgba(238,241,246,.05), transparent 70%)}
+  background:
+    radial-gradient(60% 45% at 50% 30%,
+      color-mix(in oklab, var(--stage-tint,#9fd8e8) 7%, rgba(238,241,246,.04)), transparent 70%),
+    radial-gradient(40% 30% at 50% 100%,
+      color-mix(in oklab, var(--stage-tint,#9fd8e8) 4%, transparent), transparent 75%);
+  transition:background .8s var(--ease)}
 
 /* face panel: image + absolutely-positioned live controls */
 .face{position:relative;width:min(100%,980px);user-select:none}
@@ -611,6 +620,36 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .gate-hero__shine{background:linear-gradient(180deg,var(--light-hi),var(--light) 48%,#8fb4c6);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 6px 26px rgba(180,212,230,.4))}
+/* A slow specular pass through the lit line — one moving highlight, minutes
+   apart in feel, never a strobe. The gradient is oversized and its position
+   animated, so the sweep is a light moving over the glass, not a repaint. */
+@media (prefers-reduced-motion:no-preference){
+  .gate-hero__shine{
+    background:linear-gradient(100deg,
+      var(--light-hi) 0%, var(--light) 38%, #8fb4c6 46%,
+      #ffffff 50%, #8fb4c6 54%, var(--light) 62%, var(--light-hi) 100%);
+    background-size:300% 100%;
+    animation:heroSweep 9s var(--ease) infinite}
+}
+@keyframes heroSweep{0%,55%{background-position:100% 0}90%,100%{background-position:0% 0}}
+
+/* THE CAMERA MOVE — scrolling away from the hero eases it back and down, the
+   way a dolly pulls off a subject. CSS scroll-driven animation only: where
+   animation-timeline is unsupported, the hero simply scrolls like anything
+   else, which is exactly the right fallback. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion:no-preference){
+    .gate-hero__copy{animation:heroExit linear both;
+      animation-timeline:scroll();animation-range:0 90vh}
+    .gate-rig{animation:rigExit linear both;
+      animation-timeline:scroll();animation-range:0 90vh}
+    .gate-hero__glow{animation:glowExit linear both;
+      animation-timeline:scroll();animation-range:0 70vh}
+  }
+}
+@keyframes heroExit{to{transform:translateY(-42px);opacity:.12}}
+@keyframes rigExit{to{transform:translateY(-24px) scale(.965);opacity:.3}}
+@keyframes glowExit{to{opacity:0}}
 .gate-hero__lede{font-size:.95rem;line-height:1.7;color:var(--muted);max-width:46ch;
   margin-bottom:2rem}
 .gate-hero__lede b{color:var(--text);font-weight:600}
@@ -814,15 +853,58 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   border-top:1px solid var(--line);padding-top:.7rem;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:900px){.gate-feed{grid-template-columns:minmax(0,1fr)}}
 
+/* ── inside the tab — the pinned screenshot the notes walk past ──────────
+   The oldest sticky-scene trick there is, and the cheapest: the shot holds
+   the viewport while four annotations scroll by beside it. No timeline API,
+   no library, degrades to a plain two-column layout anywhere sticky fails. */
+.gate-scene__grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);
+  gap:clamp(1.5rem,4vw,4rem);align-items:start}
+.gate-scene__pin{position:sticky;top:clamp(3.5rem,10vh,6rem);margin:0}
+.gate-scene__frame{position:relative;display:block;overflow:hidden;
+  border:1px solid var(--line-2);background:#08080b;
+  box-shadow:0 40px 90px -50px rgba(0,0,0,.95)}
+.gate-scene__frame img{display:block;width:100%;height:auto}
+.gate-scene__pin figcaption{margin-top:.7rem;font-size:.52rem;letter-spacing:.2em;
+  color:var(--muted-2);text-align:center}
+.gate-scene__notes{display:flex;flex-direction:column;
+  gap:clamp(2.5rem,8vh,5.5rem);padding-block:clamp(1rem,6vh,4rem)}
+.gate-scene__note{border-top:1px solid var(--line-2);padding-top:1rem}
+.gate-scene__noteno{font-size:.78rem;color:var(--light);
+  text-shadow:0 0 14px rgba(180,212,230,.5)}
+.gate-scene__note h3{margin:.5rem 0 .55rem}
+.gate-scene__note p{font-size:.82rem;line-height:1.7;color:var(--muted);max-width:38ch}
+@media (max-width:900px){
+  .gate-scene__grid{grid-template-columns:minmax(0,1fr)}
+  .gate-scene__pin{position:static}
+  .gate-scene__notes{gap:1.6rem;padding-block:0}
+}
+
+/* ── the rest of the scene, drawn in the same hand as the gtone card ────── */
+.gsocial{display:flex;flex-direction:column;gap:.4rem;margin-top:.55rem}
+.gsocial__row{display:flex;align-items:center;gap:.6rem;
+  border:1px solid var(--surface-line);background:var(--surface);
+  box-shadow:inset 0 1px 0 var(--surface-top);padding:.5rem .7rem}
+.gsocial__glyph{width:24px;height:24px;flex:none;display:grid;place-items:center;
+  border-radius:50%;font-size:.62rem;background:#1d1d24;color:var(--muted)}
+.gsocial__glyph--like{color:#ff6a5a}
+.gsocial__glyph--dm{color:#9fd8e8}
+.gsocial__glyph--follow{color:#5fe08a}
+.gsocial__text{flex:1;min-width:0;font-size:.7rem;color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsocial__text b{color:var(--text);font-weight:600}
+.gsocial__text i{font-style:normal;color:#9fd8e8}
+.gsocial__row em{font-style:normal;font-size:.5rem;color:var(--muted-2)}
+
 /* ── the numbers ──────────────────────────────────────────────────────────
    The claims that would otherwise be marketing adjectives, set as data. */
-.gate-tally{list-style:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+.gate-tally{list-style:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
   gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:clamp(1.6rem,3vw,2.4rem)}
 .gate-tally li{background:var(--ink);padding:1.3rem 1rem;display:flex;flex-direction:column;
   align-items:center;gap:.4rem;text-align:center}
 .gate-tally b{font-size:clamp(1.9rem,4vw,3rem);line-height:1;color:var(--light-hi);
   text-shadow:0 0 26px rgba(180,212,230,.45)}
 .gate-tally span{font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-2)}
+@media (max-width:940px){.gate-tally{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:640px){.gate-tally{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .gate-spectable{display:flex;flex-direction:column}
@@ -1487,7 +1569,7 @@ a.feed-card__title:focus-visible{outline:2px solid var(--tone,#9fd8e8);outline-o
    the rig cannot be touched by construction, because no rig element is ever
    inside these selectors. A body[data-theme] toggle driven from setView()
    could desync from the router — this cannot. */
-.feed, .profile, .landing {
+.feed, .profile, .landing, .dm, .notices {
   --surface-0:#0e0f11;      /* the ground these cards stand on   L* 4.3 */
   --surface-1:#16181c;      /* a card at rest                    L* 8.2 */
   --surface-2:#1c1f24;      /* hover, expanded, active           L*11.7 */
@@ -1748,3 +1830,231 @@ span.feed-comment__ava--blank{display:grid;place-items:center;background:#14161c
   .preset__name{min-width:120px}
   .chip{width:52px;height:52px}
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SOCIAL LAYER, CONTINUED — inbox, banners, the wall, messages.
+   Same rule as ever: PEOPLE GET A SURFACE, GEAR DOES NOT.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the inbox keys ─────────────────────────────────────────────────────── */
+.inbox{display:flex;border:1px solid var(--line-2)}
+.inbox__btn{border:0;position:relative;padding-inline:.65rem}
+.inbox__btn+.inbox__btn{border-left:1px solid var(--line)}
+/* the unread jewel — the same LED grammar as the rest of the rig */
+.inbox__btn.has-new::after{content:"";position:absolute;top:5px;right:5px;
+  width:7px;height:7px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ffd9cf,#ff5340 55%,#8f1d12);
+  box-shadow:0 0 8px rgba(255,83,64,.8)}
+
+/* ── the profile banner ─────────────────────────────────────────────────── */
+.profile__cover{position:relative;height:clamp(120px,18vw,190px);overflow:hidden;
+  border:1px solid var(--surface-line);border-bottom:0;border-radius:3px 3px 0 0}
+.profile__cover img{width:100%;height:100%;object-fit:cover}
+.profile__cover--deck i{position:absolute;inset:0;display:block}
+/* every deck ends in the page's own black, so the header underneath reads as
+   one object with the banner rather than a card taped below a picture */
+.profile__cover--deck::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 30%,rgba(5,5,6,.82) 96%)}
+.cover-deck--blackout i{background:
+  radial-gradient(120% 130% at 18% -20%, rgba(238,241,246,.12), transparent 55%),
+  linear-gradient(180deg,#17171c,#0a0a0d)}
+.cover-deck--aurora i{background:
+  radial-gradient(90% 140% at 80% -30%, rgba(143,216,207,.5), transparent 60%),
+  radial-gradient(70% 120% at 15% -10%, rgba(74,143,150,.42), transparent 65%),
+  linear-gradient(180deg,#10171a,#0a0a0d)}
+.cover-deck--brass i{background:
+  radial-gradient(90% 140% at 78% -30%, rgba(233,183,101,.44), transparent 62%),
+  radial-gradient(60% 110% at 12% -15%, rgba(138,106,42,.4), transparent 60%),
+  linear-gradient(180deg,#191410,#0a0a0d)}
+.cover-deck--ember i{background:
+  radial-gradient(90% 140% at 76% -30%, rgba(194,90,82,.46), transparent 62%),
+  radial-gradient(60% 110% at 14% -10%, rgba(138,52,42,.4), transparent 62%),
+  linear-gradient(180deg,#191010,#0a0a0d)}
+.cover-deck--ice i{background:
+  radial-gradient(90% 140% at 80% -30%, rgba(159,216,232,.42), transparent 62%),
+  radial-gradient(60% 110% at 15% -12%, rgba(91,143,212,.36), transparent 62%),
+  linear-gradient(180deg,#10141a,#0a0a0d)}
+.cover-deck--grid i{background-image:
+  linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px),
+  radial-gradient(100% 130% at 50% -30%, rgba(159,216,232,.14), transparent 60%),
+  linear-gradient(180deg,#101014,#0a0a0d);
+  background-size:34px 34px,34px 34px,100% 100%,100% 100%}
+/* the same grain the rest of the room wears */
+.profile__cover--deck i::after{content:"";position:absolute;inset:0;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* The banner and the header are ONE object — the header tucks up under the
+   cover, cancelling the page's flex gap, and the avatar climbs the seam. */
+.profile__head--covered{border-radius:0 0 3px 3px;margin-top:-1.1rem}
+.profile__head--covered .profile__ava{margin-top:calc(clamp(120px,18vw,190px) * -.38);
+  border:2px solid #0c0c0f;box-shadow:0 12px 34px rgba(0,0,0,.65)}
+
+.profile__link{display:inline-flex;align-items:center;gap:.35rem;margin-top:.4rem;
+  font-size:.7rem;letter-spacing:.04em;color:var(--ice);text-decoration:none;
+  border:1px solid color-mix(in srgb, var(--ice) 30%, transparent);
+  border-radius:999px;padding:.22rem .7rem;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  transition:border-color .2s var(--ease),background .2s var(--ease)}
+.profile__link::before{content:"↗";font-size:.66rem;color:var(--muted-2)}
+.profile__link:hover{border-color:var(--ice);background:rgba(159,216,232,.08)}
+
+/* ── the banner picker ──────────────────────────────────────────────────── */
+.cover-pick{display:flex;flex-direction:column;gap:.35rem}
+.cover-pick__head{font-size:.5rem;font-weight:600;letter-spacing:.22em;color:var(--muted-2)}
+.cover-pick__row{display:flex;gap:.4rem;flex-wrap:wrap}
+.cover-swatch{position:relative;width:64px;height:36px;border-radius:3px;overflow:hidden;
+  border:1px solid var(--line-2);padding:0;cursor:pointer;
+  transition:border-color .2s var(--ease),transform .15s var(--ease)}
+.cover-swatch i{position:absolute;inset:0;display:block}
+.cover-swatch:hover{transform:translateY(-1px);border-color:var(--line-2)}
+.cover-swatch.on{border-color:var(--ice);box-shadow:0 0 0 1px var(--ice),0 0 14px rgba(159,216,232,.35)}
+
+/* ── the wall ───────────────────────────────────────────────────────────── */
+.wall-compose{display:flex;flex-direction:column;gap:.45rem}
+.wall-compose textarea{background:var(--surface-inset);color:var(--text);
+  border:1px solid var(--line-2);border-radius:3px;padding:.6rem .75rem;
+  font:inherit;font-size:.82rem;line-height:1.55;resize:vertical}
+.wall-compose textarea:focus{outline:none;border-color:rgba(159,216,232,.6)}
+.wall-compose__row{display:flex;gap:.45rem;align-items:center}
+.wall-compose__row select{flex:1;min-width:0;background:var(--surface-inset);color:var(--muted);
+  border:1px solid var(--line-2);font-size:.6rem;font-weight:600;letter-spacing:.12em;
+  padding:.45rem .5rem}
+.profile__wall{display:flex;flex-direction:column;gap:.55rem}
+.profile__wall--public{max-width:860px;width:100%;margin:0 auto}
+.wall-post{position:relative;border:1px solid var(--line);border-radius:3px;
+  background:var(--surface-1);box-shadow:inset 0 1px 0 var(--edge-hi);
+  padding:.7rem .85rem;display:flex;flex-direction:column;gap:.4rem;
+  transition:border-color .2s var(--ease),background .2s var(--ease)}
+.wall-post:hover{background:var(--surface-2)}
+.wall-post__meta{display:flex;align-items:center;gap:.5rem;font-size:.62rem;color:var(--muted-2)}
+.wall-post__meta b{color:var(--ice);font-size:.74rem;font-weight:600}
+.wall-post__ava{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none;
+  border:1px solid var(--line-2)}
+span.wall-post__ava--blank{display:grid;place-items:center;background:var(--surface-3);
+  font-family:var(--font-display);font-weight:700;font-size:.66rem;color:var(--ice)}
+.wall-post__del{margin-left:auto;color:var(--muted-2);font-size:.66rem;padding:.15rem .35rem;
+  border:1px solid transparent;transition:.15s}
+.wall-post__del:hover{color:#ff6a5a;border-color:rgba(255,106,90,.5)}
+.wall-post__text{font-size:.84rem;line-height:1.6;color:var(--text);white-space:pre-wrap}
+.wall-post__tone{align-self:flex-start;display:inline-flex;align-items:center;gap:.45rem;
+  font-size:.66rem;font-weight:600;color:var(--ice);text-decoration:none;
+  border:1px solid color-mix(in srgb, var(--ice) 35%, transparent);border-radius:2px;
+  padding:.28rem .6rem;transition:background .2s var(--ease),border-color .2s var(--ease)}
+.wall-post__tone:hover{background:rgba(159,216,232,.1);border-color:var(--ice)}
+.wall-post__tonelabel{font-size:.5rem;letter-spacing:.22em;color:var(--muted-2)}
+
+/* ── pinned tones ───────────────────────────────────────────────────────── */
+.feed-card--pinned{border-color:color-mix(in srgb, var(--tone,#9fd8e8) 45%, var(--line-2))}
+.feed-card__pin{position:absolute;top:-1px;right:14px;z-index:1;
+  font-size:.48rem;font-weight:700;letter-spacing:.26em;color:#0a0d12;
+  background:color-mix(in srgb, var(--tone,#9fd8e8) 80%, #fff);
+  padding:.24rem .55rem .2rem;border-radius:0 0 3px 3px}
+
+/* ── messages ───────────────────────────────────────────────────────────── */
+.dm__panel{width:min(880px,100%);height:min(78vh,720px)}
+.dm__body{flex:1;display:grid;grid-template-columns:minmax(200px,.9fr) minmax(0,1.6fr);
+  min-height:0}
+.dm__threads{border-right:1px solid var(--line);overflow-y:auto;padding:.6rem;
+  display:flex;flex-direction:column;gap:.3rem;background:var(--surface-0)}
+.dm-thread{display:flex;align-items:center;gap:.6rem;text-align:left;width:100%;
+  padding:.5rem .6rem;border:1px solid transparent;border-radius:3px;
+  background:transparent;transition:background .15s var(--ease),border-color .15s var(--ease)}
+.dm-thread:hover{background:var(--surface-1)}
+.dm-thread.on{background:var(--surface-2);border-color:var(--line-2)}
+.dm-thread__ava{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none;
+  border:1px solid var(--line-2)}
+span.dm-thread__ava--blank{display:grid;place-items:center;background:var(--surface-3);
+  font-family:var(--font-display);font-weight:700;color:var(--ice)}
+.dm-thread__body{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+.dm-thread__body b{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-thread__body i{font-style:normal;font-size:.64rem;color:var(--muted-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dm-thread__when{font-size:.54rem;color:var(--muted-2);flex:none;align-self:flex-start;margin-top:.2rem}
+.dm-thread.unread b{color:var(--ice)}
+.dm-thread.unread::after{content:"";width:7px;height:7px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 35% 30%,#c9ffd9,var(--led) 55%,#1d7a44);
+  box-shadow:0 0 8px rgba(95,224,138,.7)}
+.dm__convo{display:flex;flex-direction:column;min-width:0;min-height:0}
+.dm__empty{flex:1;display:grid;place-items:center;padding:1.5rem}
+.dm-convo__head{display:flex;align-items:center;gap:.7rem;padding:.75rem 1rem;
+  border-bottom:1px solid var(--line)}
+.dm-convo__head b{font-size:.9rem}
+.dm-convo__block{margin-left:auto;font-size:.5rem}
+.dm-convo__block.on{color:#f0a39a;border-color:rgba(216,74,74,.6);background:rgba(216,74,74,.1)}
+.dm-convo__scroll{flex:1;overflow-y:auto;padding:.9rem 1rem;display:flex;
+  flex-direction:column;gap:.45rem}
+.dm-msg{max-width:78%;align-self:flex-start;display:flex;flex-direction:column;gap:.15rem;
+  background:var(--surface-1);border:1px solid var(--line);border-radius:10px 10px 10px 3px;
+  box-shadow:inset 0 1px 0 var(--edge-hi);padding:.5rem .75rem}
+.dm-msg--mine{align-self:flex-end;border-radius:10px 10px 3px 10px;
+  background:color-mix(in srgb, var(--ice) 10%, var(--surface-2));
+  border-color:color-mix(in srgb, var(--ice) 25%, var(--line))}
+.dm-msg__text{font-size:.82rem;line-height:1.5;color:var(--text);white-space:pre-wrap;
+  overflow-wrap:anywhere}
+.dm-msg__when{font-size:.5rem;color:var(--muted-2);align-self:flex-end}
+.dm-convo__form{display:flex;gap:.45rem;padding:.7rem 1rem;border-top:1px solid var(--line)}
+.dm-convo__form input{flex:1;min-width:0;background:var(--surface-inset);color:var(--text);
+  border:1px solid var(--line-2);border-radius:999px;padding:.55rem .95rem;
+  font:inherit;font-size:.82rem}
+.dm-convo__form input:focus{outline:none;border-color:rgba(159,216,232,.6)}
+.dm .hdr__btn.dm-convo__send{border-radius:999px;padding:.5rem .8rem}
+.dm-convo__send .ico{width:14px;height:14px}
+@media (max-width:640px){
+  .dm__body{grid-template-columns:minmax(0,1fr)}
+  .dm__threads{display:none}
+}
+
+/* ── activity ───────────────────────────────────────────────────────────── */
+.notice{display:flex;align-items:center;gap:.7rem;width:100%;text-align:left;
+  padding:.6rem .7rem;border:1px solid var(--line);border-radius:3px;
+  background:var(--surface-1);box-shadow:inset 0 1px 0 var(--edge-hi);
+  transition:background .15s var(--ease),border-color .15s var(--ease)}
+.notice:hover{background:var(--surface-2);border-color:var(--line-2)}
+.notice--fresh{border-left:2px solid var(--ice)}
+.notice__glyph{width:28px;height:28px;flex:none;display:grid;place-items:center;
+  border-radius:50%;font-size:.72rem;background:var(--surface-3);color:var(--muted)}
+.notice__glyph--like{color:#ff6a5a}
+.notice__glyph--comment{color:var(--ice)}
+.notice__glyph--follow{color:var(--led)}
+.notice__body{flex:1;min-width:0;font-size:.78rem;color:var(--muted);line-height:1.45}
+.notice__body b{color:var(--text);font-weight:600}
+.notice__body i{font-style:normal;color:var(--ice)}
+.notice__when{font-size:.54rem;color:var(--muted-2);flex:none}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ARRIVING AT THE RIG — the power-on.
+   One pass on boot: chrome settles top-down, the stage light blooms. The
+   same physical story as a real head warming up, told in 1.4 seconds, and
+   never repeated — the class leaves right after (see boot()).
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion:no-preference){
+  .app--arrive .hdr{animation:arrive .6s var(--ease) both}
+  .app--arrive .ribbon{animation:arrive .6s var(--ease) .1s both}
+  .app--arrive .stage{animation:arrive .7s var(--ease) .18s both}
+  .app--arrive .looper{animation:arrive .7s var(--ease) .26s both}
+  .app--arrive .foot{animation:arrive .7s var(--ease) .34s both}
+  .app--arrive .stage__glow{animation:glowup 1.5s var(--ease) both}
+  .app--arrive .chip{animation:arrive .5s var(--ease) both}
+  /* the chain lights left to right, one module at a time */
+  .app--arrive .chip:nth-child(1){animation-delay:.12s}
+  .app--arrive .chip:nth-child(2){animation-delay:.16s}
+  .app--arrive .chip:nth-child(3){animation-delay:.2s}
+  .app--arrive .chip:nth-child(4){animation-delay:.24s}
+  .app--arrive .chip:nth-child(5){animation-delay:.28s}
+  .app--arrive .chip:nth-child(6){animation-delay:.32s}
+  .app--arrive .chip:nth-child(7){animation-delay:.36s}
+  .app--arrive .chip:nth-child(8){animation-delay:.4s}
+  .app--arrive .chip:nth-child(9){animation-delay:.44s}
+  .app--arrive .chip:nth-child(10){animation-delay:.48s}
+}
+@keyframes arrive{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes glowup{from{opacity:0}60%{opacity:.4}to{opacity:1}}
+
+/* A view switch gets one quiet crossfade — setView re-arms the class. */
+@media (prefers-reduced-motion:no-preference){
+  .view-anim .stage:not([hidden]),
+  .view-anim .feed:not([hidden]),
+  .view-anim .profile:not([hidden]),
+  .view-anim .landing:not([hidden]){animation:viewin .3s var(--ease)}
+}
+@keyframes viewin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}

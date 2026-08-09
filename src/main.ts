@@ -25,6 +25,9 @@ import { InputSwitch } from './ui/inputSwitch';
 import { AccountUI, session } from './ui/account';
 import { FeedView } from './ui/feed';
 import { ProfileView } from './ui/profile';
+import { MessagesUI } from './ui/messages';
+import { NoticesUI } from './ui/notices';
+import { watchUnreadNotes, watchThreads, unreadThreadCount } from './cloud/store';
 import { openSaveDialog } from './ui/saveDialog';
 import { deletePreset, myPresets, uidForHandle, getSharedPreset, countDownload,
   type CloudPreset, type CaptureRefDoc } from './cloud/store';
@@ -95,6 +98,8 @@ let demoOwnsTempo = false;
 let looper: LooperSection | null = null;
 let feedView: FeedView;
 let profileView: ProfileView;
+let messages: MessagesUI;
+let notices: NoticesUI;
 
 const BUNDLED_IRS = [
   'uk_2x12_blue_onaxis', 'uk_2x12_blue_offaxis',
@@ -339,6 +344,23 @@ function buildHeader(): HTMLElement {
   ag.append(account.chip, el('div', 'hdr__caption', 'PROFILE'));
   h.appendChild(ag);
 
+  // inbox — activity + messages, each with an unread jewel
+  const ig = el('div', 'hdr__group hdr__group--always');
+  const irow = el('div', 'inbox');
+  const bellBtn = el('button', 'hdr__btn hdr__btn--ico inbox__btn', '') as HTMLButtonElement;
+  bellBtn.id = 'bellBtn';
+  bellBtn.innerHTML = ICONS.bell;
+  bellBtn.title = 'activity — likes, comments and follows on your sounds';
+  const dmBtn = el('button', 'hdr__btn hdr__btn--ico inbox__btn', '') as HTMLButtonElement;
+  dmBtn.id = 'dmBtn';
+  dmBtn.innerHTML = ICONS.chat;
+  dmBtn.title = 'messages — players you follow who follow you back';
+  irow.append(bellBtn, dmBtn);
+  ig.append(irow, el('div', 'hdr__caption', 'INBOX'));
+  h.appendChild(ig);
+  bellBtn.addEventListener('click', () => void notices.open());
+  dmBtn.addEventListener('click', () => void messages.open());
+
   h.appendChild(el('div', 'hdr__spacer'));
 
   // input source — the demo track, or the player's own guitar
@@ -477,8 +499,18 @@ function selectSlot(k: SlotKey) {
 
 /* ────────────────────────── panels ────────────────────────── */
 
+/* Each module throws its own light on the stage — the same tints the landing
+ * page's cards use, so walking the chain reads as one continuous room. The
+ * wash is very quiet (see .stage__glow); this is continuity, not decoration. */
+const SLOT_TINT: Record<SlotKey, string> = {
+  gate: '#8fa6c4', comp: '#c4a46a', drive: '#c47a5a', amp: '#e9b765',
+  cab: '#a9814f', sauce: '#b06a8f', studio: '#57b083', chorus: '#7a8fd4',
+  delay: '#3fa8a8', reverb: '#5b8fd4',
+};
+
 function renderStage() {
   stage.innerHTML = '';
+  stage.style.setProperty('--stage-tint', SLOT_TINT[selectedSlot] ?? '#9fd8e8');
   stage.appendChild(el('div', 'stage__glow'));
   switch (selectedSlot) {
     case 'amp': stage.appendChild(ampPanel()); break;
@@ -1375,6 +1407,12 @@ async function boot(source: BootSource = 'mic') {
 
   hideGateway();
   app.hidden = false;
+  // The power-on. One pass, on the moment the rig first exists for this
+  // player: the chrome settles in top-down and the stage light blooms, the
+  // way a real head takes a second to warm. Purely additive — the class
+  // leaves after the pass and never returns.
+  app.classList.add('app--arrive');
+  window.setTimeout(() => app.classList.remove('app--arrive'), 1700);
   // The header was built at module load, before the engine had an input at
   // all, so it is still showing the default. start() picks the source without
   // going through setInputSource(), which is what fires the change hook.
@@ -1421,6 +1459,30 @@ function levelPct(v: number): number {
   return Math.max(0, Math.min(100, (db + 60) / 60 * 100));
 }
 
+/* ── the inbox jewels ──────────────────────────────────────────────────────
+ * Two live queries, owned here so they survive every view switch: unread
+ * notifications light the bell, threads with a message newer than my last
+ * read light the chat key. Re-pointed (or torn down) on every session
+ * change — a signed-out header shows no jewels and runs no queries. */
+let unWatchNotes: (() => void) | null = null;
+let unWatchThreads: (() => void) | null = null;
+
+function watchInbox() {
+  unWatchNotes?.(); unWatchNotes = null;
+  unWatchThreads?.(); unWatchThreads = null;
+  const bell = document.getElementById('bellBtn');
+  const dm = document.getElementById('dmBtn');
+  const uid = session.user?.uid;
+  if (!uid) {
+    bell?.classList.remove('has-new');
+    dm?.classList.remove('has-new');
+    return;
+  }
+  unWatchNotes = watchUnreadNotes(uid, (n) => bell?.classList.toggle('has-new', n > 0));
+  unWatchThreads = watchThreads(uid, (ts) =>
+    dm?.classList.toggle('has-new', unreadThreadCount(ts, uid) > 0));
+}
+
 /* ────────────────────────── assemble ────────────────────────── */
 
 function build() {
@@ -1441,11 +1503,15 @@ function build() {
   account = new AccountUI(() => navigate({ view: 'profile' }));
   feedView = new FeedView(applyCloudPreset, () => account.open(), openUserProfile);
   profileView = new ProfileView(applyCloudPreset, () => account.open(), (p) => feedView.toneCard(p));
+  messages = new MessagesUI();
+  notices = new NoticesUI();
   profileView.onSignedOut = () => navigate({ view: 'rig' });
   profileView.onProfileSaved = () => account.refreshChip();
   profileView.onLibraryChanged = () => resyncPresetStrip();
+  profileView.onMessage = (target) => void messages.open(target);
   account.onSessionChange = () => {
     void switchPresetBank();
+    watchInbox();
     if (currentView === 'feed') void feedView.refresh();
     if (currentView === 'profile') void profileView.refresh();
   };
@@ -1537,8 +1603,16 @@ function navigate(r: Route) { go(r); }
  *  what is on screen — never the other way round, which is how a Back button
  *  ends up moving the URL without moving the page. */
 function setView(v: View) {
+  const changed = currentView !== v;
   currentView = v;
   const rig = v === 'rig';
+  // A view switch gets one quiet crossfade — re-adding the class restarts
+  // the animation, and same-view repaints (auth refreshes) stay still.
+  if (changed) {
+    app.classList.remove('view-anim');
+    void app.offsetWidth;                    // reflow so the animation re-arms
+    app.classList.add('view-anim');
+  }
   // Leaving the rig closes the tuner — and, more to the point, un-mutes. A
   // muted rig with no visible reason for it is indistinguishable from a broken
   // one, and the tuner is the only thing that knows to put the gain back.

@@ -283,7 +283,7 @@ export class FeedView {
       if (!session.user) { toast('Sign in to follow players.'); this.openAccount(); return; }
       const now = !this.followingSet.has(h.uid);
       try {
-        await setFollowing(session.user.uid, h.uid, now);
+        await setFollowing(session.user.uid, h.uid, now, session.profile?.username);
         if (now) this.followingSet.add(h.uid); else this.followingSet.delete(h.uid);
         this.followingIds = [...this.followingSet];
         btn.classList.toggle('on', now);
@@ -374,7 +374,10 @@ export class FeedView {
       if (!session.user) { toast('Sign in to like tones.'); this.openAccount(); return; }
       const liked = likeBtn.classList.contains('on');
       try {
-        await setLiked(session.user.uid, p.id, !liked);
+        await setLiked(session.user.uid, p.id, !liked, {
+          ownerUid: p.uid, presetName: p.name,
+          actorName: session.profile?.username ?? 'a player',
+        });
         likeBtn.classList.toggle('on', !liked);
         const n = likeBtn.querySelector('span')!;
         n.textContent = String(Number(n.textContent) + (liked ? -1 : 1));
@@ -418,7 +421,7 @@ export class FeedView {
         const text = input.value.trim();
         if (!text || !session.user || !session.profile) return;
         try {
-          await addComment(session.user, session.profile, p.id, text, p.name);
+          await addComment(session.user, session.profile, p.id, text, p.name, p.uid);
           input.value = '';
           const n = box.closest('.feed-card')?.querySelector('[data-a=comments] span');
           if (n) n.textContent = String(Number(n.textContent) + 1);

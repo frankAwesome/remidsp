@@ -7,9 +7,10 @@
 import { signOut } from '../cloud/fb';
 import {
   saveProfile, getProfile, myPresets, myComments, publicTones,
-  setShared, deletePreset, isFollowing, setFollowing,
+  setShared, deletePreset, isFollowing, setFollowing, setPinned,
+  addPost, deletePost, postsBy,
   handleProblem, handleAvailable, HandleTakenError, HANDLE_MAX,
-  type Profile, type CloudPreset, type CommentDoc,
+  type Profile, type CloudPreset, type CommentDoc, type PostDoc,
 } from '../cloud/store';
 import { deleteUserPreset } from '../presets';
 import { session } from './account';
@@ -29,6 +30,53 @@ const AMP_ACCENT: Record<string, string> = {
   camden: '#8fd8cf', portland: '#e9b765', katahdin: '#c25a52',
 };
 
+/* The banner decks — drawn in CSS, stored as 'deck:<key>', so a profile can
+ * wear a cover with no media origin configured at all. Each is one of the
+ * suite's own lights: the three amps', the ice of the TONE3000 accent, and
+ * the blackout room itself. */
+const DECKS: { key: string; label: string }[] = [
+  { key: 'blackout', label: 'Blackout' },
+  { key: 'aurora', label: 'Aurora — Camden teal' },
+  { key: 'brass', label: 'Brass — Portland gold' },
+  { key: 'ember', label: 'Ember — Katahdin red' },
+  { key: 'ice', label: 'Ice — capture blue' },
+  { key: 'grid', label: 'The grid' },
+];
+
+/** The cover strip's markup for whatever coverUrl holds — a drawn deck, a
+ *  hosted picture, or (default) the quiet blackout deck. */
+function coverHtml(coverUrl?: string): string {
+  const c = (coverUrl ?? '').trim();
+  if (c.startsWith('deck:')) {
+    const key = c.slice(5);
+    const known = DECKS.some((d) => d.key === key) ? key : 'blackout';
+    return `<div class="profile__cover profile__cover--deck cover-deck--${known}"><i></i></div>`;
+  }
+  if (c.startsWith('https://')) {
+    return `<div class="profile__cover"><img crossorigin="anonymous" src="${escape(c)}" alt=""></div>`;
+  }
+  return `<div class="profile__cover profile__cover--deck cover-deck--blackout"><i></i></div>`;
+}
+
+/** One wall post — a person saying a thing, maybe pointing at a tone. */
+function postRow(post: PostDoc, own: boolean): HTMLElement {
+  const row = document.createElement('article');
+  row.className = 'wall-post';
+  const when = post.createdAt ? timeAgo(post.createdAt.toMillis()) : 'just now';
+  row.innerHTML = `
+    <div class="wall-post__meta">
+      ${post.avatarUrl
+        ? `<img class="wall-post__ava" crossorigin="anonymous" src="${escape(post.avatarUrl)}" alt="">`
+        : `<span class="wall-post__ava wall-post__ava--blank">${escape((post.username || '?')[0].toUpperCase())}</span>`}
+      <b>${escape(post.username)}</b><span>${when}</span>
+      ${own ? `<button class="wall-post__del" title="delete this post">✕</button>` : ''}
+    </div>
+    <p class="wall-post__text">${escape(post.text)}</p>
+    ${post.toneId ? `<a class="wall-post__tone" href="#/t/${escape(post.toneId)}">
+        <span class="wall-post__tonelabel">TONE</span>${escape(post.toneName || 'listen')}</a>` : ''}`;
+  return row;
+}
+
 export class ProfileView {
   root: HTMLElement;
   private applyPreset: ApplyCloudPreset;
@@ -37,6 +85,8 @@ export class ProfileView {
   private viewUid: string | null = null; // null = your own profile
   onSignedOut: (() => void) | null = null;
   onProfileSaved: (() => void) | null = null;
+  /** Open a conversation with this player — wired to the messages panel. */
+  onMessage: ((target: { uid: string; username: string; avatarUrl: string }) => void) | null = null;
   /** Fired when the local preset library changed under the rig's feet, so the
    *  preset strip can re-sync instead of pointing at something deleted. */
   onLibraryChanged: (() => void) | null = null;
@@ -118,13 +168,15 @@ export class ProfileView {
     }
 
     this.root.innerHTML = `
-      <header class="profile__head">
+      ${coverHtml(p.coverUrl)}
+      <header class="profile__head profile__head--covered">
         ${p.avatarUrl
           ? `<img class="profile__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
           : `<div class="profile__ava profile__ava--blank">${escape((p.username || '?')[0].toUpperCase())}</div>`}
         <div class="profile__id">
           <div class="profile__name">${escape(p.username)}</div>
           ${p.bio ? `<p class="profile__bio">${escape(p.bio)}</p>` : '<p class="profile__bio profile__bio--empty">no bio yet — tell the feed who you are</p>'}
+          ${p.link ? `<a class="profile__link" href="${escape(p.link)}" target="_blank" rel="noopener">${escape(p.link.replace(/^https:\/\//, ''))}</a>` : ''}
           <div class="profile__mail mono">${escape(user.email ?? '')}
             <span class="profile__private">PRIVATE · ONLY YOU SEE THIS</span></div>
         </div>
@@ -164,6 +216,16 @@ export class ProfileView {
         <div class="handle-note" data-el="handleNote">Your handle is unique — it is how players
           find you, and it will be your address on the app. Letters, numbers and underscores.</div>
         <textarea name="bio" maxlength="400" rows="3" placeholder="bio — amps, bands, worship team, whatever">${escape(p.bio)}</textarea>
+        <input name="link" maxlength="200" placeholder="https:// — one link: your channel, your band"
+          value="${escape(p.link ?? '')}" autocapitalize="off" autocorrect="off" spellcheck="false" />
+        <div class="cover-pick">
+          <span class="cover-pick__head">BANNER</span>
+          <div class="cover-pick__row" data-el="coverRow">
+            ${DECKS.map((d) => `<button type="button" class="cover-swatch cover-deck--${d.key}${
+              (p.coverUrl ?? 'deck:blackout') === `deck:${d.key}` ? ' on' : ''}"
+              data-deck="deck:${d.key}" title="${escape(d.label)}"><i></i></button>`).join('')}
+          </div>
+        </div>
         <label class="profile__vis">
           <span class="profile__vis__head">PROFILE PAGE</span>
           <select name="isPublic">
@@ -185,6 +247,18 @@ export class ProfileView {
           <div class="profile__sounds"><div class="t3k__note">Loading…</div></div>
         </div>
         <div class="profile__col">
+          <div class="account-rule"><span>THE WALL</span></div>
+          <form class="wall-compose">
+            <textarea name="text" maxlength="600" rows="2"
+              placeholder="say something that isn't a preset — a question, a win, this Sunday's setlist…"></textarea>
+            <div class="wall-compose__row">
+              <select name="tone" title="attach one of your shared tones">
+                <option value="">NO TONE ATTACHED</option>
+              </select>
+              <button type="submit" class="hdr__btn hdr__btn--lit">POST</button>
+            </div>
+          </form>
+          <div class="profile__wall"></div>
           <div class="account-rule"><span>MY COMMENTS</span></div>
           <div class="profile__comments"><div class="t3k__note">Loading…</div></div>
         </div>
@@ -195,6 +269,16 @@ export class ProfileView {
     this.wireHandleField(form, p.username);
     this.root.querySelector('[data-a=edit]')!.addEventListener('click', () => { form.hidden = !form.hidden; });
     this.root.querySelector('[data-a=cancel]')!.addEventListener('click', () => { form.hidden = true; });
+
+    // Banner picker — the chosen deck rides the form until SAVE commits it.
+    form.dataset.cover = p.coverUrl ?? 'deck:blackout';
+    for (const sw of form.querySelectorAll<HTMLButtonElement>('[data-deck]')) {
+      sw.addEventListener('click', () => {
+        form.dataset.cover = sw.dataset.deck!;
+        form.querySelectorAll('[data-deck]').forEach((x) => x.classList.remove('on'));
+        sw.classList.add('on');
+      });
+    }
 
     // Picture upload. The encoded image goes straight into the avatarUrl
     // field, so one code path saves it whether it was uploaded or pasted.
@@ -249,7 +333,16 @@ export class ProfileView {
         toast('That picture is too large to store — upload it again and it will be resized.', 4500);
         return;
       }
-      const next: Profile = { username: v('username'), bio: v('bio'), avatarUrl, isPublic };
+      const link = v('link');
+      if (link && !link.startsWith('https://')) {
+        toast('The link needs to start with <b>https://</b>');
+        return;
+      }
+      const next: Profile = {
+        username: v('username'), bio: v('bio'), avatarUrl, isPublic,
+        link, coverUrl: form.dataset.cover ?? p.coverUrl ?? '',
+        pinnedId: p.pinnedId ?? '',
+      };
       try {
         await saveProfile(user.uid, next);
         session.profile = { ...session.profile, ...next };
@@ -271,10 +364,14 @@ export class ProfileView {
     });
 
     // data
-    const [sounds, comments] = await Promise.all([
+    const [sounds, comments, posts] = await Promise.all([
       myPresets(user.uid).catch(() => [] as CloudPreset[]),
       myComments(user.uid).catch(() => [] as CommentDoc[]),
+      postsBy(user.uid).catch(() => [] as PostDoc[]),
     ]);
+    // The pinned sound leads, whatever the clock says.
+    const pinned = p.pinnedId ?? '';
+    if (pinned) sounds.sort((a, b) => Number(b.id === pinned) - Number(a.id === pinned));
 
     // stat tiles
     const shared = sounds.filter((s) => s.shared).length;
@@ -295,7 +392,43 @@ export class ProfileView {
     const sbox = this.root.querySelector<HTMLElement>('.profile__sounds')!;
     sbox.innerHTML = sounds.length ? '' :
       `<div class="t3k__note">Nothing saved yet — dial a sound on the rig and hit SAVE.</div>`;
-    for (const s of sounds) sbox.appendChild(this.soundCard(s));
+    for (const s of sounds) sbox.appendChild(this.soundCard(s, pinned === s.id));
+
+    // the wall — composer + posts
+    const compose = this.root.querySelector<HTMLFormElement>('.wall-compose')!;
+    const toneSel = compose.elements.namedItem('tone') as HTMLSelectElement;
+    for (const s of sounds.filter((x) => x.shared)) {
+      const o = document.createElement('option');
+      o.value = s.id;
+      o.textContent = s.name.toUpperCase();
+      toneSel.appendChild(o);
+    }
+    compose.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ta = compose.elements.namedItem('text') as HTMLTextAreaElement;
+      const text = ta.value.trim();
+      if (!text || !session.user || !session.profile) return;
+      const tone = sounds.find((x) => x.id === toneSel.value);
+      try {
+        await addPost(session.user, session.profile, text,
+          tone ? { id: tone.id, name: tone.name } : undefined);
+        ta.value = '';
+        toneSel.value = '';
+        toast('<b>Posted to your wall.</b>');
+        void this.refresh();
+      } catch (err) { toast(`Post failed — ${(err as Error).message}`, 4500); }
+    });
+    const wbox = this.root.querySelector<HTMLElement>('.profile__wall')!;
+    wbox.innerHTML = posts.length ? '' :
+      `<div class="t3k__note">Nothing on the wall yet.</div>`;
+    for (const post of posts) {
+      const row = postRow(post, true);
+      row.querySelector('.wall-post__del')?.addEventListener('click', async () => {
+        try { await deletePost(post.id); row.remove(); toast('Post deleted.'); }
+        catch (err) { toast(`Delete failed — ${(err as Error).message}`); }
+      });
+      wbox.appendChild(row);
+    }
 
     // comment history
     const cbox = this.root.querySelector<HTMLElement>('.profile__comments')!;
@@ -311,9 +444,10 @@ export class ProfileView {
    * storable. Never add a field here that reads from an auth record. */
   private async refreshPublic(uid: string) {
     this.root.innerHTML = `<div class="t3k__note" style="padding:2rem 0">Loading profile…</div>`;
-    const [p, tones] = await Promise.all([
+    const [p, tones, posts] = await Promise.all([
       getProfile(uid).catch(() => null),
       publicTones(uid).catch(() => [] as CloudPreset[]),
+      postsBy(uid).catch(() => [] as PostDoc[]),
     ]);
     // A private profile reads as "not there" through the rules, so a null
     // here covers both cases; say so without guessing which.
@@ -331,17 +465,24 @@ export class ProfileView {
     }
     const likes = tones.reduce((a, s) => a + (s.likesCount ?? 0), 0);
     const loads = tones.reduce((a, s) => a + (s.downloadsCount ?? 0), 0);
+    // Their pinned sound opens the page, whatever the clock says.
+    const pinned = p.pinnedId ?? '';
+    if (pinned) tones.sort((a, b) => Number(b.id === pinned) - Number(a.id === pinned));
     this.root.innerHTML = `
-      <header class="profile__head">
+      ${coverHtml(p.coverUrl)}
+      <header class="profile__head profile__head--covered">
         ${p.avatarUrl
           ? `<img class="profile__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
           : `<div class="profile__ava profile__ava--blank">${escape((p.username || '?')[0].toUpperCase())}</div>`}
         <div class="profile__id">
           <div class="profile__name">${escape(p.username)}</div>
           ${p.bio ? `<p class="profile__bio">${escape(p.bio)}</p>` : ''}
+          ${p.link ? `<a class="profile__link" href="${escape(p.link)}" target="_blank" rel="noopener">${escape(p.link.replace(/^https:\/\//, ''))}</a>` : ''}
         </div>
         <div class="profile__actions">
           <button class="t3k__pill profile__follow" data-a="follow">FOLLOW</button>
+          <button class="t3k__pill" data-a="message"
+            title="1:1 messages open between players who follow each other">MESSAGE</button>
           <button class="t3k__pill" data-a="share" title="copy a link to this profile">SHARE</button>
         </div>
       </header>
@@ -352,8 +493,18 @@ export class ProfileView {
         ${tile(tones.length, 'TONES')}
         ${tile(p.followersCount ?? 0, 'FOLLOWERS', 5)}
       </div>
+      ${posts.length ? `<div class="account-rule"><span>THE WALL</span></div>
+      <div class="profile__wall profile__wall--public"></div>` : ''}
       <div class="account-rule"><span>PUBLIC TONES</span></div>
       <div class="feed__list profile__tones"></div>`;
+
+    const wall = this.root.querySelector<HTMLElement>('.profile__wall');
+    if (wall) for (const post of posts) wall.appendChild(postRow(post, false));
+
+    this.root.querySelector('[data-a=message]')!.addEventListener('click', () => {
+      if (!session.user) { this.openAuth(); return; }
+      this.onMessage?.({ uid, username: p.username, avatarUrl: p.avatarUrl ?? '' });
+    });
 
     this.root.querySelector('[data-a=share]')!.addEventListener('click',
       () => void shareLink(urlFor({ view: 'user', handle: p.username }),
@@ -373,7 +524,7 @@ export class ProfileView {
       if (!session.user) { this.openAuth(); return; }
       const now = !followBtn.classList.contains('on');
       try {
-        await setFollowing(session.user.uid, uid, now);
+        await setFollowing(session.user.uid, uid, now, session.profile?.username);
         followBtn.classList.toggle('on', now);
         followBtn.textContent = now ? 'FOLLOWING' : 'FOLLOW';
         toast(now ? `Following <b>${escape(p.username)}</b>` : `Unfollowed ${escape(p.username)}`);
@@ -382,15 +533,26 @@ export class ProfileView {
 
     const box = this.root.querySelector<HTMLElement>('.profile__tones')!;
     if (!tones.length) box.innerHTML = `<div class="t3k__note">Nothing shared yet.</div>`;
-    for (const t of tones) box.appendChild(this.renderToneCard(t));
+    for (const t of tones) {
+      const card = this.renderToneCard(t);
+      if (t.id === pinned) {
+        card.classList.add('feed-card--pinned');
+        const badge = document.createElement('span');
+        badge.className = 'feed-card__pin';
+        badge.textContent = 'PINNED';
+        card.prepend(badge);
+      }
+      box.appendChild(card);
+    }
   }
 
-  private soundCard(s: CloudPreset): HTMLElement {
+  private soundCard(s: CloudPreset, isPinned = false): HTMLElement {
     const c = document.createElement('article');
-    c.className = 'feed-card profile-sound';
+    c.className = 'feed-card profile-sound' + (isPinned ? ' feed-card--pinned' : '');
     c.style.setProperty('--tone', AMP_ACCENT[s.amp] ?? '#9fd8e8');
     const when = s.createdAt ? timeAgo(s.createdAt.toMillis()) : '';
     c.innerHTML = `
+      ${isPinned ? '<span class="feed-card__pin">PINNED</span>' : ''}
       <div class="profile-sound__row">
         <div class="profile-sound__body">
           <div class="feed-card__title profile-sound__title">${escape(s.name)}</div>
@@ -404,6 +566,8 @@ export class ProfileView {
         </div>
         <div class="profile-sound__acts">
           <button class="tone-card__load" data-a="load">LOAD</button>
+          <button class="t3k__pill ${isPinned ? 'on' : ''}" data-a="pin"
+            title="${isPinned ? 'unpin from the top of your profile' : 'pin to the top of your profile'}">${isPinned ? 'PINNED' : 'PIN'}</button>
           <!-- "SHARE" used to sit here meaning PUT ON THE FEED, while the same
                word on a feed card means COPY A LINK. Two different actions
                under one label is a good way to be told sharing is broken. -->
@@ -413,6 +577,18 @@ export class ProfileView {
         </div>
       </div>`;
     c.querySelector('[data-a=load]')!.addEventListener('click', () => void this.applyPreset(s));
+    c.querySelector('[data-a=pin]')!.addEventListener('click', async () => {
+      const user = session.user;
+      if (!user) return;
+      const next = isPinned ? '' : s.id;
+      try {
+        await setPinned(user.uid, next);
+        if (session.profile) session.profile.pinnedId = next;
+        toast(next ? `<b>${escape(s.name)}</b> pinned to the top of your profile.`
+                   : 'Unpinned.');
+        void this.refresh();
+      } catch (err) { toast(`Pin failed — ${(err as Error).message}`); }
+    });
     // Only a tone that is ON the feed has a public page — a link to a private
     // one would 404 for everybody the owner sent it to.
     c.querySelector('[data-a=copy]')?.addEventListener('click', () => void shareLink(

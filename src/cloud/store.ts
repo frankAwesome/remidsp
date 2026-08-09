@@ -12,7 +12,7 @@
 import {
   collection, collectionGroup, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, serverTimestamp, increment, writeBatch, runTransaction,
-  type Timestamp,
+  onSnapshot, type Timestamp, type Unsubscribe,
 } from 'firebase/firestore';
 import { db, type User } from './fb';
 
@@ -30,6 +30,12 @@ export interface Profile {
   /** One link — a YouTube channel, a band page. For a guitarist this is the
    *  proof-of-existence a bio cannot be. */
   link?: string;
+  /** The banner: an https URL, or one of the suite's own drawn decks —
+   *  'deck:<name>', rendered in CSS so it needs no media origin at all. */
+  coverUrl?: string;
+  /** The tone pinned to the top of this profile — an id, not a copy, so the
+   *  pin can never disagree with the tone it points at. */
+  pinnedId?: string;
   /** When this player showed up.
    *
    *  This exists to solve the empty profile. A new player's every social
@@ -267,6 +273,8 @@ export async function saveProfile(uid: string, p: Profile): Promise<void> {
   await setDoc(profRef,
     { username: p.username.trim(), bio: p.bio, avatarUrl: p.avatarUrl,
       link: p.link ?? '',
+      coverUrl: p.coverUrl ?? '',
+      pinnedId: p.pinnedId ?? '',
       isPublic: p.isPublic !== false,
       usernameLower: lower, updatedAt: serverTimestamp(),
       ...(existing?.createdAt ? {} : { createdAt: serverTimestamp() }) },
@@ -355,7 +363,8 @@ export async function myFollowingIds(uid: string): Promise<string[]> {
   return snap.docs.map((d) => d.id);
 }
 
-export async function setFollowing(me: string, target: string, follow: boolean): Promise<void> {
+export async function setFollowing(me: string, target: string, follow: boolean,
+                                   actorName?: string): Promise<void> {
   if (me === target) throw new Error('that would be you');
   const batch = writeBatch(db);
   const edge = doc(db, 'profiles', me, 'following', target);
@@ -364,6 +373,7 @@ export async function setFollowing(me: string, target: string, follow: boolean):
   batch.update(doc(db, 'profiles', target), { followersCount: increment(follow ? 1 : -1) });
   batch.update(doc(db, 'profiles', me), { followingCount: increment(follow ? 1 : -1) });
   await batch.commit();
+  if (follow && actorName) pushNote(target, me, actorName, 'follow');
 }
 
 /** Shared tones from the people you follow ('in' caps at 30 uids a chunk). */
@@ -432,17 +442,22 @@ export async function hasLiked(uid: string, presetId: string): Promise<boolean> 
   return (await getDoc(doc(db, 'presets', presetId, 'likes', uid))).exists();
 }
 
-export async function setLiked(uid: string, presetId: string, like: boolean): Promise<void> {
+export async function setLiked(uid: string, presetId: string, like: boolean,
+  meta?: { ownerUid: string; presetName: string; actorName: string }): Promise<void> {
   const batch = writeBatch(db);
   const likeRef = doc(db, 'presets', presetId, 'likes', uid);
   if (like) batch.set(likeRef, { createdAt: serverTimestamp() });
   else batch.delete(likeRef);
   batch.update(doc(db, 'presets', presetId), { likesCount: increment(like ? 1 : -1) });
   await batch.commit();
+  if (like && meta && meta.ownerUid !== uid) {
+    pushNote(meta.ownerUid, uid, meta.actorName, 'like', presetId, meta.presetName);
+  }
 }
 
 export async function addComment(
   user: User, profile: Profile, presetId: string, text: string, presetName = '',
+  ownerUid = '',
 ): Promise<void> {
   const batch = writeBatch(db);
   const cRef = doc(collection(db, 'presets', presetId, 'comments'));
@@ -452,6 +467,9 @@ export async function addComment(
   });
   batch.update(doc(db, 'presets', presetId), { commentsCount: increment(1) });
   await batch.commit();
+  if (ownerUid && ownerUid !== user.uid) {
+    pushNote(ownerUid, user.uid, profile.username, 'comment', presetId, presetName);
+  }
 }
 
 export async function comments(presetId: string): Promise<CommentDoc[]> {
@@ -472,4 +490,204 @@ export async function myComments(uid: string): Promise<CommentDoc[]> {
 export async function countDownload(presetId: string): Promise<void> {
   await updateDoc(doc(db, 'presets', presetId), { downloadsCount: increment(1) })
     .catch(() => { /* a blocked counter must never block the load */ });
+}
+
+/** Pin (or unpin, with '') a tone to the top of your profile. */
+export async function setPinned(uid: string, presetId: string): Promise<void> {
+  await updateDoc(doc(db, 'profiles', uid), { pinnedId: presetId, updatedAt: serverTimestamp() });
+}
+
+/* ══════════ notifications ══════════
+ *
+ * Written by the ACTOR at the moment they like / comment / follow, readable
+ * only by the player they are about. Always fire-and-forget: a notification
+ * that fails to write must never fail the action it decorates. */
+
+export interface NoteDoc {
+  id: string;
+  kind: 'like' | 'comment' | 'follow';
+  actorUid: string;
+  actorName: string;
+  toneId?: string;
+  toneName?: string;
+  read: boolean;
+  createdAt?: Timestamp;
+}
+
+function pushNote(target: string, actorUid: string, actorName: string,
+                  kind: NoteDoc['kind'], toneId = '', toneName = ''): void {
+  void addDoc(collection(db, 'profiles', target, 'notes'), {
+    kind, actorUid, actorName: actorName.slice(0, 40),
+    toneId, toneName: toneName.slice(0, 60),
+    read: false, createdAt: serverTimestamp(),
+  }).catch(() => { /* decoration, never load-bearing */ });
+}
+
+export async function myNotes(uid: string): Promise<NoteDoc[]> {
+  const q = query(collection(db, 'profiles', uid, 'notes'),
+    orderBy('createdAt', 'desc'), limit(40));
+  return (await getDocs(q)).docs.map((d) => ({ id: d.id, ...d.data() } as NoteDoc));
+}
+
+/** Live unread count (capped — the dot says "some", not "how many"). */
+export function watchUnreadNotes(uid: string, cb: (n: number) => void): Unsubscribe {
+  const q = query(collection(db, 'profiles', uid, 'notes'),
+    where('read', '==', false), limit(30));
+  return onSnapshot(q, (snap) => cb(snap.size), () => cb(0));
+}
+
+export async function markNotesRead(uid: string, ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const batch = writeBatch(db);
+  for (const id of ids.slice(0, 400)) {
+    batch.update(doc(db, 'profiles', uid, 'notes', id), { read: true });
+  }
+  await batch.commit().catch(() => undefined);
+}
+
+/* ══════════ wall posts ══════════ */
+
+export interface PostDoc {
+  id: string;
+  uid: string;
+  username: string;
+  avatarUrl?: string;
+  text: string;
+  toneId?: string;
+  toneName?: string;
+  createdAt?: Timestamp;
+}
+
+export async function addPost(user: User, profile: Profile, text: string,
+                              tone?: { id: string; name: string }): Promise<void> {
+  await addDoc(collection(db, 'posts'), {
+    uid: user.uid, username: profile.username, avatarUrl: profile.avatarUrl ?? '',
+    text: text.slice(0, 600),
+    toneId: tone?.id ?? '', toneName: tone?.name.slice(0, 60) ?? '',
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function deletePost(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'posts', id));
+}
+
+export async function postsBy(uid: string): Promise<PostDoc[]> {
+  const q = query(collection(db, 'posts'), where('uid', '==', uid),
+    orderBy('createdAt', 'desc'), limit(30));
+  return (await getDocs(q)).docs.map((d) => ({ id: d.id, ...d.data() } as PostDoc));
+}
+
+/* ══════════ messages ══════════
+ *
+ * 1:1 threads gated on MUTUAL FOLLOW (the rules enforce it — this layer just
+ * asks nicely first so the UI can explain). The thread id is the sorted pair
+ * of uids, so one pair of players has exactly one thread, forever. */
+
+export interface ThreadDoc {
+  id: string;
+  members: [string, string];
+  names: Record<string, string>;
+  avatars: Record<string, string>;
+  lastText: string;
+  lastUid: string;
+  lastAt?: Timestamp;
+  reads: Record<string, Timestamp>;
+}
+
+export interface DmDoc {
+  id: string;
+  uid: string;
+  text: string;
+  createdAt?: Timestamp;
+}
+
+export function threadIdFor(a: string, b: string): string {
+  return [a, b].sort().join('_');
+}
+
+export function otherOf(t: ThreadDoc, me: string): string {
+  return t.members[0] === me ? t.members[1] : t.members[0];
+}
+
+/** Can these two message each other at all? (Both edges are world-readable.) */
+export async function isMutualFollow(a: string, b: string): Promise<boolean> {
+  const [ab, ba] = await Promise.all([
+    getDoc(doc(db, 'profiles', a, 'following', b)),
+    getDoc(doc(db, 'profiles', b, 'following', a)),
+  ]);
+  return ab.exists() && ba.exists();
+}
+
+/** Open (or find) the one thread between `me` and `other`. */
+export async function ensureThread(
+  me: { uid: string; username: string; avatarUrl: string },
+  other: { uid: string; username: string; avatarUrl: string },
+): Promise<string> {
+  const id = threadIdFor(me.uid, other.uid);
+  const ref = doc(db, 'dms', id);
+  if ((await getDoc(ref)).exists()) return id;
+  const [a, b] = [me, other].sort((x, y) => (x.uid < y.uid ? -1 : 1));
+  await setDoc(ref, {
+    members: [a.uid, b.uid],
+    names: { [a.uid]: a.username, [b.uid]: b.username },
+    avatars: { [a.uid]: a.avatarUrl ?? '', [b.uid]: b.avatarUrl ?? '' },
+    lastText: '', lastUid: '', lastAt: serverTimestamp(),
+    reads: {}, createdAt: serverTimestamp(),
+  });
+  return id;
+}
+
+export function watchThreads(uid: string, cb: (t: ThreadDoc[]) => void): Unsubscribe {
+  const q = query(collection(db, 'dms'), where('members', 'array-contains', uid),
+    orderBy('lastAt', 'desc'), limit(30));
+  return onSnapshot(q,
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as ThreadDoc))),
+    () => cb([]));
+}
+
+export function watchMessages(threadId: string, cb: (m: DmDoc[]) => void): Unsubscribe {
+  const q = query(collection(db, 'dms', threadId, 'messages'),
+    orderBy('createdAt', 'asc'), limit(200));
+  return onSnapshot(q,
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as DmDoc))),
+    () => cb([]));
+}
+
+export async function sendDm(threadId: string, me: string, text: string): Promise<void> {
+  const t = text.trim().slice(0, 1000);
+  if (!t) return;
+  // Two writes, not one batch: the rules for the message do a get() on the
+  // thread, and a batch would show it the pre-batch thread anyway. The message
+  // lands first — the thread surface is a summary of it, not the other way
+  // round.
+  await addDoc(collection(db, 'dms', threadId, 'messages'),
+    { uid: me, text: t, createdAt: serverTimestamp() });
+  await updateDoc(doc(db, 'dms', threadId), {
+    lastText: t.slice(0, 200), lastUid: me, lastAt: serverTimestamp(),
+    [`reads.${me}`]: serverTimestamp(),
+  }).catch(() => undefined);
+}
+
+export async function markThreadRead(threadId: string, me: string): Promise<void> {
+  await updateDoc(doc(db, 'dms', threadId), { [`reads.${me}`]: serverTimestamp() })
+    .catch(() => undefined);
+}
+
+/** How many threads hold a message newer than my last read. */
+export function unreadThreadCount(threads: ThreadDoc[], me: string): number {
+  return threads.filter((t) => t.lastUid && t.lastUid !== me
+    && (t.lastAt?.toMillis() ?? 0) > (t.reads?.[me]?.toMillis() ?? 0)).length;
+}
+
+/* ══════════ blocks ══════════ */
+
+export async function setBlocked(me: string, target: string, on: boolean): Promise<void> {
+  const ref = doc(db, 'profiles', me, 'blocks', target);
+  if (on) await setDoc(ref, { createdAt: serverTimestamp() });
+  else await deleteDoc(ref);
+}
+
+export async function isBlocked(me: string, target: string): Promise<boolean> {
+  return (await getDoc(doc(db, 'profiles', me, 'blocks', target))).exists();
 }
