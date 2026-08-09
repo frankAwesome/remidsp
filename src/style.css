@@ -622,10 +622,13 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   filter:drop-shadow(0 6px 26px rgba(180,212,230,.4))}
 /* A slow specular pass through the lit line — one moving highlight, minutes
    apart in feel, never a strobe. The gradient is oversized and its position
-   animated, so the sweep is a light moving over the glass, not a repaint. */
+   animated, so the sweep is a light moving over the glass, not a repaint.
+   background-IMAGE and background-SIZE only, never the `background` shorthand:
+   the shorthand resets background-clip, un-clips the gradient from the
+   letters, and paints the whole line box as one solid slab of light. */
 @media (prefers-reduced-motion:no-preference){
   .gate-hero__shine{
-    background:linear-gradient(100deg,
+    background-image:linear-gradient(100deg,
       var(--light-hi) 0%, var(--light) 38%, #8fb4c6 46%,
       #ffffff 50%, #8fb4c6 54%, var(--light) 62%, var(--light-hi) 100%);
     background-size:300% 100%;
