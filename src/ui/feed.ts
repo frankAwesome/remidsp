@@ -265,7 +265,9 @@ export class FeedView {
     card.className = 'person-card';
     const following = this.followingSet.has(h.uid);
     card.innerHTML = `
-      ${h.avatarUrl ? `<img crossorigin="anonymous" src="${escape(h.avatarUrl)}" alt="">` : `<div class="person-card__blank">${escape((h.username || '?')[0].toUpperCase())}</div>`}
+      ${h.avatarUrl ? `<img crossorigin="anonymous" src="${escape(h.avatarUrl)}"
+          data-name="${escape(h.username || '?')}" data-blank="person-card__blank" alt="">`
+        : `<div class="person-card__blank">${escape((h.username || '?')[0].toUpperCase())}</div>`}
       <div class="person-card__body">
         <b>${escape(h.username)}</b>
         <span>${h.followersCount ?? 0} follower${(h.followersCount ?? 0) === 1 ? '' : 's'}${h.bio ? ` · ${escape(h.bio.slice(0, 70))}` : ''}</span>
@@ -334,7 +336,8 @@ export class FeedView {
     c.innerHTML = `
       <header class="feed-card__head">
         <button class="feed-card__byline" data-a="user" title="open profile">
-          ${p.avatarUrl ? `<img class="feed-card__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
+          ${p.avatarUrl ? `<img class="feed-card__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}"
+              data-name="${escape(p.username || '?')}" alt="">`
             : `<div class="feed-card__ava feed-card__ava--blank">${escape((p.username || '?')[0].toUpperCase())}</div>`}
           <span class="feed-card__who"><b>${escape(p.username)}</b><span>${when}</span></span>
         </button>
@@ -459,7 +462,8 @@ export function renderCommentRow(cm: { username: string; avatarUrl?: string; tex
   const when = cm.createdAt ? timeAgo(cm.createdAt.toMillis()) : '';
   row.innerHTML = `
     ${cm.avatarUrl
-      ? `<img class="feed-comment__ava" crossorigin="anonymous" src="${escape(cm.avatarUrl)}" alt="">`
+      ? `<img class="feed-comment__ava" crossorigin="anonymous" src="${escape(cm.avatarUrl)}"
+          data-name="${escape(cm.username || '?')}" alt="">`
       : `<span class="feed-comment__ava feed-comment__ava--blank">${escape((cm.username || '?')[0].toUpperCase())}</span>`}
     <div class="feed-comment__body">
       <div class="feed-comment__meta"><b>${escape(cm.username)}</b>

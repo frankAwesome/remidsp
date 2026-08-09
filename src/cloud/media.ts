@@ -119,6 +119,27 @@ export async function encodeInline(file: File): Promise<string> {
   });
 }
 
+/** Pull a remote picture down and re-encode it as the inline avatar.
+ *
+ *  This exists to end provider-photo hotlinking: a Google account photo on
+ *  lh3.googleusercontent.com gets throttled (HTTP 429) when every visitor's
+ *  browser hotlinks it anonymously — and COEP forces those requests to be
+ *  anonymous, so there is no cookie to ride. Copying it inline once, at
+ *  sign-in, makes the avatar ours forever. Returns null when it cannot
+ *  (offline, throttled right now, not actually an image) — the caller keeps
+ *  whatever URL it had and the render-time fallback carries the day. */
+export async function inlineRemoteImage(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (!blob.type.startsWith('image/')) return null;
+    return await encodeInline(new File([blob], 'avatar', { type: blob.type }));
+  } catch {
+    return null;
+  }
+}
+
 export type MediaKind = 'avatar' | 'cover';
 
 /**

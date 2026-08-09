@@ -66,7 +66,8 @@ function postRow(post: PostDoc, own: boolean): HTMLElement {
   row.innerHTML = `
     <div class="wall-post__meta">
       ${post.avatarUrl
-        ? `<img class="wall-post__ava" crossorigin="anonymous" src="${escape(post.avatarUrl)}" alt="">`
+        ? `<img class="wall-post__ava" crossorigin="anonymous" src="${escape(post.avatarUrl)}"
+            data-name="${escape(post.username || '?')}" alt="">`
         : `<span class="wall-post__ava wall-post__ava--blank">${escape((post.username || '?')[0].toUpperCase())}</span>`}
       <b>${escape(post.username)}</b><span>${when}</span>
       ${own ? `<button class="wall-post__del" title="delete this post">✕</button>` : ''}
@@ -171,7 +172,8 @@ export class ProfileView {
       ${coverHtml(p.coverUrl)}
       <header class="profile__head profile__head--covered">
         ${p.avatarUrl
-          ? `<img class="profile__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
+          ? `<img class="profile__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}"
+              data-name="${escape(p.username || '?')}" alt="">`
           : `<div class="profile__ava profile__ava--blank">${escape((p.username || '?')[0].toUpperCase())}</div>`}
         <div class="profile__id">
           <div class="profile__name">${escape(p.username)}</div>
@@ -472,7 +474,8 @@ export class ProfileView {
       ${coverHtml(p.coverUrl)}
       <header class="profile__head profile__head--covered">
         ${p.avatarUrl
-          ? `<img class="profile__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
+          ? `<img class="profile__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}"
+              data-name="${escape(p.username || '?')}" alt="">`
           : `<div class="profile__ava profile__ava--blank">${escape((p.username || '?')[0].toUpperCase())}</div>`}
         <div class="profile__id">
           <div class="profile__name">${escape(p.username)}</div>

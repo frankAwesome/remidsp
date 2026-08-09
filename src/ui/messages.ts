@@ -117,7 +117,8 @@ export class MessagesUI {
       row.className = 'dm-thread' + (t.id === this.openId ? ' on' : '') + (unread ? ' unread' : '');
       const ava = t.avatars?.[other];
       row.innerHTML = `
-        ${ava ? `<img class="dm-thread__ava" crossorigin="anonymous" src="${esc(ava)}" alt="">`
+        ${ava ? `<img class="dm-thread__ava" crossorigin="anonymous" src="${esc(ava)}"
+              data-name="${esc(t.names?.[other] || '?')}" alt="">`
               : `<span class="dm-thread__ava dm-thread__ava--blank">${esc((t.names?.[other] || '?')[0].toUpperCase())}</span>`}
         <span class="dm-thread__body">
           <b>${esc(t.names?.[other] ?? 'player')}</b>

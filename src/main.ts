@@ -107,6 +107,29 @@ const BUNDLED_IRS = [
 ];
 
 const app = document.getElementById('app')!;
+
+/* ── the avatar net ────────────────────────────────────────────────────────
+ * Avatars are hotlinked (Google account photos, pasted URLs), and Google's
+ * CDN throttles anonymous hotlinks with 429s — which this page cannot avoid:
+ * COEP forces crossorigin="anonymous", so there are no cookies to ride. A
+ * dead avatar used to render as the browser's broken-image glyph on every
+ * card at once.
+ *
+ * One listener catches every avatar failure, present and future: any <img>
+ * that carries data-name is an avatar, and on error it is swapped for the
+ * same blank initial-disc its render site would have drawn had there been no
+ * URL at all. Capture phase, because resource errors do not bubble. */
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  const name = img.dataset.name;
+  if (name === undefined) return;           // not an avatar — leave it alone
+  const blank = document.createElement('span');
+  blank.className = img.dataset.blank
+    ?? (img.className ? `${img.className} ${img.className.split(/\s+/)[0]}--blank` : '');
+  blank.textContent = name ? name[0].toUpperCase() : '';
+  img.replaceWith(blank);
+}, true);
 const stage = document.createElement('section');
 /* Where a shared link lands before the engine exists — see showToneLanding. */
 const landing = document.createElement('section');

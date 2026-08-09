@@ -15,6 +15,7 @@ import {
   onSnapshot, type Timestamp, type Unsubscribe,
 } from 'firebase/firestore';
 import { db, type User } from './fb';
+import { inlineRemoteImage } from './media';
 
 export interface Profile {
   username: string;
@@ -127,6 +128,21 @@ export async function ensureProfile(user: User): Promise<Profile> {
     } catch (err) {
       console.warn('username migration deferred:', err);
     }
+    // A provider photo is a hotlink into googleusercontent, which throttles
+    // anonymous requests — the whole feed wears this player's 429. Copy it
+    // inline once and the avatar stops depending on Google's rate limiter.
+    // Best-effort: on failure the old URL stays and the render-time fallback
+    // covers it. New presets and comments then carry the inline copy; the
+    // ones already written keep the old URL until their author touches them.
+    if (p.avatarUrl?.startsWith('https://lh3.googleusercontent.com')) {
+      const inline = await inlineRemoteImage(p.avatarUrl);
+      if (inline) {
+        try {
+          await saveProfile(user.uid, { ...p, avatarUrl: inline });
+          p.avatarUrl = inline;
+        } catch { /* next sign-in tries again */ }
+      }
+    }
     return p;
   }
   // The username is PUBLIC — it rides every post, comment and search result,
@@ -135,8 +151,14 @@ export async function ensureProfile(user: User): Promise<Profile> {
   // anyone who never edited it. A display name is already public where it
   // came from, so it seeds the handle; failing that, a neutral one.
   const username = await freeHandleNear(user.displayName || 'player', user.uid);
+  // Seed the avatar from the provider photo — but as OUR inline copy, never
+  // as a hotlink (see the migration above for what hotlinks cost). If the
+  // copy cannot be made right now, store the URL and migrate next sign-in.
+  const seededAvatar = user.photoURL
+    ? (await inlineRemoteImage(user.photoURL)) ?? user.photoURL
+    : '';
   const fresh: Profile = {
-    username, bio: '', avatarUrl: user.photoURL ?? '', isPublic: true,
+    username, bio: '', avatarUrl: seededAvatar, isPublic: true,
     followersCount: 0, followingCount: 0,
   };
   // saveProfile claims the handle before writing the profile, so a new player

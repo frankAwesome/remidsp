@@ -81,7 +81,8 @@ export class AccountUI {
     const p = session.profile;
     const name = p?.username || session.user.displayName || session.user.email?.split('@')[0] || 'you';
     this.chip.innerHTML = `${p?.avatarUrl
-      ? `<img class="account-chip__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">`
+      ? `<img class="account-chip__ava" crossorigin="anonymous" src="${escape(p.avatarUrl)}"
+          data-name="" data-blank="account-chip__dot" alt="">`
       : '<span class="account-chip__dot"></span>'}${escape(name)}`;
   }
 
@@ -183,7 +184,8 @@ export class AccountUI {
     const wrap = el('div', 'account-profile');
     wrap.innerHTML = `
       <div class="account-profile__head">
-        ${p.avatarUrl ? `<img crossorigin="anonymous" src="${escape(p.avatarUrl)}" alt="">` : '<div class="account-profile__blank"></div>'}
+        ${p.avatarUrl ? `<img crossorigin="anonymous" src="${escape(p.avatarUrl)}"
+          data-name="" data-blank="account-profile__blank" alt="">` : '<div class="account-profile__blank"></div>'}
         <div>
           <div class="account-profile__name">${escape(p.username)}</div>
           <div class="account-profile__mail">${escape(user.email ?? '')}</div>
