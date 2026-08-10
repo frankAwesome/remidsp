@@ -24,21 +24,23 @@
     without anything being passed between them.
   -->
   <style>
+    /* daylight studio — paper, ink, the plugin's blue (matches src/style.css) */
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
-    body{background:#050506;color:#f4f5f7;display:grid;place-items:center;
+    body{background:#f6f8fa;color:#131a24;display:grid;place-items:center;
       font-family:"Space Grotesk",system-ui,sans-serif;padding:2rem;text-align:center}
     .wrap{display:flex;flex-direction:column;align-items:center;gap:1rem;max-width:430px}
-    img{height:70px;opacity:.9}
-    h1{font-size:.95rem;font-weight:600;letter-spacing:.02em}
-    p{font-size:.78rem;color:#8f939c;line-height:1.65}
-    .spin{width:22px;height:22px;border:2px solid rgba(255,255,255,.18);
-      border-top-color:#9fd8e8;border-radius:50%;animation:s .8s linear infinite}
+    /* the mark ships white-on-transparent; invert(1) turns it to ink */
+    img{height:70px;filter:invert(1);opacity:.92}
+    h1{font-size:.95rem;font-weight:600;letter-spacing:.02em;color:#0b1018}
+    p{font-size:.78rem;color:#57616e;line-height:1.65}
+    .spin{width:22px;height:22px;border:2px solid rgba(11,16,24,.15);
+      border-top-color:#1b84ad;border-radius:50%;animation:s .8s linear infinite}
     @keyframes s{to{transform:rotate(360deg)}}
-    a{display:inline-block;margin-top:.3rem;padding:.6rem 1.3rem;background:#fff;color:#0a0d12;
+    a{display:inline-block;margin-top:.3rem;padding:.6rem 1.3rem;background:#0b1018;color:#fff;
       text-decoration:none;font-size:.66rem;font-weight:700;letter-spacing:.2em}
-    .bad h1{color:#e0a04a}
-    code{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:#63666f;word-break:break-all}
+    .bad h1{color:#a66e1a}
+    code{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:#8b94a1;word-break:break-all}
   </style>
 </head>
 <body>
