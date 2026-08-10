@@ -3,7 +3,7 @@
    REMI DSP — link-preview card renderer
 
    Screenshots tools/og-card.html at exactly 1200x630 and writes
-   assets/img/og-card-portland.jpg — the image Slack, iMessage,
+   assets/img/og-card-daylight.jpg — the image Slack, iMessage,
    WhatsApp, X and Facebook show when remidsp.com is pasted.
 
    Served over HTTP rather than opened as file://, so @font-face
@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PAGE = 'tools/og-card.html';
-const OUT  = path.join(ROOT, 'assets/img/og-card-portland.jpg');
+const OUT  = path.join(ROOT, 'assets/img/og-card-daylight.jpg');
 const [W, H] = [1200, 630];
 
 const CHROME = [

@@ -1,10 +1,12 @@
 /* ══════════════════════════════════════════════════════════════
-   REMI DSP — Maine · single-page site · v2 "obsidian showroom"
+   REMI DSP — Maine · single-page site · v3 "daylight studio"
    Type system: Oswald (poster caps) / Space Grotesk (UI + body,
    the plugin's own face) / system mono (data) / DSEG7 (LED).
-   Look: cinema-scale editorial — zero border-radius, hairline rules,
-   notched panels, chapter bars. One accent only: the plugin's white
-   light. Every live/active state is a brightness of that light.
+   Look: gallery-white editorial. Paper backgrounds, ink type,
+   hairline rules, notched panels, chapter bars. One accent only:
+   the plugin's ice-blue light — every live/active state is a
+   depth of that same blue. The dark amp renders and the plugin
+   window are the only black on the page, so they carry it.
    Scroll philosophy: NATIVE scroll, 1:1 response, transform/opacity
    only. No smooth-scroll lib, no giant animated blurs, no per-frame
    layout reads. Decorative layers may trail; content never does.
@@ -21,26 +23,27 @@
 @font-face{font-family:"Space Grotesk";src:url("../assets/fonts/SpaceGroteskBold.ttf") format("truetype");font-weight:700;font-display:swap}
 
 :root{
-  --ink:#030304;
-  --ink-2:#07070b;
-  --panel:#0c0c12;
-  --panel-2:#12121a;
-  --line:rgba(237,242,248,.08);
-  --line-2:rgba(237,242,248,.16);
-  --line-3:rgba(237,242,248,.30);
+  --paper:#f6f8fa;
+  --paper-2:#eef2f6;
+  --card:#ffffff;
+  --card-2:#f9fbfd;
+  --line:rgba(11,16,24,.09);
+  --line-2:rgba(11,16,24,.16);
+  --line-3:rgba(11,16,24,.32);
 
-  /* Brand accent — white light, matching the plugin. No amber, no green:
-     every live/active state is a brightness of the same white-ice light.
-     (Variable names are legacy; the values are the light.) */
-  --gold:#e9eef4;
-  --gold-hi:#ffffff;
-  --gold-deep:#8fb4c6;
-  --ice:#9fd8e8;
-  --red:#ff4b3a;
+  /* Brand accent — the plugin's ice-blue light, now on paper. Every
+     live/active state is a depth of this one blue; no second hue.
+     (--gold names are legacy; the values are the light.) */
+  --gold:#1b84ad;        /* the accent — readable blue on white */
+  --gold-hi:#0f6f96;     /* pressed deeper */
+  --gold-deep:#0b5273;   /* deepest — gradients bottom out here */
+  --ice:#9fd8e8;         /* the wash — glows, tints, highlights */
+  --red:#c9402c;
 
-  --text:#f2f4f7;
-  --muted:#9aa0ab;
-  --muted-2:#63666f;
+  --ink:#0b1018;
+  --text:#131a24;
+  --muted:#57616e;
+  --muted-2:#8b94a1;
 
   /* Oswald leads the display stack: condensed, tall, built for uppercase at
      poster scale — it lets headlines run at cinema size without wrapping. */
@@ -55,6 +58,9 @@
   --ease:cubic-bezier(.22,1,.36,1);
   /* the house corner-cut — every panel wears it, bottom-right */
   --notch:polygon(0 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%);
+  /* the house shadow — cool paper-lift, never black */
+  --shadow-lift:0 24px 60px -28px rgba(15,45,68,.28);
+  --shadow-deep:0 60px 130px -40px rgba(15,45,68,.35);
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -63,7 +69,7 @@ html{scroll-behavior:smooth;overflow-x:clip;scroll-padding-top:4.5rem}
 
 body{
   font-family:var(--font-body);
-  background:var(--ink);
+  background:var(--paper);
   color:var(--text);
   line-height:1.6;
   overflow-x:clip;
@@ -74,8 +80,8 @@ img{display:block;max-width:100%;height:auto}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0}
 code{font-family:var(--font-mono);font-size:.92em;color:var(--gold-hi)}
-::selection{background:var(--gold);color:#0a0d12}
-:focus-visible{outline:1px solid var(--ice);outline-offset:3px}
+::selection{background:var(--ice);color:var(--ink)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 
 .mono{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.14em;color:var(--muted)}
 .led{font-family:var(--font-led)}
@@ -84,18 +90,18 @@ code{font-family:var(--font-mono);font-size:.92em;color:var(--gold-hi)}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 
 /* Oswald is condensed with a tall x-height, so it wants noticeably more size
-   and less leading than a regular grotesk. v2 pushes the scale up a class:
-   section heads now run to ~7rem — the amp renders can carry it. */
-h1,h2,h3{font-family:var(--font-display);font-weight:700;line-height:.9}
+   and less leading than a regular grotesk. Section heads run to ~7rem — ink
+   at poster scale is the page's strongest black, and it can carry it. */
+h1,h2,h3{font-family:var(--font-display);font-weight:700;line-height:.9;color:var(--ink)}
 h2{font-size:clamp(3rem,7.6vw,7rem);text-transform:uppercase;letter-spacing:-.024em;line-height:.84}
 h3{font-size:1.4rem;text-transform:uppercase;letter-spacing:.03em;line-height:1}
 .kicker{font-family:var(--font-ui);font-size:.74rem;font-weight:600;letter-spacing:.46em;
   text-transform:uppercase;color:var(--gold)}
-strong{color:#fff;font-weight:600}
+strong{color:var(--ink);font-weight:600}
 em{font-style:normal;color:var(--gold-hi)}
 
 /* ════════ chapter bar — the one repeating editorial device ════════
-   v2: a double rule (bright over dim), the section index blown up to unlit-
+   A double rule (dark over faint), the section index blown up to unlit-
    segment scale (outlined DSEG7 — glass with the light off), kicker beside
    it, data note right. Reads as a chapter title card, not a label. */
 .shead{position:relative;display:flex;align-items:baseline;gap:1.4rem;
@@ -103,27 +109,50 @@ em{font-style:normal;color:var(--gold-hi)}
   padding-top:1.15rem;margin-bottom:clamp(1.8rem,3.6vw,3rem)}
 .shead::before{content:"";position:absolute;left:0;right:0;top:4px;height:1px;background:var(--line)}
 .shead__no{font-size:clamp(1.9rem,3.6vw,3.1rem);line-height:1;
-  color:transparent;-webkit-text-stroke:1px rgba(233,238,244,.55);
-  text-shadow:0 0 22px rgba(180,212,230,.25);transform:translateY(.08em)}
+  color:transparent;-webkit-text-stroke:1px rgba(27,132,173,.6);
+  text-shadow:0 0 22px rgba(159,216,232,.5);transform:translateY(.08em)}
 .shead__meta{margin-left:auto;font-size:.6rem;letter-spacing:.22em;color:var(--muted-2);text-align:right}
 
 /* ════════ static backdrop — painted once, composited, never repaints ════════
    Translucent gradients so the body's morphing background-color shows through.
-   v2 adds a faint vertical light shaft down the page centre — stage lighting,
-   not decoration — and a whisper of scanline over the grain. */
+   A faint vertical light shaft down the page centre — north-window daylight,
+   not decoration — and a whisper of paper grain. */
 .bg{position:fixed;inset:0;z-index:-2;pointer-events:none;transform:translateZ(0);
   background:
-    linear-gradient(90deg,transparent 44%,rgba(233,238,244,.016) 50%,transparent 56%),
-    radial-gradient(110% 70% at 50% -12%, rgba(14,15,24,.9) 0%, transparent 58%),
-    radial-gradient(70% 55% at 88% 108%, rgba(11,10,16,.7) 0%, transparent 60%)}
-.bg__grain{position:absolute;inset:0;opacity:.05;
+    linear-gradient(90deg,transparent 44%,rgba(27,132,173,.02) 50%,transparent 56%),
+    radial-gradient(110% 70% at 50% -12%, rgba(255,255,255,.85) 0%, transparent 58%),
+    radial-gradient(70% 55% at 88% 108%, rgba(159,216,232,.12) 0%, transparent 60%)}
+.bg__grain{position:absolute;inset:0;opacity:.035;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.bg__grain::after{content:"";position:absolute;inset:0;opacity:.35;
-  background:repeating-linear-gradient(180deg,rgba(255,255,255,.012) 0 1px,transparent 1px 3px)}
+.bg__grain::after{content:"";position:absolute;inset:0;opacity:.3;
+  background:repeating-linear-gradient(180deg,rgba(11,16,24,.012) 0 1px,transparent 1px 3px)}
+
+/* ════════ BOOT — the power-on overlay ════════
+   Paper room, one tilted blue field, the mark, and a rack of LEDs filling
+   with real load progress. Exits with a hard upward wipe — a fader, not a
+   fade. Sits above everything including the HUD. */
+.boot{position:fixed;inset:0;z-index:400;display:grid;place-items:center;
+  background:var(--paper);
+  clip-path:inset(0 0 0 0);
+  transition:clip-path .8s cubic-bezier(.7,0,.2,1)}
+.boot__field{position:absolute;left:50%;top:36%;bottom:36%;width:114vw;
+  transform:translateX(-50%) rotate(-2.4deg);
+  background:linear-gradient(150deg,#d8ecf6,#ecf5fa);
+  border-top:1px solid rgba(27,132,173,.3);
+  border-bottom:1px solid rgba(27,132,173,.2)}
+/* wordless on purpose: the mark and a filling LED rack — no copy, no counter */
+.boot__core{position:relative;display:flex;flex-direction:column;align-items:center;gap:1.4rem}
+.boot__mark{height:56px;width:auto;filter:invert(1)}
+.boot__leds{display:flex;gap:5px}
+.boot__leds i{width:12px;height:5px;background:rgba(11,16,24,.12);transition:background .15s}
+.boot__leds i.on{background:var(--gold);box-shadow:0 0 8px rgba(27,132,173,.55)}
+.boot.is-done{clip-path:inset(0 0 100% 0)}
+.boot.is-gone{display:none}
+@media (prefers-reduced-motion:reduce){.boot{display:none}}
 
 /* ════════ fixed HUD chrome ════════ */
 .hud{position:fixed;inset:0;z-index:90;pointer-events:none}
-.hud__corner{position:absolute;width:20px;height:20px;border:1px solid rgba(255,255,255,.26)}
+.hud__corner{position:absolute;width:20px;height:20px;border:1px solid rgba(11,16,24,.28)}
 .hud__corner--tl{top:12px;left:12px;border-right:0;border-bottom:0}
 .hud__corner--tr{top:12px;right:12px;border-left:0;border-bottom:0}
 .hud__corner--bl{bottom:12px;left:12px;border-right:0;border-top:0}
@@ -131,19 +160,20 @@ em{font-style:normal;color:var(--gold-hi)}
 .hud__item{position:absolute;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.26em;color:var(--muted-2)}
 .hud__item--bl{left:2rem;bottom:1.05rem}
 .hud__item--br{right:2rem;bottom:1.05rem;color:var(--gold);display:flex;align-items:baseline;gap:.25rem}
-.hud__item--br .led{font-size:.78rem;text-shadow:0 0 10px rgba(180,212,230,.55)}
+.hud__item--br .led{font-size:.78rem;text-shadow:0 0 10px rgba(159,216,232,.8)}
 .hud__pctsign{font-family:var(--font-mono);color:var(--muted-2)}
 @media (max-width:880px){.hud__item{display:none}}
 
 .scrollbar{position:fixed;top:0;left:0;right:0;height:2px;z-index:200;pointer-events:none}
 .scrollbar span{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:0 50%;
-  background:linear-gradient(90deg,var(--gold-deep),var(--gold),var(--gold-hi));
-  box-shadow:0 0 12px rgba(180,212,230,.7)}
+  background:linear-gradient(90deg,var(--ice),var(--gold),var(--gold-deep));
+  box-shadow:0 0 12px rgba(27,132,173,.5)}
 
-/* ════════ buttons — flat slabs of the brand's white light ════════
-   No gradient face, no gloss: a solid slab, dark type. v2 hover: a second
-   hairline frame steps out behind the slab — stacked print plates, still
-   perfectly flat. The OS pointer stays native everywhere. */
+/* ════════ buttons — flat slabs of ink ════════
+   No gradient face, no gloss: a solid slab, light type — the inverse of the
+   old theme's white slab, same grammar. Hover: a second hairline frame steps
+   out behind the slab — stacked print plates, still perfectly flat. The OS
+   pointer stays native everywhere. */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.55rem;font-family:var(--font-ui);
   font-weight:600;text-transform:uppercase;letter-spacing:.14em;font-size:.8rem;padding:.95rem 1.7rem;
   position:relative;border:1px solid transparent;
@@ -151,19 +181,21 @@ em{font-style:normal;color:var(--gold-hi)}
 .btn::after{content:"";position:absolute;inset:0;border:1px solid transparent;pointer-events:none;
   transition:transform .3s var(--ease),border-color .3s}
 .btn--lg{padding:1.15rem 2.2rem;font-size:.9rem}
-.btn--amber{background:var(--gold-hi);color:#0a0d12}
-.btn--amber:hover{background:var(--gold);box-shadow:0 14px 40px -14px rgba(159,216,232,.75)}
-.btn--amber:hover::after{border-color:rgba(233,238,244,.5);transform:translate(5px,5px)}
-.btn--ghost{background:rgba(255,255,255,.04);color:var(--text);border-color:var(--line-2)}
-.btn--ghost:hover{background:rgba(255,255,255,.09);border-color:rgba(159,216,232,.5)}
+.btn--amber{background:var(--ink);color:#fff}
+.btn--amber:hover{background:var(--gold-deep);box-shadow:0 14px 40px -14px rgba(11,82,115,.55)}
+.btn--amber:hover::after{border-color:rgba(27,132,173,.55);transform:translate(5px,5px)}
+.btn--ghost{background:rgba(11,16,24,.03);color:var(--ink);border-color:var(--line-2)}
+.btn--ghost:hover{background:rgba(11,16,24,.07);border-color:rgba(27,132,173,.5)}
 .btn:active{transform:scale(.97)}
 
 /* ════════ logo lockup (exact app wordmark) ════════ */
 .logo{display:inline-flex;align-items:center;gap:.62rem;user-select:none}
+/* the app's mark ships white-on-transparent; invert(1) turns it to ink for
+   the paper theme without shipping a second asset */
 .logo__img{height:34px;width:auto;display:block;
-  filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))}
+  filter:invert(1) drop-shadow(0 1px 4px rgba(15,45,68,.18))}
 .logo__word{font-family:var(--font-display);font-weight:600;font-size:.92rem;
-  letter-spacing:.34em;color:var(--text);padding-left:.06em;white-space:nowrap}
+  letter-spacing:.34em;color:var(--ink);padding-left:.06em;white-space:nowrap}
 .logo--footer{gap:.85rem}
 .logo--footer .logo__img{height:56px}
 .logo--footer .logo__word{font-size:1.18rem}
@@ -172,14 +204,14 @@ em{font-style:normal;color:var(--gold-hi)}
 .nav{position:fixed;top:0;left:0;right:0;z-index:120;display:flex;align-items:center;gap:2rem;
   padding:1.05rem var(--pad);border-bottom:1px solid transparent;
   transition:padding .4s var(--ease),background .4s,border-color .4s}
-.nav.is-stuck{background:rgba(3,3,4,.8);backdrop-filter:blur(12px);border-color:var(--line);
+.nav.is-stuck{background:rgba(246,248,250,.82);backdrop-filter:blur(12px);border-color:var(--line);
   padding-top:.65rem;padding-bottom:.65rem}
 .nav__links{display:flex;gap:1.9rem;margin-left:auto;font-family:var(--font-ui);font-weight:600;
   text-transform:uppercase;letter-spacing:.16em;font-size:.72rem}
 .nav__links a{color:var(--muted);position:relative;padding:.2rem 0;transition:color .25s}
 .nav__links a::after{content:"";position:absolute;left:0;bottom:-2px;width:100%;height:1px;background:var(--gold);
   transform:scaleX(0);transform-origin:0 50%;transition:transform .35s var(--ease)}
-.nav__links a:hover{color:#fff}
+.nav__links a:hover{color:var(--ink)}
 .nav__links a:hover::after{transform:scaleX(1)}
 @media (max-width:960px){.nav__links{display:none}.nav__cta{margin-left:auto}}
 @media (max-width:600px){
@@ -188,13 +220,13 @@ em{font-style:normal;color:var(--gold-hi)}
 }
 
 /* ════════ HERO — the marquee card ════════
-   v2 goes full cinema: everything on the centre line. Eyebrow, then the
+   Full cinema, in daylight: everything on the centre line. Eyebrow, then the
    product name at masthead scale — the one word this page exists to sell,
-   filled with the plugin's light — then the amp itself, wide as the content
-   column allows, cycling Camden → Portland → Katahdin under type-only tabs.
-   The heads carry real alpha (black baked to transparent at build time), so
-   nothing hard-edged may sit behind them: soft radial light survives the
-   part-transparent body, type reads straight through it like a print error. */
+   cut from ink into the plugin's blue — then the amp itself, wide as the
+   content column allows, cycling Camden → Portland → Katahdin under type-only
+   tabs. The heads carry real alpha (black baked to transparent at build
+   time), so nothing hard-edged may sit behind them: soft radial light
+   survives the part-transparent body, type reads straight through it. */
 .hero{position:relative;
   --amp-glow:#8fd8cf;--amp-glow-2:#4a8f96;
   min-height:100svh;display:flex;flex-direction:column;align-items:center;
@@ -204,24 +236,24 @@ em{font-style:normal;color:var(--gold-hi)}
 .hero__strings{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 .rig__glow{position:absolute;z-index:0;left:50%;bottom:-6%;width:min(90vw,1100px);aspect-ratio:1.4;
   transform:translateX(-50%);pointer-events:none;
-  background:radial-gradient(ellipse,color-mix(in oklab,var(--amp-glow) 20%,transparent) 0%,
-    color-mix(in oklab,var(--amp-glow-2) 9%,transparent) 42%,transparent 68%);
+  background:radial-gradient(ellipse,color-mix(in oklab,var(--amp-glow) 26%,transparent) 0%,
+    color-mix(in oklab,var(--amp-glow-2) 10%,transparent) 42%,transparent 68%);
   transition:background 1.1s var(--ease);filter:blur(8px)}
 
 .rig__copy{position:relative;z-index:3;text-align:center;max-width:none}
 .hero__eyebrow{font-family:var(--font-ui);font-weight:600;letter-spacing:.5em;font-size:.66rem;
   color:var(--gold);text-transform:uppercase;margin-bottom:1.4rem}
-/* The masthead. One word, cinema scale, cut from the plugin's light. */
+/* The masthead. One word, cinema scale, ink diving into the plugin's blue. */
 .hero__title{margin-bottom:1.4rem}
 .hero__title .line{display:block;overflow:hidden;padding-block:.06em}
 /* the glow lives on the WRAPPER: drop-shadow on the clipped span itself makes
    Chromium composite it and paint the gradient unclipped — a solid box */
-.hero__title .line:first-child{filter:drop-shadow(0 10px 40px rgba(180,212,230,.34))}
+.hero__title .line:first-child{filter:drop-shadow(0 14px 44px rgba(27,132,173,.28))}
 .hero__title .line > span,.hero__title .line span > span{display:block}
 .hero__mast{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
   font-size:clamp(4.6rem,16.5vw,13.5rem);line-height:.86;letter-spacing:.045em;
   padding-left:.045em; /* optically recentre the tracked caps */
-  background:linear-gradient(180deg,var(--gold-hi) 8%,var(--gold) 55%,var(--gold-deep) 96%);
+  background:linear-gradient(180deg,var(--ink) 22%,#134a66 62%,var(--gold) 98%);
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .hero__sub{display:block;margin-top:1.05rem;font-family:var(--font-ui);font-weight:600;
   font-size:clamp(.68rem,1.4vw,.84rem);letter-spacing:.4em;text-transform:uppercase;
@@ -231,13 +263,43 @@ em{font-style:normal;color:var(--gold-hi)}
 .hero__formats{padding:.4rem 0}
 .hero__note{color:var(--muted-2);text-align:center}
 
-/* The stage sits centred beneath the masthead, as wide as the column gives. */
-.rig__stage{position:relative;z-index:1;width:100%;max-width:980px;margin-top:clamp(1.2rem,3vh,2.4rem);
-  display:flex;flex-direction:column;align-items:center}
+/* THE STAGE — the first field on the page, and it is black. The head renders
+   carry luminance-keyed alpha (built for darkness), so the hero seats them
+   in darkness that runs the FULL HORIZON: a tilted black band edge to edge,
+   the same grammar as the colour fields below — no floating box. The live
+   head's light blooms inside the band; its colour also spills onto the
+   paper above and below via .rig__glow. */
+.rig__stage{position:relative;isolation:isolate;z-index:1;width:100%;max-width:1020px;
+  margin-top:clamp(1.2rem,3vh,2.4rem);
+  display:flex;flex-direction:column;align-items:center;
+  padding:clamp(1.6rem,3vw,2.6rem) clamp(1rem,2.6vw,2.2rem) 1.6rem}
+.rig__stage::before{content:"";position:absolute;z-index:-1;pointer-events:none;
+  left:50%;top:.5rem;bottom:.5rem;width:114vw;
+  transform:translateX(-50%) rotate(-2.2deg);
+  background:
+    linear-gradient(90deg,transparent,rgba(159,216,232,.5),transparent) top/100% 1px no-repeat,
+    radial-gradient(46% 62% at 50% 46%,color-mix(in oklab,var(--amp-glow) 20%,transparent) 0%,
+      color-mix(in oklab,var(--amp-glow-2) 8%,transparent) 46%,transparent 70%),
+    linear-gradient(180deg,#0c0f15,#06080c);
+  border-top:1px solid rgba(11,16,24,.4);
+  border-bottom:1px solid rgba(11,16,24,.45);
+  box-shadow:0 50px 120px -50px rgba(11,20,30,.55);
+  transition:background 1.1s var(--ease)}
 /* isolate: the sheen's `overlay` must land on the heads inside this group,
-   not on the page behind them. */
+   not on the panel behind them. */
 .rig__amps{position:relative;z-index:1;width:100%;aspect-ratio:1672/941;isolation:isolate}
-.rig__amp{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+/* the angled colour panel — a tilted backdrop card in the live head's own
+   light, like a gel behind the amp on a photo stage. The heads' translucent
+   darks pick the colour up, so it reads as lighting, not decoration. */
+.rig__amps::before{content:"";position:absolute;z-index:0;inset:7% -12% 13% -12%;
+  transform:rotate(-4deg);
+  background:linear-gradient(155deg,
+    color-mix(in oklab,var(--amp-glow) 22%,#0b0e14) 0%,
+    color-mix(in oklab,var(--amp-glow-2) 12%,#07090d) 100%);
+  border-top:1px solid color-mix(in srgb,var(--amp-glow) 32%,transparent);
+  border-bottom:1px solid color-mix(in srgb,var(--amp-glow) 18%,transparent);
+  box-shadow:0 30px 80px -30px color-mix(in oklab,var(--amp-glow) 35%,transparent)}
+.rig__amp{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:contain;
   opacity:0;transform:scale(1.04);
   transition:opacity .9s var(--ease),transform 1.4s var(--ease)}
 .rig__amp.is-active{opacity:1;transform:none}
@@ -245,7 +307,7 @@ em{font-style:normal;color:var(--gold-hi)}
    on change) so the highlight rides the metal, never the empty space. */
 .rig__sheen{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;
   mix-blend-mode:overlay;transition:opacity .5s var(--ease);
-  background:radial-gradient(320px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.3),transparent 60%);
+  background:radial-gradient(320px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.35),transparent 60%);
   -webkit-mask-image:var(--amp-mask);mask-image:var(--amp-mask);
   -webkit-mask-size:100% 100%;mask-size:100% 100%;
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
@@ -253,20 +315,20 @@ em{font-style:normal;color:var(--gold-hi)}
 
 .rig__sel{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:1.05rem;
   margin-top:1.3rem;width:100%}
-/* Amp switcher — type only, no boxes. Poster caps; the live head's own light
-   draws the rule under the active name. */
+/* Amp switcher — type only, no boxes, living inside the dark stage. Poster
+   caps; the live head's own light draws the rule under the active name. */
 .rig__tabs{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;
   gap:clamp(1.8rem,3.6vw,3.4rem)}
 .rig__tabs button{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
   letter-spacing:.06em;font-size:clamp(1.2rem,2vw,1.65rem);line-height:1;padding:.2rem 0;
-  position:relative;color:var(--muted-2);transition:color .35s}
+  position:relative;color:#5d6672;transition:color .35s}
 .rig__tabs button::after{content:"";position:absolute;left:0;right:0;bottom:-.42rem;height:2px;
   background:var(--amp-glow);transform:scaleX(0);
   box-shadow:0 0 12px color-mix(in oklab,var(--amp-glow) 60%,transparent);
   transition:transform .45s var(--ease),background 1.1s var(--ease)}
-.rig__tabs button:hover{color:var(--text)}
+.rig__tabs button:hover{color:#cfd6df}
 .rig__tabs button.is-active{color:#fff;
-  text-shadow:0 0 28px color-mix(in oklab,var(--amp-glow) 55%,transparent)}
+  text-shadow:0 0 26px color-mix(in oklab,var(--amp-glow) 60%,transparent)}
 .rig__tabs button.is-active::after{transform:scaleX(1)}
 /* Voice readout crossfades with the head; the row is reserved so nothing
    reflows. Plain mono text — the amp light only marks the separators. */
@@ -276,10 +338,10 @@ em{font-style:normal;color:var(--gold-hi)}
   transition:opacity .5s var(--ease),transform .5s var(--ease)}
 .rig__voiceset.is-active{opacity:1;transform:none}
 .rig__voiceset span{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.24em;
-  color:var(--gold);line-height:1.4rem}
+  color:var(--ice);line-height:1.4rem}
 .rig__voiceset span + span::before{content:"·";margin:0 .85rem;
-  color:var(--amp-glow);transition:color 1.1s var(--ease)}
-.rig__cap{margin-top:.1rem;font-size:.6rem;color:var(--muted-2);text-align:center}
+  color:color-mix(in srgb,var(--amp-glow) 70%,#fff);transition:color 1.1s var(--ease)}
+.rig__cap{margin-top:.1rem;font-size:.6rem;color:#5d6672;text-align:center}
 
 .hero__scrollcue{position:absolute;left:50%;bottom:1.4rem;transform:translateX(-50%);z-index:2;
   display:flex;flex-direction:column;align-items:center;gap:.5rem}
@@ -296,22 +358,22 @@ em{font-style:normal;color:var(--gold-hi)}
 }
 
 /* ════════ MARQUEE — straight, ruled, velocity-reactive ════════
-   v2: bigger, and the words alternate solid / outline — the filled ones are
-   the claims, the outlined ones the names. */
+   The words alternate solid ink / outline — the filled ones are the claims,
+   the outlined ones the names. */
 .marquee{padding:3.4rem 0 2.6rem;overflow:clip}
 .marquee__band{display:flex;white-space:nowrap;position:relative;
   border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
-  background:linear-gradient(180deg,rgba(255,255,255,.025),transparent);padding:1.35rem 0;will-change:transform}
+  background:linear-gradient(180deg,rgba(255,255,255,.6),transparent);padding:1.35rem 0;will-change:transform}
 .marquee__band::before,.marquee__band::after{content:"";position:absolute;left:0;right:0;height:1px;background:var(--line)}
 .marquee__band::before{top:4px}
 .marquee__band::after{bottom:4px}
 .marquee__track{display:flex;align-items:center;flex:0 0 auto;animation:marq 36s linear infinite}
 .marquee__track span{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
   font-size:clamp(1.9rem,4.6vw,3.8rem);letter-spacing:.02em;padding:0 1.7rem;
-  color:transparent;-webkit-text-stroke:1px rgba(240,237,230,.55)}
-.marquee__track span:nth-of-type(even){color:var(--text);-webkit-text-stroke:0}
-.marquee__track i{color:var(--gold);font-style:normal;font-size:1.1rem;opacity:.85;
-  text-shadow:0 0 12px rgba(180,212,230,.5)}
+  color:transparent;-webkit-text-stroke:1px rgba(11,16,24,.4)}
+.marquee__track span:nth-of-type(even){color:var(--ink);-webkit-text-stroke:0}
+.marquee__track i{color:var(--gold);font-style:normal;font-size:1.1rem;opacity:.9;
+  text-shadow:0 0 12px rgba(159,216,232,.8)}
 .marquee:hover .marquee__track{animation-play-state:paused}
 @keyframes marq{to{transform:translateX(-100%)}}
 
@@ -323,19 +385,20 @@ em{font-style:normal;color:var(--gold-hi)}
 .creed__kicker{display:block;font-size:.62rem;letter-spacing:.34em;color:var(--muted-2);
   margin-bottom:1.6rem}
 .creed__title{font-size:clamp(3.2rem,9vw,8.4rem);line-height:.86;margin-bottom:1.8rem;
-  filter:drop-shadow(0 8px 34px rgba(180,212,230,.3))} /* glow on the parent — see .hero__mast */
-.creed__lit{background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,var(--gold-deep));
+  filter:drop-shadow(0 10px 36px rgba(27,132,173,.22))} /* glow on the parent — see .hero__mast */
+.creed__lit{background:linear-gradient(180deg,var(--gold),var(--gold-deep));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .creed__sub{color:var(--muted);font-size:clamp(1rem,1.5vw,1.16rem);max-width:44em;
   margin:0 auto clamp(2.4rem,5vw,3.6rem)}
 .creed__stats{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;
-  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+  background:linear-gradient(180deg,rgba(255,255,255,.55),transparent)}
 .creed__stats li{display:flex;flex-direction:column;align-items:center;gap:.55rem;
   padding:1.6rem clamp(1.2rem,3.4vw,2.8rem);position:relative}
 .creed__stats li + li::before{content:"";position:absolute;left:0;top:22%;bottom:22%;width:1px;
   background:var(--line)}
 .creed__stats .led{font-size:clamp(2.2rem,4.6vw,3.6rem);color:var(--gold);
-  text-shadow:0 0 26px rgba(180,212,230,.55)}
+  text-shadow:0 0 26px rgba(159,216,232,.9)}
 .creed__stats i{font-family:var(--font-mono);font-style:normal;font-size:.6rem;
   letter-spacing:.3em;color:var(--muted-2)}
 @media (max-width:720px){
@@ -343,13 +406,53 @@ em{font-style:normal;color:var(--gold-hi)}
   .creed__stats li:nth-child(4)::before{display:none} /* row break at 3-up */
 }
 
+/* ════════ THE FILM — a band of motion between the creed and 01 ════════
+   Unnumbered, like the marquee and the creed. The film is silent and loops
+   on a still of the masthead, so it reads as living print, not a player. */
+.film{position:relative;isolation:isolate;max-width:calc(var(--maxw) + 4vw);margin:0 auto;
+  padding:clamp(4rem,8vw,6.5rem) var(--pad)}
+.film::before{content:"";position:absolute;z-index:-1;left:50%;
+  top:clamp(1rem,2.6vw,2.6rem);bottom:clamp(1rem,2.6vw,2.6rem);width:114vw;
+  transform:translateX(-50%) rotate(2.4deg);
+  background:linear-gradient(180deg,#0c0f15,#06080c);
+  border-top:1px solid rgba(159,216,232,.4);
+  border-bottom:1px solid rgba(11,16,24,.5);
+  box-shadow:0 60px 140px -60px rgba(11,20,30,.6)}
+.film__frame{position:relative;max-width:1040px;margin-inline:auto;
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 70px 150px -40px rgba(0,0,0,.85)}
+.film__frame::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;z-index:2;
+  background:linear-gradient(90deg,transparent,rgba(159,216,232,.6),transparent)}
+.film__frame video{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#06080c}
+.film__cap{margin:1.1rem auto 0;max-width:1040px;text-align:right;color:#6b7480;font-size:.6rem}
+
 /* ════════ chips — mono data tags (studio strip readouts) ════════ */
 .chip{display:inline-block;padding:.5rem .95rem;border:1px solid var(--line-2);
-  background:rgba(255,255,255,.02);color:var(--muted)}
+  background:rgba(255,255,255,.65);color:var(--muted)}
+
+/* ════════ COLOUR FIELDS — full-bleed angled pastel panels ════════
+   The Archetype move, in this site's grammar: each big section sits inside
+   its own tilted colour field that runs right across the screen — light
+   blue, light green, light red, light orange — the white page showing at
+   the angled edges. Tilt alternates down the page so the fields hang like
+   a series. z-index:-1 inside an isolated section: behind everything the
+   section draws, above the page. */
+.showcase,.sound,.studio,.cab{position:relative;isolation:isolate}
+.showcase::before,.sound::before,.studio::before,.cab::before{
+  content:"";position:absolute;z-index:-1;
+  left:50%;top:clamp(1rem,2.6vw,2.6rem);bottom:clamp(1rem,2.6vw,2.6rem);
+  width:114vw;transform:translateX(-50%) rotate(var(--field-tilt,-2.5deg));
+  background:linear-gradient(150deg,var(--field) 0%,var(--field-2) 100%);
+  border-top:1px solid var(--field-line);
+  border-bottom:1px solid var(--field-line)}
+.showcase{--field:#bfe0f2;--field-2:#ddeef8;--field-line:rgba(27,132,173,.36);--field-tilt:-3deg}
+.sound{--field:#c4e7d4;--field-2:#e0f3e9;--field-line:rgba(47,138,86,.34);--field-tilt:-2.8deg}
+.studio{--field:#f5c8bf;--field-2:#fadfd9;--field-line:rgba(190,84,70,.34);--field-tilt:3deg}
+.cab{--field:#f5d3ad;--field-2:#fae6cc;--field-line:rgba(196,120,42,.36);--field-tilt:-3.2deg}
 
 /* ════════ 01 · SHOWCASE — the product, full width ════════ */
-.showcase{position:relative;max-width:calc(var(--maxw) + 4vw);margin:0 auto;
-  padding:clamp(4rem,9vw,7rem) var(--pad) clamp(3rem,6vw,4.5rem);overflow:clip}
+.showcase{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
+  padding:clamp(4rem,9vw,7rem) var(--pad) clamp(3.5rem,7vw,5.5rem)}
 /* editorial split: headline left, argument right, baseline-aligned. The prose
    sits deliberately small against the poster caps — a ruled sidenote, not a
    second voice. Its rule opens with a tick of the light. */
@@ -359,22 +462,24 @@ em{font-style:normal;color:var(--gold-hi)}
   border-left:1px solid var(--line-2);
   display:flex;flex-direction:column;gap:.75rem}
 .showcase__lede::before,.sound__lede::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:2.6rem;
-  background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep),transparent)}
+  background:linear-gradient(180deg,var(--gold),var(--ice),transparent)}
 .showcase__lede p,.sound__lede p{color:var(--muted);font-size:.96rem;line-height:1.7}
 .showcase__lede p:first-child,.sound__lede p:first-child{color:var(--text)}
-/* Both plugin-window shots sit at one width, one class of image. */
+/* Both plugin-window shots sit at one width, one class of image. The window
+   itself is dark — the one deep black on the page, framed like a print. */
 .showcase__stage{position:relative;max-width:1040px;margin-inline:auto}
 .showcase__frame{position:relative;overflow:hidden;
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 70px 150px -40px rgba(0,0,0,.95);
+  border:1px solid rgba(11,16,24,.18);
+  background:#fff;
+  box-shadow:var(--shadow-deep);
   will-change:transform}
 .showcase__frame::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;z-index:2;
-  background:linear-gradient(90deg,transparent,rgba(233,238,244,.5),transparent)}
+  background:linear-gradient(90deg,transparent,rgba(159,216,232,.9),transparent)}
 .showcase__frame img{width:100%;display:block}
 .showcase__glare{position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(115deg,rgba(255,255,255,.09),transparent 42%)}
+  background:linear-gradient(115deg,rgba(255,255,255,.10),transparent 42%)}
 /* HUD brackets around the shot — same language as the fixed page corners */
-.bk{position:absolute;width:26px;height:26px;border:1.5px solid rgba(255,255,255,.45);z-index:2;pointer-events:none}
+.bk{position:absolute;width:26px;height:26px;border:1.5px solid rgba(11,16,24,.42);z-index:2;pointer-events:none}
 .bk--tl{top:-13px;left:-13px;border-right:0;border-bottom:0}
 .bk--tr{top:-13px;right:-13px;border-left:0;border-bottom:0}
 .bk--bl{bottom:-13px;left:-13px;border-right:0;border-top:0}
@@ -384,19 +489,43 @@ em{font-style:normal;color:var(--gold-hi)}
 .showcase__caption .led{color:var(--gold);font-size:.9em}
 @media (max-width:880px){.showcase__head{grid-template-columns:1fr;align-items:start}}
 
-/* ════════ 02 · THE LINEUP — all three heads, side by side ════════
-   The counterpart to the hero reel: nothing switches, nothing hides. Three
-   ruled columns, each lit by its own head's colour via --glow; hovering one
-   solos it. v2: taller cells, poster-size names, notched corners. */
-.lineup{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
-  padding:clamp(4.5rem,9vw,7rem) var(--pad)}
+/* ════════ 02 · THE LINEUP — the dark showroom ════════
+   The one full-bleed black room on the white page: scrolling in is stepping
+   through a door. The heads were rendered for darkness, so here they stand
+   in it — three ruled columns, each lit by its own head's colour via --glow;
+   hovering one solos it. Entry and exit are sharp hairline rules, not fades:
+   the gallery's walls, not a gradient. */
+.lineup{position:relative;isolation:isolate;max-width:none;margin:0;
+  padding:clamp(4.5rem,9vw,7rem) max(var(--pad),calc((100vw - var(--maxw) - 4vw)/2))}
+/* the showroom is a tilted band like every other field — just black. Cold
+   light falls from its top edge; sharp hairline walls, no fades. */
+.lineup::before{content:"";position:absolute;z-index:-1;left:50%;
+  top:clamp(1rem,2.6vw,2.6rem);bottom:clamp(1rem,2.6vw,2.6rem);width:114vw;
+  transform:translateX(-50%) rotate(2.6deg);
+  background:
+    radial-gradient(80% 55% at 50% 0,rgba(159,216,232,.09),transparent 70%),
+    linear-gradient(180deg,#0b0e13 0%,#05070a 100%);
+  border-top:1px solid rgba(159,216,232,.4);
+  border-bottom:1px solid rgba(11,16,24,.5);
+  box-shadow:0 60px 140px -60px rgba(11,20,30,.6)}
+/* the room speaks in light type — every shared device flips polarity here */
+.lineup .shead{border-top-color:rgba(242,244,247,.34)}
+.lineup .shead::before{background:rgba(242,244,247,.09)}
+.lineup .shead__no{-webkit-text-stroke:1px rgba(159,216,232,.6);
+  text-shadow:0 0 22px rgba(159,216,232,.35)}
+.lineup .kicker{color:var(--ice)}
+.lineup .shead__meta{color:#6b7480}
+.lineup h2{color:#f2f4f7}
 .lineup__intro{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.5rem,4vw,3rem);
   align-items:end;margin-bottom:clamp(2.6rem,5vw,3.8rem)}
-.lineup__intro p{color:var(--muted);font-size:clamp(1rem,1.4vw,1.16rem);max-width:36em;
+.lineup__intro p{color:#98a1ac;font-size:clamp(1rem,1.4vw,1.16rem);max-width:36em;
   padding-bottom:.35rem}
+.lineup__intro strong{color:#fff}
+.lineup [data-reveal] strong{background-image:linear-gradient(rgba(159,216,232,.28),rgba(159,216,232,.28))}
 .lineup__row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
-  background:var(--line);border:1px solid var(--line)}
-.ampcol{position:relative;background:var(--ink);padding:2rem 1.6rem 1.7rem;
+  background:rgba(242,244,247,.09);border:1px solid rgba(242,244,247,.09);
+  box-shadow:0 60px 120px -50px rgba(0,0,0,.9)}
+.ampcol{position:relative;background:#0a0d12;padding:2rem 1.6rem 1.7rem;
   display:flex;flex-direction:column;
   clip-path:var(--notch);
   transition:opacity .45s var(--ease),background .45s var(--ease)}
@@ -412,34 +541,47 @@ em{font-style:normal;color:var(--gold-hi)}
   .lineup__row:hover .ampcol:not(:hover){opacity:.34}
 }
 .ampcol__stage{position:relative;z-index:1;margin-bottom:1.4rem}
-.ampcol__shot{position:relative;aspect-ratio:1672/941;will-change:transform}
+/* each head's angled backdrop card, cut from its own light; the tilt
+   alternates across the row so the three stages read as a hung series */
+.ampcol__stage::before{content:"";position:absolute;z-index:0;inset:2% -12% 9% -12%;
+  transform:rotate(-4.5deg);
+  background:linear-gradient(155deg,
+    color-mix(in oklab,var(--glow) 20%,#0c0f14) 0%,
+    color-mix(in oklab,var(--glow) 7%,#07090d) 100%);
+  border-top:1px solid color-mix(in srgb,var(--glow) 30%,transparent);
+  border-bottom:1px solid color-mix(in srgb,var(--glow) 16%,transparent);
+  box-shadow:0 24px 60px -26px color-mix(in oklab,var(--glow) 32%,transparent);
+  transition:transform .5s var(--ease)}
+.ampcol:nth-child(2) .ampcol__stage::before{transform:rotate(3.5deg)}
+.ampcol:nth-child(3) .ampcol__stage::before{transform:rotate(-3.5deg)}
+.ampcol:hover .ampcol__stage::before{transform:rotate(0deg)}
+.ampcol__shot{position:relative;z-index:1;aspect-ratio:1672/941;will-change:transform}
 .ampcol__shot img{width:100%;height:100%;object-fit:contain}
 .ampcol__meta{position:relative;z-index:1;display:flex;flex-direction:column;flex:1;
-  border-top:1px solid var(--line-2);padding-top:1.2rem}
+  border-top:1px solid rgba(242,244,247,.14);padding-top:1.2rem}
 .ampcol__no{font-size:1.5rem;line-height:1;margin-bottom:.55rem;
   color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--glow) 75%,transparent);
   text-shadow:0 0 18px color-mix(in oklab,var(--glow) 40%,transparent)}
 .ampcol__meta h3{font-size:clamp(1.8rem,2.4vw,2.3rem);color:#fff;margin-bottom:.4rem}
-.ampcol__tag{color:var(--glow);font-size:.6rem;margin-bottom:.85rem;
-  filter:brightness(1.2)}
-.ampcol__copy{color:var(--muted);font-size:.94rem;margin-bottom:1.3rem}
+.ampcol__tag{color:var(--glow);filter:brightness(1.2);font-size:.6rem;margin-bottom:.85rem}
+.ampcol__copy{color:#98a1ac;font-size:.94rem;margin-bottom:1.3rem}
 /* the voice list is the point: ruled rows, one per voice, so 3 + 2 + 1 = 6
    is legible at a glance instead of buried behind tabs */
 .ampcol__voices{list-style:none;margin-top:auto;display:flex;flex-direction:column}
 .ampcol__voices li{display:flex;align-items:baseline;gap:.85rem;
-  padding:.62rem 0;border-top:1px solid var(--line);
+  padding:.62rem 0;border-top:1px solid rgba(242,244,247,.08);
   font-family:var(--font-display);font-weight:600;text-transform:uppercase;
-  letter-spacing:.08em;font-size:1.05rem;color:var(--text)}
-.ampcol__voices li span{font-size:.58rem;letter-spacing:.16em;color:var(--muted-2)}
-.lineup__tally{margin-top:1.7rem;text-align:right;font-size:.64rem;color:var(--muted-2)}
-.lineup__tally .led{color:var(--gold);font-size:1.2em;text-shadow:0 0 14px rgba(180,212,230,.4)}
+  letter-spacing:.08em;font-size:1.05rem;color:#e9ecf0}
+.ampcol__voices li span{font-size:.58rem;letter-spacing:.16em;color:#6b7480}
+.lineup__tally{margin-top:1.7rem;text-align:right;font-size:.64rem;color:#6b7480}
+.lineup__tally .led{color:var(--ice);font-size:1.2em;text-shadow:0 0 14px rgba(159,216,232,.5)}
 @media (max-width:980px){
   .lineup__intro{grid-template-columns:1fr;align-items:start}
   .lineup__row{grid-template-columns:1fr}
   .lineup__tally{text-align:left}
   /* voices go from a stacked ruled list to a compact chip row on phones */
   .ampcol__voices{margin-top:1.1rem;flex-direction:row;flex-wrap:wrap;gap:.45rem}
-  .ampcol__voices li{padding:.34rem .7rem;border:1px solid var(--line-2);
+  .ampcol__voices li{padding:.34rem .7rem;border:1px solid rgba(242,244,247,.18);
     font-size:.72rem;letter-spacing:.1em;gap:0}
   .ampcol__voices li span{display:none}
 }
@@ -458,40 +600,40 @@ em{font-style:normal;color:var(--gold-hi)}
 .deck{position:relative;overflow:hidden;isolation:isolate;
   border:1px solid var(--line-2);
   clip-path:var(--notch);
-  background:linear-gradient(180deg,var(--panel-2),var(--panel));
-  box-shadow:0 50px 110px -45px rgba(0,0,0,.95);
+  background:linear-gradient(180deg,var(--card),var(--card-2));
+  box-shadow:var(--shadow-deep);
   --mx:50%;--my:0%}
 /* faceplate light — parked dim, blooms from the top edge once a clip is live */
 .deck::before{content:"";position:absolute;left:0;right:0;top:0;height:34%;z-index:0;
-  pointer-events:none;opacity:.08;
+  pointer-events:none;opacity:.12;
   background:radial-gradient(130% 100% at 50% 0,var(--ice),transparent 74%);
   transition:opacity .8s var(--ease)}
-.deck.is-live::before{opacity:.22}
+.deck.is-live::before{opacity:.4}
 /* shared cursor spotlight — same [data-card] pointer handler as the tiles */
 .deck::after{content:"";position:absolute;inset:0;z-index:4;opacity:0;pointer-events:none;
-  background:radial-gradient(440px circle at var(--mx) var(--my),rgba(255,255,255,.055),transparent 62%);
+  background:radial-gradient(440px circle at var(--mx) var(--my),rgba(159,216,232,.14),transparent 62%);
   transition:opacity .35s}
 .deck:hover::after{opacity:1}
 
 /* ── transport strip ── */
 .deck__bar{position:relative;z-index:2;display:flex;align-items:center;gap:1.05rem;
   padding:1.05rem clamp(1.1rem,2.6vw,1.8rem);border-bottom:1px solid var(--line-2);
-  background-image:repeating-linear-gradient(180deg,rgba(255,255,255,.022) 0 1px,transparent 1px 4px)}
+  background-image:repeating-linear-gradient(180deg,rgba(11,16,24,.02) 0 1px,transparent 1px 4px)}
 .deck__lamp{width:9px;height:9px;flex:0 0 auto;background:var(--muted-2);
   box-shadow:none;transition:background .3s,box-shadow .3s}
-.deck.is-live .deck__lamp{background:var(--gold-hi);
-  box-shadow:0 0 14px rgba(180,212,230,.95);animation:lamp 2.2s ease-in-out infinite}
+.deck.is-live .deck__lamp{background:var(--gold);
+  box-shadow:0 0 14px rgba(27,132,173,.85);animation:lamp 2.2s ease-in-out infinite}
 .deck__state{flex:0 0 auto;font-size:.6rem;letter-spacing:.28em;color:var(--muted-2)}
 .deck.is-live .deck__state{color:var(--gold)}
 .deck__now{flex:0 0 auto;font-family:var(--font-display);font-weight:600;
   text-transform:uppercase;letter-spacing:.12em;font-size:1rem;line-height:1;
   color:var(--muted-2);transition:color .3s}
-.deck.is-live .deck__now{color:#fff}
+.deck.is-live .deck__now{color:var(--ink)}
 /* flex-basis 0 (not auto): the canvas has an intrinsic 520px from its width
    attribute, which as a basis would shove the clock off the strip */
 .deck__spectrum{flex:1 1 0;min-width:0;max-width:100%;height:36px;display:block;opacity:.9}
 .deck__clock{flex:0 0 auto;display:flex;align-items:baseline;gap:.4rem;
-  font-size:.92rem;color:var(--gold);text-shadow:0 0 14px rgba(180,212,230,.5)}
+  font-size:.92rem;color:var(--gold);text-shadow:0 0 14px rgba(159,216,232,.7)}
 .deck__clock i{font-family:var(--font-mono);font-style:normal;font-size:.62rem;color:var(--muted-2)}
 .deck__clock .led:last-of-type{color:var(--muted-2);text-shadow:none}
 
@@ -510,31 +652,31 @@ em{font-style:normal;color:var(--gold-hi)}
 .clip:first-child{border-top:0}
 /* the live row: a 2px rule of the plugin's light down its leading edge */
 .clip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
-  background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep));
+  background:linear-gradient(180deg,var(--gold),var(--gold-deep));
   transform:scaleY(0);transform-origin:50% 0;
   transition:transform .5s var(--ease)}
-.clip.is-active{background:rgba(159,216,232,.04)}
+.clip.is-active{background:rgba(159,216,232,.10)}
 .clip.is-active::before{transform:scaleY(1)}
 
 /* play / pause — a flat square slab in the .btn--amber grammar */
 .clip__toggle{grid-area:toggle;width:48px;height:48px;flex:0 0 auto;
   display:grid;place-items:center;cursor:pointer;
-  border:1px solid var(--line-2);color:var(--text);
-  background:rgba(255,255,255,.03);
+  border:1px solid var(--line-2);color:var(--ink);
+  background:rgba(255,255,255,.7);
   transition:background .25s,border-color .25s,color .25s,box-shadow .3s}
-.clip__toggle:hover{background:rgba(255,255,255,.09);border-color:rgba(159,216,232,.55)}
-.clip.is-playing .clip__toggle{background:var(--gold-hi);border-color:var(--gold-hi);color:#0a0d12;
-  box-shadow:0 0 30px -6px rgba(159,216,232,.85)}
+.clip__toggle:hover{background:#fff;border-color:rgba(27,132,173,.55)}
+.clip.is-playing .clip__toggle{background:var(--ink);border-color:var(--ink);color:#fff;
+  box-shadow:0 0 30px -6px rgba(27,132,173,.65)}
 .clip__ico{width:20px;height:20px;fill:currentColor;grid-area:1/1}
 .clip__ico--pause{display:none}
 .clip.is-playing .clip__ico--play{display:none}
 .clip.is-playing .clip__ico--pause{display:block}
 
 .clip__no{grid-area:no;font-size:.78rem;color:var(--muted-2);transition:color .3s}
-.clip.is-active .clip__no{color:var(--gold);text-shadow:0 0 14px rgba(180,212,230,.5)}
+.clip.is-active .clip__no{color:var(--gold);text-shadow:0 0 14px rgba(159,216,232,.7)}
 .clip__id{grid-area:id;min-width:0}
 .clip__id h3{font-size:1.65rem;color:var(--text);transition:color .3s}
-.clip.is-active .clip__id h3{color:#fff}
+.clip.is-active .clip__id h3{color:var(--ink)}
 .clip__tag{margin-top:.3rem;font-size:.56rem;color:var(--muted-2);transition:color .3s}
 .clip.is-active .clip__tag{color:var(--gold)}
 
@@ -544,19 +686,19 @@ em{font-style:normal;color:var(--gold-hi)}
   touch-action:pan-y}
 .clip__wave canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .clip__head{position:absolute;top:2px;bottom:2px;left:0;width:1px;z-index:2;
-  background:var(--gold-hi);box-shadow:0 0 10px rgba(180,212,230,.9);
+  background:var(--gold-deep);box-shadow:0 0 10px rgba(27,132,173,.8);
   opacity:0;transition:opacity .25s;will-change:transform}
 .clip.is-active .clip__head{opacity:1}
 .clip__ghost{position:absolute;top:6px;bottom:6px;left:0;width:1px;z-index:1;
-  background:rgba(255,255,255,.35);opacity:0;transition:opacity .2s;will-change:transform}
+  background:rgba(11,16,24,.4);opacity:0;transition:opacity .2s;will-change:transform}
 .clip__scrub{position:absolute;top:-.15rem;left:0;z-index:3;font-size:.56rem;
-  color:var(--text);background:rgba(3,3,4,.92);border:1px solid var(--line-2);
+  color:var(--ink);background:rgba(255,255,255,.94);border:1px solid var(--line-2);
   padding:.1rem .3rem;opacity:0;transition:opacity .2s;pointer-events:none;
   white-space:nowrap;will-change:transform}
 @media (hover:hover) and (pointer:fine){
   .clip__wave:hover .clip__ghost,.clip__wave:hover .clip__scrub{opacity:1}
 }
-.clip__wave:focus-visible{outline:1px solid var(--ice);outline-offset:2px}
+.clip__wave:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 .clip__time{grid-area:time;font-size:.66rem;color:var(--muted-2);
   font-variant-numeric:tabular-nums;transition:color .3s}
@@ -600,34 +742,36 @@ em{font-style:normal;color:var(--gold-hi)}
 .board__track{display:flex;gap:clamp(1.5rem,3.2vw,3rem);padding-left:max(var(--pad),calc((100vw - var(--maxw))/2));
   padding-right:8vw;will-change:transform}
 .pcard{flex:0 0 min(76vw,470px);position:relative;overflow:hidden;
-  background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-2);
+  background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line-2);
   clip-path:var(--notch);
-  box-shadow:0 40px 90px -40px rgba(0,0,0,.9);will-change:transform;
+  box-shadow:var(--shadow-lift);will-change:transform;
   --mx:50%;--my:30%}
-.pcard::before{content:"";position:absolute;inset:0;z-index:0;opacity:.16;
+.pcard::before{content:"";position:absolute;inset:0;z-index:0;opacity:.14;
   background:radial-gradient(90% 70% at 50% 0%,var(--tint),transparent 70%)}
 .pcard::after{content:"";position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;
-  background:radial-gradient(340px circle at var(--mx) var(--my),rgba(255,255,255,.09),transparent 60%);
+  background:radial-gradient(340px circle at var(--mx) var(--my),rgba(159,216,232,.16),transparent 60%);
   transition:opacity .35s}
 .pcard:hover::after{opacity:1}
 /* Pedal shots are pre-cropped to the pedal panel; the image well matches the
-   shot's native ratio so the whole pedal shows at full width, no side crop. */
+   shot's native ratio so the whole pedal shows at full width, no side crop.
+   The well stays dark on purpose — each pedal is photographed in its own
+   lamplight, a lit window set into the white card. */
 .pcard__img{position:relative;z-index:1;aspect-ratio:1920/907;overflow:hidden;background:#0a0a0b}
 .pcard__img img{width:100%;height:100%;object-fit:contain;object-position:center}
 .pcard__meta{position:relative;z-index:2;padding:1.4rem 1.7rem 1.8rem;border-top:1px solid var(--line);
-  background:linear-gradient(180deg,rgba(3,3,4,.4),rgba(3,3,4,.78))}
+  background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.85))}
 .pcard__no{font-size:1.4rem;line-height:1;display:inline-block;
-  color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--tint) 85%,white 15%);
-  text-shadow:0 0 16px color-mix(in oklab,var(--tint) 45%,transparent)}
+  color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--tint) 65%,var(--ink));
+  text-shadow:0 0 16px color-mix(in oklab,var(--tint) 40%,transparent)}
 .pcard__meta h3{margin:.4rem 0 .2rem;font-size:1.7rem}
-.pcard__tag{margin-bottom:.6rem;color:var(--tint);filter:brightness(1.5);font-size:.64rem}
+.pcard__tag{margin-bottom:.6rem;color:color-mix(in srgb,var(--tint) 60%,var(--ink));font-size:.64rem}
 .pcard__meta > p:last-child{color:var(--muted);font-size:.95rem}
 .board__progress{position:absolute;left:50%;bottom:5vh;transform:translateX(-50%);z-index:5;
   display:flex;align-items:center;gap:1rem;pointer-events:none}
-.board__count{font-size:.85rem;color:var(--gold);text-shadow:0 0 10px rgba(180,212,230,.5)}
-.board__bar{width:min(30vw,280px);height:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.board__count{font-size:.85rem;color:var(--gold);text-shadow:0 0 10px rgba(159,216,232,.7)}
+.board__bar{width:min(30vw,280px);height:2px;background:rgba(11,16,24,.14);overflow:hidden}
 .board__bar span{display:block;height:100%;width:100%;background:var(--gold);transform:scaleX(0);
-  transform-origin:0 50%;will-change:transform;box-shadow:0 0 10px rgba(180,212,230,.6)}
+  transform-origin:0 50%;will-change:transform;box-shadow:0 0 10px rgba(27,132,173,.5)}
 
 @media (max-width:880px){
   .board__viewport{position:static;height:auto;overflow-x:auto;overscroll-behavior-x:contain;
@@ -643,7 +787,7 @@ em{font-style:normal;color:var(--gold-hi)}
   display:grid;grid-template-columns:1.12fr .88fr;gap:clamp(2.2rem,5vw,5rem);align-items:center}
 .studio__media{position:relative;overflow:hidden;border:1px solid var(--line-2);
   clip-path:var(--notch);
-  box-shadow:0 60px 130px -40px rgba(0,0,0,.92)}
+  box-shadow:var(--shadow-deep)}
 .studio__media img{width:100%}
 /* Observe the un-clipped container; wipe the inner image. A clip-path on the
    observed element itself suppresses the IntersectionObserver's enter callback
@@ -656,12 +800,12 @@ em{font-style:normal;color:var(--gold-hi)}
 .studio__chips{display:flex;flex-wrap:wrap;gap:.55rem;margin-bottom:2.1rem}
 .vu{width:200px}
 .vu svg{width:100%;display:block}
-.vu__arc{fill:none;stroke:rgba(255,255,255,.16);stroke-width:2}
-.vu__ticks line{stroke:rgba(255,255,255,.35);stroke-width:1.6}
+.vu__arc{fill:none;stroke:rgba(11,16,24,.2);stroke-width:2}
+.vu__ticks line{stroke:rgba(11,16,24,.42);stroke-width:1.6}
 .vu__ticks line.hot{stroke:var(--red)}
-.vu__needle{stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;transform-origin:100px 98px;
+.vu__needle{stroke:var(--gold-deep);stroke-width:2.4;stroke-linecap:round;transform-origin:100px 98px;
   transform:rotate(-46deg);transition:transform .12s linear;will-change:transform}
-.vu__pin{fill:#d9d4c8}
+.vu__pin{fill:var(--ink)}
 .vu__label{margin-top:.4rem;font-size:.58rem;text-align:center;color:var(--muted-2)}
 @media (max-width:880px){
   .studio{grid-template-columns:1fr}
@@ -675,11 +819,11 @@ em{font-style:normal;color:var(--gold-hi)}
 .cab__copy{max-width:56ch}
 .cab__copy h2{margin-bottom:1.1rem}
 .cab__copy > p{color:var(--muted);font-size:1.04rem}
-/* The cab art is a transparent cut-out: it sits straight on the page — no
-   frame, no panel. The drop-shadow follows the cabinet's own alpha. */
+/* The cab art is an opaque cut-out sitting straight on its orange field —
+   no frame, no inner panel; the section's own colour is the stage. */
 .cab__media{position:relative;max-width:760px;margin:2.4rem auto 0}
 .cab__media img{width:100%;display:block;
-  filter:drop-shadow(0 30px 52px rgba(0,0,0,.78))}
+  filter:drop-shadow(0 30px 52px rgba(120,70,25,.35))}
 
 /* ════════ 07 · SPECS — the chain, then two ruled facts ════════ */
 .specs{max-width:var(--maxw);margin:0 auto;padding:clamp(2.5rem,5vw,4rem) var(--pad)}
@@ -687,7 +831,7 @@ em{font-style:normal;color:var(--gold-hi)}
 .specrow{display:grid;grid-template-columns:minmax(7.5rem,12%) 1fr;gap:clamp(1rem,3vw,2.5rem);
   align-items:baseline;padding:.75rem .25rem;border-bottom:1px solid var(--line);
   transition:background .3s}
-.specrow:hover{background:rgba(255,255,255,.022)}
+.specrow:hover{background:rgba(255,255,255,.7)}
 .specrow dt{font-family:var(--font-ui);font-weight:600;text-transform:uppercase;
   letter-spacing:.16em;font-size:.66rem;color:var(--gold)}
 .specrow dd{color:var(--muted);font-size:.94rem;line-height:1.55}
@@ -706,9 +850,9 @@ em{font-style:normal;color:var(--gold-hi)}
 .chain__meta{flex:0 0 auto;color:var(--muted-2);font-size:.6rem;letter-spacing:.22em}
 .chain__wire{flex:1 1 auto;height:1px;position:relative;background:var(--line-2);overflow:hidden}
 .chain__wire::before{content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,transparent,var(--ice),var(--gold-hi),var(--ice),transparent);
+  background:linear-gradient(90deg,transparent,var(--gold),var(--gold-deep),var(--gold),transparent);
   background-size:40% 100%;background-repeat:no-repeat;
-  filter:drop-shadow(0 0 6px rgba(159,216,232,.75));
+  filter:drop-shadow(0 0 6px rgba(27,132,173,.6));
   animation:chainflow 3.4s linear infinite}
 @keyframes chainflow{0%{background-position:-42% 0}100%{background-position:142% 0}}
 
@@ -719,19 +863,19 @@ em{font-style:normal;color:var(--gold-hi)}
 
 .chain__node{position:relative;overflow:hidden;isolation:isolate;
   padding:.85rem .85rem .9rem;border:1px solid var(--line-2);
-  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  background:linear-gradient(180deg,var(--card),var(--card-2));
   clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);
   --mx:50%;--my:0%;
-  transition:transform .45s var(--ease),border-color .45s var(--ease)}
+  transition:transform .45s var(--ease),border-color .45s var(--ease),box-shadow .45s var(--ease)}
 .chain__node::before{content:"";position:absolute;left:0;right:0;top:0;height:64%;z-index:-1;
-  opacity:.13;background:radial-gradient(120% 100% at 50% 0,var(--c),transparent 70%);
+  opacity:.12;background:radial-gradient(120% 100% at 50% 0,var(--c),transparent 70%);
   transition:opacity .45s}
 .chain__node::after{content:"";position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;
-  background:radial-gradient(160px circle at var(--mx) var(--my),rgba(255,255,255,.11),transparent 60%);
+  background:radial-gradient(160px circle at var(--mx) var(--my),rgba(255,255,255,.5),transparent 60%);
   transition:opacity .35s}
-.chain__node:hover{transform:translateY(-5px);
+.chain__node:hover{transform:translateY(-5px);box-shadow:var(--shadow-lift);
   border-color:color-mix(in srgb,var(--c) 55%,var(--line-2))}
-.chain__node:hover::before{opacity:.34}
+.chain__node:hover::before{opacity:.3}
 .chain__node:hover::after{opacity:1}
 
 .chain__bar{position:absolute;left:0;top:0;height:2px;width:100%;z-index:3;
@@ -741,22 +885,22 @@ em{font-style:normal;color:var(--gold-hi)}
 .chain__pulse{position:absolute;inset:0;z-index:-1;opacity:0;
   background:radial-gradient(130% 92% at 50% 0,var(--c),transparent 66%);
   animation:chainpulse 3.6s var(--ease) infinite;animation-delay:calc(var(--i) * .26s)}
-@keyframes chainpulse{0%,70%,100%{opacity:0}83%{opacity:.24}}
+@keyframes chainpulse{0%,70%,100%{opacity:0}83%{opacity:.2}}
 
 .chain__no{position:relative;z-index:3;font-size:.64rem;letter-spacing:.05em;
-  color:var(--c);filter:brightness(1.55)}
+  color:color-mix(in srgb,var(--c) 62%,var(--ink))}
 .chain__ico{position:relative;z-index:3;display:grid;place-items:center;width:34px;height:34px;
-  margin:.45rem 0 .45rem;border:1px solid color-mix(in srgb,var(--c) 42%,var(--line-2));
-  background:color-mix(in srgb,var(--c) 13%,transparent);
+  margin:.45rem 0 .45rem;border:1px solid color-mix(in srgb,var(--c) 45%,var(--line-2));
+  background:color-mix(in srgb,var(--c) 10%,#fff);
   transition:background .4s,border-color .4s}
-.chain__node:hover .chain__ico{background:color-mix(in srgb,var(--c) 22%,transparent);
+.chain__node:hover .chain__ico{background:color-mix(in srgb,var(--c) 18%,#fff);
   border-color:color-mix(in srgb,var(--c) 70%,transparent)}
-.chain__ico svg{width:18px;height:18px;fill:none;stroke:var(--c);stroke-width:1.6;
-  stroke-linecap:round;stroke-linejoin:round;filter:brightness(1.28)}
+.chain__ico svg{width:18px;height:18px;fill:none;stroke:color-mix(in srgb,var(--c) 75%,var(--ink));stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round}
 .chain__node h4{position:relative;z-index:3;font-family:var(--font-display);font-weight:600;
-  text-transform:uppercase;letter-spacing:.02em;font-size:1rem;line-height:1;color:var(--text)}
+  text-transform:uppercase;letter-spacing:.02em;font-size:1rem;line-height:1;color:var(--ink)}
 .chain__tag{position:relative;z-index:3;display:block;margin-top:.3rem;font-size:.52rem;
-  letter-spacing:.13em;color:var(--c);filter:brightness(1.4)}
+  letter-spacing:.13em;color:color-mix(in srgb,var(--c) 55%,var(--ink))}
 
 /* phone: the chain is secondary info here — compact, centred chips, no tag */
 @media (max-width:560px){
@@ -787,22 +931,22 @@ em{font-style:normal;color:var(--gold-hi)}
 .versus__row{display:grid;grid-template-columns:minmax(8rem,18%) 1fr 1fr;
   gap:clamp(1rem,3vw,2.5rem);align-items:baseline;
   padding:1rem .25rem;border-bottom:1px solid var(--line);transition:background .3s}
-.versus__row:hover{background:rgba(255,255,255,.022)}
+.versus__row:hover{background:rgba(255,255,255,.7)}
 .versus__row--head{padding:.8rem .25rem;border-bottom:1px solid var(--line-2)}
 /* the header's first cell is screen-reader-only (position:absolute, so out of
    grid flow) — this anonymous item holds the empty first column in its place */
 .versus__row--head::before{content:""}
 .versus__brand{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
   font-size:1.5rem;line-height:1;letter-spacing:.04em;
-  background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep));
+  background:linear-gradient(180deg,var(--gold),var(--gold-deep));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .versus__them{color:var(--muted-2);font-size:.95rem}
 .versus__row--head .versus__them{font-size:.66rem;letter-spacing:.26em;align-self:center}
 .versus__cat{font-size:.62rem;letter-spacing:.22em;color:var(--muted-2)}
-.versus__us{position:relative;color:#fff;font-weight:600;font-size:1.02rem;padding-left:1.1rem}
+.versus__us{position:relative;color:var(--ink);font-weight:600;font-size:1.02rem;padding-left:1.1rem}
 .versus__us::before{content:"";position:absolute;left:0;top:.1em;bottom:.1em;width:2px;
-  background:linear-gradient(180deg,var(--gold-hi),var(--gold-deep));
-  box-shadow:0 0 10px rgba(180,212,230,.5)}
+  background:linear-gradient(180deg,var(--gold),var(--gold-deep));
+  box-shadow:0 0 10px rgba(159,216,232,.7)}
 @media (max-width:720px){
   .versus__head{grid-template-columns:1fr}
   .versus__sub{justify-self:start;text-align:left}
@@ -819,15 +963,15 @@ em{font-style:normal;color:var(--gold-hi)}
   padding:clamp(4.5rem,9vw,7rem) var(--pad) clamp(6rem,12vw,10rem)}
 .download__ghost{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);z-index:0;
   font-family:var(--font-display);font-weight:700;font-size:clamp(12rem,36vw,32rem);line-height:1;
-  color:transparent;-webkit-text-stroke:1px rgba(180,212,230,.13);pointer-events:none;user-select:none;
+  color:transparent;-webkit-text-stroke:1px rgba(27,132,173,.14);pointer-events:none;user-select:none;
   will-change:transform}
 .download__head{position:relative;z-index:1;margin-bottom:3rem;text-align:center}
-/* live lamp badge — a blinking point of the brand's white light */
+/* live lamp badge — a blinking point of the brand's light */
 .badge{display:inline-flex;align-items:center;gap:.6rem;font-size:.66rem;letter-spacing:.3em;
-  padding:.55rem 1.1rem;border:1px solid rgba(180,212,230,.4);color:var(--gold);
-  background:rgba(180,212,230,.06);margin-bottom:1.5rem}
-.badge::before{content:"";width:7px;height:7px;flex:0 0 auto;background:var(--gold-hi);
-  box-shadow:0 0 10px rgba(180,212,230,.9);animation:lamp 2.2s ease-in-out infinite}
+  padding:.55rem 1.1rem;border:1px solid rgba(27,132,173,.4);color:var(--gold);
+  background:rgba(159,216,232,.14);margin-bottom:1.5rem}
+.badge::before{content:"";width:7px;height:7px;flex:0 0 auto;background:var(--gold);
+  box-shadow:0 0 10px rgba(27,132,173,.8);animation:lamp 2.2s ease-in-out infinite}
 @keyframes lamp{50%{opacity:.35}}
 .download__head h2{margin-bottom:1.1rem}
 .download__head p{color:var(--muted);font-size:1.1rem;max-width:34em;margin:0 auto}
@@ -838,29 +982,29 @@ em{font-style:normal;color:var(--gold-hi)}
 /* Two-card layout helper: centre the pair instead of an empty third column. */
 .download__cards--pair{grid-template-columns:repeat(2,1fr);max-width:720px;margin-inline:auto}
 .dcard{position:relative;padding:2.1rem 1.9rem;border:1px solid var(--line-2);overflow:hidden;
-  background:linear-gradient(180deg,var(--panel-2),var(--panel));display:flex;flex-direction:column;gap:.55rem;
+  background:linear-gradient(180deg,var(--card),var(--card-2));display:flex;flex-direction:column;gap:.55rem;
   clip-path:var(--notch);
-  box-shadow:0 30px 70px -40px rgba(0,0,0,.9);--mx:50%;--my:20%}
+  box-shadow:var(--shadow-lift);--mx:50%;--my:20%}
 .dcard::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(233,238,244,.4),transparent)}
+  background:linear-gradient(90deg,transparent,rgba(159,216,232,.9),transparent)}
 .dcard::after{content:"";position:absolute;inset:0;opacity:0;pointer-events:none;
-  background:radial-gradient(300px circle at var(--mx) var(--my),rgba(255,255,255,.07),transparent 60%);
+  background:radial-gradient(300px circle at var(--mx) var(--my),rgba(159,216,232,.16),transparent 60%);
   transition:opacity .35s}
 .dcard:hover::after{opacity:1}
 .dcard__os{width:50px;height:50px;display:grid;place-items:center;
-  background:rgba(255,255,255,.05);border:1px solid var(--line-2);margin-bottom:.4rem}
-.dcard__os svg{width:27px;height:27px;fill:var(--text)}
-.dcard__os--plug svg{fill:none;stroke:var(--text);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.dcard h3{font-size:1.55rem;color:#fff}
+  background:rgba(11,16,24,.04);border:1px solid var(--line-2);margin-bottom:.4rem}
+.dcard__os svg{width:27px;height:27px;fill:var(--ink)}
+.dcard__os--plug svg{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dcard h3{font-size:1.55rem;color:var(--ink)}
 .dcard__req{margin-bottom:.85rem;font-size:.64rem}
 .dcard__btn{justify-content:center;width:100%}
 .dcard__note{font-size:.86rem;color:var(--muted);text-align:center;margin-top:.2rem}
-.dcard__note strong{color:var(--gold)}
+.dcard__note strong{color:var(--gold-hi)}
 /* Windows build is not code-signed yet — flag SmartScreen right at the download. */
 .dcard__warn{margin-top:.35rem;padding:.62rem .72rem;font-size:.76rem;line-height:1.5;text-align:left;
-  color:var(--muted);background:rgba(224,168,78,.07);border:1px solid rgba(224,168,78,.30)}
-.dcard__warn strong{color:var(--gold);font-weight:600}
-.dcard--box{border-color:rgba(159,216,232,.32);background:linear-gradient(180deg,#0a0f13,var(--panel))}
+  color:var(--muted);background:rgba(201,132,32,.08);border:1px solid rgba(166,110,26,.35)}
+.dcard__warn strong{color:#8a5c12;font-weight:600}
+.dcard--box{border-color:rgba(27,132,173,.4);background:linear-gradient(180deg,#f2f9fc,var(--card))}
 .dcard__list{list-style:none;display:flex;flex-direction:column;gap:.62rem;margin-top:.2rem}
 .dcard__list li{position:relative;padding-left:1.7rem;color:var(--text);font-size:.94rem}
 .dcard__list li::before{content:"";position:absolute;left:0;top:.18em;width:1.05rem;height:1.05rem;
@@ -870,7 +1014,7 @@ em{font-style:normal;color:var(--gold-hi)}
 @media (max-width:880px){.download__cards{grid-template-columns:1fr}}
 
 /* ════════ FOOTER ════════ */
-.footer{position:relative;border-top:1px solid var(--line);background:var(--ink-2);overflow:clip;
+.footer{position:relative;border-top:1px solid var(--line);background:var(--paper-2);overflow:clip;
   padding:clamp(3rem,6vw,4.5rem) var(--pad) 0}
 .footer__brand{max-width:var(--maxw);margin:0 auto 2.5rem}
 .footer__tag{color:var(--muted);margin-top:1.2rem;font-size:1rem}
@@ -879,14 +1023,14 @@ em{font-style:normal;color:var(--gold-hi)}
 .footer__cols h4{font-family:var(--font-ui);font-weight:600;text-transform:uppercase;letter-spacing:.18em;
   font-size:.68rem;color:var(--gold);margin-bottom:1rem}
 .footer__cols a{display:block;color:var(--muted);font-size:.92rem;padding:.24rem 0;transition:color .25s}
-.footer__cols a:hover{color:#fff}
+.footer__cols a:hover{color:var(--ink)}
 .footer__legal{max-width:var(--maxw);margin:2rem auto 0;color:var(--muted-2);font-size:.85rem;line-height:1.8}
 .footer__fine{font-size:.78rem}
 /* the sign-off: a giant outline wordmark half-sunk below the page edge */
 .footer__ghost{max-width:var(--maxw);margin:1.5rem auto -.28em;
   font-family:var(--font-display);font-weight:700;text-transform:uppercase;line-height:.8;
   font-size:clamp(4.4rem,15.5vw,15rem);letter-spacing:.02em;white-space:nowrap;
-  color:transparent;-webkit-text-stroke:1px rgba(233,238,244,.11);
+  color:transparent;-webkit-text-stroke:1px rgba(11,16,24,.12);
   user-select:none;pointer-events:none}
 @media (max-width:620px){.footer__cols{grid-template-columns:repeat(2,auto);gap:2rem}}
 
@@ -895,9 +1039,10 @@ em{font-style:normal;color:var(--gold-hi)}
   transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:var(--d,0s)}
 [data-reveal].in{opacity:1;transform:none}
 
-/* highlight sweep on keywords once their block reveals */
+/* highlight sweep on keywords once their block reveals — a run of the
+   plugin's ice, like a marker pass on a proof */
 [data-reveal] strong{
-  background:linear-gradient(rgba(180,212,230,.26),rgba(180,212,230,.26)) no-repeat 0 74%/0% 36%;
+  background:linear-gradient(rgba(159,216,232,.5),rgba(159,216,232,.5)) no-repeat 0 74%/0% 36%;
   transition:background-size .9s var(--ease) .35s}
 [data-reveal].in strong{background-size:100% 36%}
 [data-reveal-line]{transform:translateY(112%);transition:transform .85s var(--ease);transition-delay:var(--d,0s)}

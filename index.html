@@ -22,7 +22,7 @@
      by URL and re-scrape rarely, so a redesign ships under a NEW filename
      (or at least a bumped ?v=) — editing the JPG in place will not reach
      anyone who has already pasted the link. -->
-<meta property="og:image" content="https://remidsp.com/assets/img/og-card-portland.jpg" />
+<meta property="og:image" content="https://remidsp.com/assets/img/og-card-daylight.jpg" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -30,9 +30,9 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="REMI DSP — Maine, the all-in-one guitar rig" />
 <meta name="twitter:description" content="Three amplifiers captured from the real things." />
-<meta name="twitter:image" content="https://remidsp.com/assets/img/og-card-portland.jpg" />
+<meta name="twitter:image" content="https://remidsp.com/assets/img/og-card-daylight.jpg" />
 <meta name="twitter:image:alt" content="The Portland amplifier head — black tolex and gold, with brass corners" />
-<meta name="theme-color" content="#050506" />
+<meta name="theme-color" content="#f6f8fa" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="icon" type="image/png" href="assets/img/icon-256.png" />
 <link rel="apple-touch-icon" href="assets/img/icon-256.png" />
@@ -72,7 +72,7 @@
       "applicationSubCategory": "Audio plugin",
       "operatingSystem": "macOS 11+, Windows 10/11",
       "url": "https://remidsp.com/",
-      "image": "https://remidsp.com/assets/img/og-card-portland.jpg",
+      "image": "https://remidsp.com/assets/img/og-card-daylight.jpg",
       "description": "An all-in-one guitar rig: three amplifiers captured from real, mic'd-up rigs, a pedalboard that reorders itself and a studio strip that finishes the job.",
       "softwareVersion": "0.9.0",
       "featureList": [
@@ -121,6 +121,19 @@
      with its own data-product; the analytics code does not change. -->
 <body data-product="maine">
 
+<!-- ░░ BOOT — the power-on ░░
+     Every render on the page now loads eagerly; this overlay holds the
+     room while they arrive, counting REAL progress (loaded images / total),
+     and wipes away when the rig is warm. Once per session; skipped
+     entirely under reduced motion. -->
+<div class="boot" id="boot" aria-hidden="true">
+  <div class="boot__field" aria-hidden="true"></div>
+  <div class="boot__core">
+    <img class="boot__mark" src="assets/img/logo-mark.png" alt="" width="70" height="56" />
+    <div class="boot__leds" id="bootLeds"></div>
+  </div>
+</div>
+
 <!-- ░░ static backdrop (painted once — zero per-frame cost) ░░ -->
 <div class="bg" aria-hidden="true"><div class="bg__grain"></div></div>
 
@@ -162,7 +175,7 @@
   <div class="rig__glow" aria-hidden="true"></div>
 
   <div class="hero__inner rig__copy">
-    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;PRESENTS&nbsp;·&nbsp;THE&nbsp;ALL-IN-ONE&nbsp;GUITAR&nbsp;RIG</p>
+    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP PRESENTS · THE ALL-IN-ONE GUITAR&nbsp;RIG</p>
     <h1 class="hero__title" data-reveal-lines>
       <!-- the reveal transform rides the middle span: transforming the
            gradient-clipped element itself makes Chromium composite it and
@@ -174,9 +187,9 @@
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
         <span>Download&nbsp;—&nbsp;Free</span>
       </a>
-      <span class="hero__formats mono">VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;AAX&nbsp;·&nbsp;STANDALONE</span>
+      <span class="hero__formats mono">VST3 · AU · AAX · STANDALONE</span>
     </div>
-    <p class="hero__note mono" data-reveal style="--d:.42s">FULL&nbsp;VERSION&nbsp;·&nbsp;NO&nbsp;ACCOUNT&nbsp;·&nbsp;NO&nbsp;ILOK</p>
+    <p class="hero__note mono" data-reveal style="--d:.42s">FULL&nbsp;VERSION · NO&nbsp;ACCOUNT · NO&nbsp;ILOK</p>
   </div>
 
   <div class="rig__stage" id="rig" data-card>
@@ -184,9 +197,9 @@
       <img class="rig__amp is-active" src="assets/img/amp-head-camden.webp" width="1672" height="941"
            fetchpriority="high" alt="Camden — a cream-and-gold amplifier head with a stained-glass front panel" />
       <img class="rig__amp" src="assets/img/amp-head-portland.webp" width="1672" height="941"
-           loading="lazy" alt="Portland — a black tolex amplifier head with a gold control plate and brass corners" />
+           alt="Portland — a black tolex amplifier head with a gold control plate and brass corners" />
       <img class="rig__amp" src="assets/img/amp-head-katahdin.webp" width="1672" height="941"
-           loading="lazy" alt="Katahdin — an amplifier head carved with baroque cherubs playing lutes" />
+           alt="Katahdin — an amplifier head carved with baroque cherubs playing lutes" />
       <span class="rig__sheen" aria-hidden="true"></span>
     </div>
 
@@ -201,7 +214,7 @@
         <div class="rig__voiceset"><span>BLOOM</span><span>PUSHED</span></div>
         <div class="rig__voiceset"><span>RED</span></div>
       </div>
-      <p class="rig__cap mono">3&nbsp;AMPS&nbsp;·&nbsp;6&nbsp;VOICES&nbsp;·&nbsp;CAPTURED&nbsp;FROM&nbsp;REAL&nbsp;RIGS</p>
+      <p class="rig__cap mono">3&nbsp;AMPS · 6&nbsp;VOICES · CAPTURED FROM REAL&nbsp;RIGS</p>
     </div>
   </div>
 
@@ -225,7 +238,7 @@
 <!-- ░░ THE CREED — the part the others put in the fine print ░░
      Unnumbered on purpose (like the marquee): it is a declaration, not a
      chapter. The LED tallies reuse the brand's one light — no second hue. -->
-<section class="creed" id="free" data-bg="#050507">
+<section class="creed" id="free" data-bg="#eaf2f6">
   <p class="creed__kicker mono" data-reveal>THE&nbsp;PART&nbsp;THE&nbsp;OTHERS&nbsp;PUT&nbsp;IN&nbsp;THE&nbsp;FINE&nbsp;PRINT</p>
   <h2 class="creed__title" data-reveal style="--d:.06s">The full version.<br><span class="creed__lit">Free. No account.</span></h2>
   <p class="creed__sub" data-reveal style="--d:.14s">No iLok. No per-amp upsell. No trial timer counting down in the corner.
@@ -240,8 +253,22 @@
   </ul>
 </section>
 
+<!-- ░░ THE FILM — Maine in motion ░░
+     Unnumbered, like the marquee and the creed: a band, not a chapter.
+     The film is silent by design AND muted besides — autoplay policy allows
+     muted loops, and there is no soundtrack to miss. Loops on a still of
+     the masthead so the seam is invisible. -->
+<section class="film" aria-label="Maine in motion">
+  <div class="film__frame" data-reveal>
+    <video muted autoplay loop playsinline preload="metadata"
+           poster="assets/img/film-poster.jpg" src="assets/video/maine-film.mp4"
+           aria-label="A silent film cycling through Maine's three amplifiers, pedals, studio strip and cabinet"></video>
+  </div>
+  <p class="film__cap mono" data-reveal>MAINE&nbsp;IN&nbsp;MOTION · 14&nbsp;S&nbsp;LOOP · SILENT</p>
+</section>
+
 <!-- ░░ 01 · THE PLUGIN — one product, so show the product ░░ -->
-<section class="showcase" id="plugin" data-bg="#07080c">
+<section class="showcase" id="plugin" data-bg="#ffffff">
   <header class="shead" data-reveal>
     <span class="shead__no led">01</span>
     <p class="kicker">The Plugin</p>
@@ -262,7 +289,7 @@
     <div class="showcase__frame" data-tilt>
       <picture>
         <source srcset="assets/img/amp-window-portland.webp" type="image/webp">
-        <img src="assets/img/amp-window-portland.png" width="1920" height="1208" loading="lazy"
+        <img src="assets/img/amp-window-portland.png" width="1920" height="1208"
              alt="The Maine plugin window on its Pushed Crunch patch — the Portland head in black tolex and gold, the effects chain along the top and the Pushed voice selected below" />
       </picture>
       <span class="showcase__glare" aria-hidden="true"></span>
@@ -280,7 +307,8 @@
      section's whole job is the opposite — every head and all six voices on
      screen together, so the "6 voices" claim is shown rather than asserted.
      Hover solos a column (siblings dim); nothing is ever hidden behind a tab. -->
-<section class="lineup" id="amps" data-bg="#07080b">
+<!-- No data-bg: the dark showroom paints itself; the page behind stays paper. -->
+<section class="lineup" id="amps">
   <header class="shead" data-reveal>
     <span class="shead__no led">02</span>
     <p class="kicker">The Amplifiers</p>
@@ -298,7 +326,7 @@
   <div class="lineup__row">
     <article class="ampcol" style="--glow:#8fd8cf" data-reveal data-card>
       <div class="ampcol__stage"><div class="ampcol__shot" data-tilt>
-        <img src="assets/img/amp-head-camden.webp" width="1672" height="941" loading="lazy"
+        <img src="assets/img/amp-head-camden.webp" width="1672" height="941"
              alt="Camden — a cream-and-gold amplifier head with a stained-glass front panel" />
       </div></div>
       <div class="ampcol__meta">
@@ -317,7 +345,7 @@
 
     <article class="ampcol" style="--glow:#e8c877;--d:.08s" data-reveal data-card>
       <div class="ampcol__stage"><div class="ampcol__shot" data-tilt>
-        <img src="assets/img/amp-head-portland.webp" width="1672" height="941" loading="lazy"
+        <img src="assets/img/amp-head-portland.webp" width="1672" height="941"
              alt="Portland — a black tolex amplifier head with a gold control plate and brass corners" />
       </div></div>
       <div class="ampcol__meta">
@@ -335,7 +363,7 @@
 
     <article class="ampcol" style="--glow:#e0a878;--d:.16s" data-reveal data-card>
       <div class="ampcol__stage"><div class="ampcol__shot" data-tilt>
-        <img src="assets/img/amp-head-katahdin.webp" width="1672" height="941" loading="lazy"
+        <img src="assets/img/amp-head-katahdin.webp" width="1672" height="941"
              alt="Katahdin — an amplifier head carved with baroque cherubs playing lutes" />
       </div></div>
       <div class="ampcol__meta">
@@ -367,7 +395,7 @@
      into #clipPeaks below. That buys two things: the shapes draw the instant the
      section reveals (no decode, no fetch), and the page ships ~2 kB of JSON
      instead of pulling 2.6 MB of MP3 that most visitors never press play on. -->
-<section class="sound" id="sound" data-bg="#04060b">
+<section class="sound" id="sound" data-bg="#eef7f1">
   <header class="shead" data-reveal>
     <span class="shead__no led">03</span>
     <p class="kicker">The Sound</p>
@@ -492,7 +520,7 @@
     <div class="board__viewport">
       <div class="board__track" id="boardTrack">
         <article class="pcard" style="--tint:#d2a43a" data-card>
-          <div class="pcard__img"><img src="assets/img/pedal.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Drive pedal — Victory! gold enclosure with drive, treble, bass and level" /></div>
+          <div class="pcard__img"><img src="assets/img/pedal.webp" width="1920" height="907" alt="REMI DSP Drive pedal — Victory! gold enclosure with drive, treble, bass and level" /></div>
           <div class="pcard__meta">
             <span class="pcard__no led">01</span>
             <h3>Drive</h3>
@@ -501,7 +529,7 @@
           </div>
         </article>
         <article class="pcard" style="--tint:#c9682c" data-card>
-          <div class="pcard__img"><img src="assets/img/chorus.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Chorus pedal — burnt-orange enclosure with WWII aviation artwork" /></div>
+          <div class="pcard__img"><img src="assets/img/chorus.webp" width="1920" height="907" alt="REMI DSP Chorus pedal — burnt-orange enclosure with WWII aviation artwork" /></div>
           <div class="pcard__meta">
             <span class="pcard__no led">02</span>
             <h3>Chorus</h3>
@@ -510,7 +538,7 @@
           </div>
         </article>
         <article class="pcard" style="--tint:#3fa8a8" data-card>
-          <div class="pcard__img"><img src="assets/img/delay.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Delay — tape-warm echo with astronaut artwork" /></div>
+          <div class="pcard__img"><img src="assets/img/delay.webp" width="1920" height="907" alt="REMI DSP Delay — tape-warm echo with astronaut artwork" /></div>
           <div class="pcard__meta">
             <span class="pcard__no led">03</span>
             <h3>Delay</h3>
@@ -519,7 +547,7 @@
           </div>
         </article>
         <article class="pcard" style="--tint:#5b8fd4" data-card>
-          <div class="pcard__img"><img src="assets/img/reverb.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Reverb — astronaut on the moon artwork" /></div>
+          <div class="pcard__img"><img src="assets/img/reverb.webp" width="1920" height="907" alt="REMI DSP Reverb — astronaut on the moon artwork" /></div>
           <div class="pcard__meta">
             <span class="pcard__no led">04</span>
             <h3>Reverb</h3>
@@ -528,7 +556,7 @@
           </div>
         </article>
         <article class="pcard" style="--tint:#a8402e" data-card>
-          <div class="pcard__img"><img src="assets/img/sauce.webp" width="1920" height="907" loading="lazy" alt="REMI DSP Sauce — spectral finalizer with a live before/after analyser" /></div>
+          <div class="pcard__img"><img src="assets/img/sauce.webp" width="1920" height="907" alt="REMI DSP Sauce — spectral finalizer with a live before/after analyser" /></div>
           <div class="pcard__meta">
             <span class="pcard__no led">05</span>
             <h3>Sauce</h3>
@@ -547,9 +575,9 @@
 </section>
 
 <!-- ░░ 05 · THE STUDIO STRIP ░░ -->
-<section class="studio" id="studio" data-bg="#060a10">
+<section class="studio" id="studio" data-bg="#f9f1ef">
   <div class="studio__media" data-reveal-wipe>
-    <img src="assets/img/studio.webp" width="1920" height="1208" loading="lazy"
+    <img src="assets/img/studio.webp" width="1920" height="1208"
          alt="REMI DSP studio strip — REMI 4000 channel EQ and 2026 FET compressor" />
   </div>
   <div class="studio__copy">
@@ -595,7 +623,7 @@
     </p>
   </div>
   <div class="cab__media" data-reveal-wipe>
-    <img src="assets/img/cab.webp" width="1600" height="857" loading="lazy"
+    <img src="assets/img/cab.webp" width="1600" height="857"
          alt="REMI DSP cab — impulse-response loader with a blue-grey grille cabinet" />
   </div>
 </section>
@@ -696,54 +724,6 @@
   </dl>
 </section>
 
-<!-- ░░ THE FINE PRINT — Maine against the way this market usually works ░░
-     Unnumbered, like the creed. No competitor is named: "the usual suite" is
-     the category, and every claim in its column is standard practice across
-     the big modelling suites (per-plugin pricing, accounts, activation). -->
-<section class="versus" id="versus" data-bg="#07070b">
-  <header class="shead" data-reveal>
-    <p class="kicker">The Fine Print</p>
-    <span class="shead__meta mono">READ&nbsp;THEIRS&nbsp;·&nbsp;THEN&nbsp;OURS</span>
-  </header>
-  <div class="versus__head">
-    <h2 data-reveal>Ours is short.</h2>
-    <p class="versus__sub" data-reveal style="--d:.08s">Every big modelling suite ships the same fine print —
-       an account, an activation, an amp at a time. Maine ships without one.</p>
-  </div>
-  <div class="versus__table" data-reveal style="--d:.14s" role="table" aria-label="Maine compared with the usual modelling suite">
-    <div class="versus__row versus__row--head" role="row">
-      <span role="columnheader" class="vh">Category</span>
-      <span role="columnheader" class="versus__brand">Maine</span>
-      <span role="columnheader" class="versus__them mono">THE&nbsp;USUAL&nbsp;SUITE</span>
-    </div>
-    <div class="versus__row" role="row">
-      <span class="versus__cat mono" role="rowheader">PRICE</span>
-      <span class="versus__us" role="cell">Free — the full version</span>
-      <span class="versus__them" role="cell">€99–€299, per plugin</span>
-    </div>
-    <div class="versus__row" role="row">
-      <span class="versus__cat mono" role="rowheader">ACCOUNT</span>
-      <span class="versus__us" role="cell">None</span>
-      <span class="versus__them" role="cell">Required to install</span>
-    </div>
-    <div class="versus__row" role="row">
-      <span class="versus__cat mono" role="rowheader">COPY&nbsp;PROTECTION</span>
-      <span class="versus__us" role="cell">None</span>
-      <span class="versus__them" role="cell">iLok or online activation</span>
-    </div>
-    <div class="versus__row" role="row">
-      <span class="versus__cat mono" role="rowheader">WHAT&nbsp;YOU&nbsp;GET</span>
-      <span class="versus__us" role="cell">The whole rig — amps, board, studio</span>
-      <span class="versus__them" role="cell">One amp pack at a time</span>
-    </div>
-    <div class="versus__row" role="row">
-      <span class="versus__cat mono" role="rowheader">THE&nbsp;TRIAL</span>
-      <span class="versus__us" role="cell">The product is the trial</span>
-      <span class="versus__them" role="cell">14 days, then the counter</span>
-    </div>
-  </div>
-</section>
-
 <!-- ░░ 08 · DOWNLOAD ░░ -->
 <section class="download" id="download">
   <div class="download__ghost" aria-hidden="true">PLAY</div>
@@ -765,7 +745,7 @@
       <div class="showcase__frame" data-tilt>
         <picture>
           <source srcset="assets/img/amp-hero.webp" type="image/webp">
-          <img src="assets/img/amp-hero.png" width="1920" height="1208" loading="lazy"
+          <img src="assets/img/amp-hero.png" width="1920" height="1208"
                alt="The Maine plugin window — the Camden amplifier head with its voice selector, the effects chain along the top and the capture readout below" />
         </picture>
         <span class="showcase__glare" aria-hidden="true"></span>

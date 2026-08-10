@@ -18,6 +18,18 @@
 
   const yEl = $("#year"); if (yEl) yEl.textContent = new Date().getFullYear();
 
+  /* reduced motion: the film must not run on its own — hand it a transport */
+  if (reduce) $$("video[autoplay]").forEach(v => {
+    v.removeAttribute("autoplay"); v.pause?.(); v.controls = true;
+  });
+  /* otherwise keep the film running whenever it's on screen — browsers park
+     offscreen/backgrounded loops and don't always resume them on their own */
+  if (!reduce) $$("video[autoplay]").forEach(v =>
+    new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) v.play().catch(() => {});
+      else v.pause();
+    }), { threshold: 0.15 }).observe(v));
+
   /* VU meter ticks (drawn once) */
   (() => {
     const g = $("#vuTicks"); if (!g) return;
@@ -89,43 +101,48 @@
     if (reduce || sessionStorage.getItem("remiBoot")) {
       boot.remove(); initReveals(); return;
     }
-    const numEl = $("#bootNum"), ledsEl = $("#bootLeds"), lineEl = $(".boot__line");
+    const ledsEl = $("#bootLeds");
     const LEDS = 26;
     for (let i = 0; i < LEDS; i++) ledsEl.appendChild(document.createElement("i"));
     const leds = [...ledsEl.children];
-    const lines = ["POWERING ON · CAPTURE ENGINE · 48K", "WARMING TUBES…",
-                   "LOADING CAPTURES…", "WAKING THE BOARD…", "ON AIR"];
-    let li = 0;
-    const lineTimer = setInterval(() => { lineEl.textContent = lines[li = (li + 1) % (lines.length - 1)]; }, 460);
+
+    /* Every image on the page loads eagerly now; the bar tracks what has
+       actually arrived rather than acting out a load. `error` counts too —
+       a missing render should not hold the door. The cap still guarantees
+       nobody is ever trapped behind the overlay on a slow connection.
+       Wordless by design: no counter, no status copy — the mark and a
+       filling LED rack say everything. */
+    const imgs = [...document.images];
+    let loadedN = imgs.filter(i => i.complete).length;
+    imgs.forEach(i => {
+      if (i.complete) return;
+      const done = () => { loadedN++; };
+      i.addEventListener("load",  done, { once: true });
+      i.addEventListener("error", done, { once: true });
+    });
+    let fontsIn = false;
+    document.fonts?.ready.then(() => { fontsIn = true; });
 
     let ready = false;
-    const heroImg = $(".hero__shot img");
-    Promise.race([
-      Promise.allSettled([document.fonts.ready, heroImg?.decode?.() ?? 0]),
-      new Promise(r => setTimeout(r, 2000)),
-    ]).then(() => { ready = true; });
-    setTimeout(() => { ready = true; }, 2400); // never trap the visitor
+    setTimeout(() => { ready = true; }, 3800); // never trap the visitor
 
     const t0 = performance.now();
     let shown = 0;
     (function tick(t) {
       const el = t - t0;
-      // glide to 92% over ~1s, then wait for `ready`, then sprint to 100
-      const target = ready ? 100 : Math.min(92, 92 * (1 - Math.pow(1 - Math.min(el / 1050, 1), 3)));
-      shown = Math.min(100, lerp(shown, target, ready ? 0.25 : 0.12));
-      const n = Math.round(shown);
-      numEl.textContent = pad(n, 2);
-      const on = Math.round((n / 100) * LEDS);
+      const real = (imgs.length ? loadedN / imgs.length : 1) * (fontsIn ? 1 : 0.92);
+      if (real >= 1 && el > 700) ready = true;
+      // the bar answers to the network: a floor eases it off zero, real
+      // progress carries it, and only `ready` may fill the rack
+      const target = ready ? 100 : Math.min(99, Math.max(real * 100, 12 * Math.min(el / 700, 1)));
+      shown = Math.min(100, lerp(shown, target, ready ? 0.25 : 0.14));
+      const on = Math.round((shown / 100) * LEDS);
       leds.forEach((l, i) => l.classList.toggle("on", i < on));
-      if (n >= 100 && el > 900) {
-        clearInterval(lineTimer);
-        lineEl.textContent = lines[lines.length - 1];
-        setTimeout(() => {
-          boot.classList.add("is-done");
-          sessionStorage.setItem("remiBoot", "1");
-          initReveals();
-          setTimeout(() => boot.classList.add("is-gone"), 800);
-        }, 140);
+      if (shown >= 99.6 && el > 700) {
+        boot.classList.add("is-done");
+        sessionStorage.setItem("remiBoot", "1");
+        initReveals();
+        setTimeout(() => boot.classList.add("is-gone"), 800);
         return;
       }
       requestAnimationFrame(tick);
@@ -153,9 +170,9 @@
   // Camden / Portland / Katahdin — keyed to each head's own colour: Camden's
   // cool seafoam, Portland's gold-on-black, Katahdin's warm carving. The hero
   // reel washes the page with whichever head is live.
-  const AMP_BGS   = ["#05090b", "#0b0906", "#0b0705"];
-  const CARD_BGS  = ["#0d0a04", "#0e0704", "#04100f", "#060a12", "#0e0605"]; // drive/chorus/delay/reverb/sauce
-  const BASE_BG   = "#050506";
+  const AMP_BGS   = ["#edf6f4", "#f6f2e9", "#f6efe8"];
+  const CARD_BGS  = ["#f7f2e4", "#f7efe7", "#e9f4f3", "#eaf1f8", "#f7edea"]; // drive/chorus/delay/reverb/sauce
+  const BASE_BG   = "#f6f8fa";
 
   const M = { vh: 0, docH: 1, hero: 0,
               boardTop: 0, boardTravel: 1, boardDist: 0,
@@ -411,7 +428,7 @@
        played span again in the brand light under a clip rect. That gives a
        pixel-exact progress edge without a second DOM layer, and the whole
        redraw is ~160 fillRects — cheap enough to run on the shared rAF. */
-    const IDLE = "rgba(233,238,244,.20)";
+    const IDLE = "rgba(11,16,24,.18)";
 
     function sizeWave(c) {
       const r = c.wave.getBoundingClientRect();
@@ -423,12 +440,12 @@
       c.cv.height = Math.round(r.height * dpr);
       c.ctx = c.cv.getContext("2d");
       c.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // white light at the centre line, falling off toward the peaks — the same
-      // gradient the hero headline is filled with
+      // deepest blue at the centre line, easing to ice toward the peaks — the
+      // same dive the hero headline gradient makes
       c.grad = c.ctx.createLinearGradient(0, 0, 0, c.h);
-      c.grad.addColorStop(0,   "#8fb4c6");
-      c.grad.addColorStop(.5,  "#ffffff");
-      c.grad.addColorStop(1,   "#8fb4c6");
+      c.grad.addColorStop(0,   "#1b84ad");
+      c.grad.addColorStop(.5,  "#0b5273");
+      c.grad.addColorStop(1,   "#1b84ad");
       c.drawnP = -1;
       return true;
     }
@@ -454,7 +471,7 @@
       const n   = clamp(Math.round(c.w / 3), 24, c.peaks.length);
       const cw  = c.w / n, mid = c.h / 2;
       // centre rule — keeps the quiet passages from reading as a gap in the row
-      ctx.fillStyle = "rgba(255,255,255,.06)";
+      ctx.fillStyle = "rgba(11,16,24,.08)";
       ctx.fillRect(0, mid - .5, c.w, 1);
       bars(c, ctx, IDLE, n, mid, cw);
       const played = p * c.w;
@@ -598,8 +615,8 @@
       sctx = spec.getContext("2d");
       sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       sgrad = sctx.createLinearGradient(0, sh, 0, 0);
-      sgrad.addColorStop(0, "rgba(143,180,198,.55)");
-      sgrad.addColorStop(1, "#ffffff");
+      sgrad.addColorStop(0, "rgba(27,132,173,.45)");
+      sgrad.addColorStop(1, "#0b5273");
     }
 
     let wired = false;
@@ -848,8 +865,8 @@
       px = nx; py = ny; hadP = true;
     }, { passive: true });
 
-    // no amber anywhere — the plucked middle string glows ice like the plugin
-    const COLORS = ["rgba(240,237,230,.16)", "rgba(159,216,232,.4)", "rgba(240,237,230,.12)"];
+    // ink hairlines on paper — the plucked middle string runs the plugin blue
+    const COLORS = ["rgba(11,16,24,.12)", "rgba(27,132,173,.4)", "rgba(11,16,24,.09)"];
     function step(t) {
       ctx.clearRect(0, 0, w, h);
       for (let s = 0; s < ROWS.length; s++) {
