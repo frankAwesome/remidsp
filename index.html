@@ -146,6 +146,7 @@
     <a href="#sound" data-scramble>Listen</a>
     <a href="#board" data-scramble>Pedalboard</a>
     <a href="#studio" data-scramble>Studio</a>
+    <a href="#free" data-scramble>Free</a>
   </nav>
   <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download</span></a>
 </header>
@@ -161,18 +162,21 @@
   <div class="rig__glow" aria-hidden="true"></div>
 
   <div class="hero__inner rig__copy">
-    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;MAINE&nbsp;·&nbsp;ALL-IN-ONE&nbsp;GUITAR&nbsp;RIG</p>
+    <p class="hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;PRESENTS&nbsp;·&nbsp;THE&nbsp;ALL-IN-ONE&nbsp;GUITAR&nbsp;RIG</p>
     <h1 class="hero__title" data-reveal-lines>
-      <span class="line"><span data-reveal-line style="--d:.05s">Three amps.</span></span>
-      <span class="line"><span data-reveal-line class="hero__free" style="--d:.14s">One window.</span></span>
+      <!-- the reveal transform rides the middle span: transforming the
+           gradient-clipped element itself makes Chromium composite it and
+           paint the background-clip:text gradient as a solid box -->
+      <span class="line"><span data-reveal-line style="--d:.05s"><span class="hero__mast">Maine</span></span></span>
+      <span class="line"><span data-reveal-line class="hero__sub" style="--d:.18s">Three amps&nbsp;·&nbsp;One window&nbsp;·&nbsp;The whole rig</span></span>
     </h1>
-    <div class="hero__cta" data-reveal style="--d:.3s">
+    <div class="hero__cta" data-reveal style="--d:.32s">
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
-        <span>Download</span>
+        <span>Download&nbsp;—&nbsp;Free</span>
       </a>
       <span class="hero__formats mono">VST3&nbsp;·&nbsp;AU&nbsp;·&nbsp;AAX&nbsp;·&nbsp;STANDALONE</span>
     </div>
-    <p class="hero__note mono" data-reveal style="--d:.4s">NO ACCOUNT REQUIRED</p>
+    <p class="hero__note mono" data-reveal style="--d:.42s">FULL&nbsp;VERSION&nbsp;·&nbsp;NO&nbsp;ACCOUNT&nbsp;·&nbsp;NO&nbsp;ILOK</p>
   </div>
 
   <div class="rig__stage" id="rig" data-card>
@@ -216,6 +220,24 @@
       <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
   </div>
+</section>
+
+<!-- ░░ THE CREED — the part the others put in the fine print ░░
+     Unnumbered on purpose (like the marquee): it is a declaration, not a
+     chapter. The LED tallies reuse the brand's one light — no second hue. -->
+<section class="creed" id="free" data-bg="#050507">
+  <p class="creed__kicker mono" data-reveal>THE&nbsp;PART&nbsp;THE&nbsp;OTHERS&nbsp;PUT&nbsp;IN&nbsp;THE&nbsp;FINE&nbsp;PRINT</p>
+  <h2 class="creed__title" data-reveal style="--d:.06s">The full version.<br><span class="creed__lit">Free. No account.</span></h2>
+  <p class="creed__sub" data-reveal style="--d:.14s">No iLok. No per-amp upsell. No trial timer counting down in the corner.
+     Download it, plug in, keep it — every amp, every pedal, every format.</p>
+  <ul class="creed__stats" data-reveal style="--d:.2s">
+    <li><span class="led">3</span><i>AMPS</i></li>
+    <li><span class="led">6</span><i>VOICES</i></li>
+    <li><span class="led">7</span><i>CAPTURES</i></li>
+    <li><span class="led">10</span><i>MODULES</i></li>
+    <li><span class="led">0</span><i>ACCOUNTS</i></li>
+    <li><span class="led">0</span><i>DOLLARS</i></li>
+  </ul>
 </section>
 
 <!-- ░░ 01 · THE PLUGIN — one product, so show the product ░░ -->
@@ -672,6 +694,54 @@
     <div class="specrow"><dt>Formats</dt><dd>macOS: standalone, VST3, Audio Unit and AAX for Pro&nbsp;Tools. Windows: standalone and VST3. One installer per platform.</dd></div>
     <div class="specrow"><dt>Sample rates</dt><dd>44.1, 48, 88.2 and 96&nbsp;kHz. Captures resample to their trained rate; every effect follows the host. No 48k lock-in.</dd></div>
   </dl>
+</section>
+
+<!-- ░░ THE FINE PRINT — Maine against the way this market usually works ░░
+     Unnumbered, like the creed. No competitor is named: "the usual suite" is
+     the category, and every claim in its column is standard practice across
+     the big modelling suites (per-plugin pricing, accounts, activation). -->
+<section class="versus" id="versus" data-bg="#07070b">
+  <header class="shead" data-reveal>
+    <p class="kicker">The Fine Print</p>
+    <span class="shead__meta mono">READ&nbsp;THEIRS&nbsp;·&nbsp;THEN&nbsp;OURS</span>
+  </header>
+  <div class="versus__head">
+    <h2 data-reveal>Ours is short.</h2>
+    <p class="versus__sub" data-reveal style="--d:.08s">Every big modelling suite ships the same fine print —
+       an account, an activation, an amp at a time. Maine ships without one.</p>
+  </div>
+  <div class="versus__table" data-reveal style="--d:.14s" role="table" aria-label="Maine compared with the usual modelling suite">
+    <div class="versus__row versus__row--head" role="row">
+      <span role="columnheader" class="vh">Category</span>
+      <span role="columnheader" class="versus__brand">Maine</span>
+      <span role="columnheader" class="versus__them mono">THE&nbsp;USUAL&nbsp;SUITE</span>
+    </div>
+    <div class="versus__row" role="row">
+      <span class="versus__cat mono" role="rowheader">PRICE</span>
+      <span class="versus__us" role="cell">Free — the full version</span>
+      <span class="versus__them" role="cell">€99–€299, per plugin</span>
+    </div>
+    <div class="versus__row" role="row">
+      <span class="versus__cat mono" role="rowheader">ACCOUNT</span>
+      <span class="versus__us" role="cell">None</span>
+      <span class="versus__them" role="cell">Required to install</span>
+    </div>
+    <div class="versus__row" role="row">
+      <span class="versus__cat mono" role="rowheader">COPY&nbsp;PROTECTION</span>
+      <span class="versus__us" role="cell">None</span>
+      <span class="versus__them" role="cell">iLok or online activation</span>
+    </div>
+    <div class="versus__row" role="row">
+      <span class="versus__cat mono" role="rowheader">WHAT&nbsp;YOU&nbsp;GET</span>
+      <span class="versus__us" role="cell">The whole rig — amps, board, studio</span>
+      <span class="versus__them" role="cell">One amp pack at a time</span>
+    </div>
+    <div class="versus__row" role="row">
+      <span class="versus__cat mono" role="rowheader">THE&nbsp;TRIAL</span>
+      <span class="versus__us" role="cell">The product is the trial</span>
+      <span class="versus__them" role="cell">14 days, then the counter</span>
+    </div>
+  </div>
 </section>
 
 <!-- ░░ 08 · DOWNLOAD ░░ -->
