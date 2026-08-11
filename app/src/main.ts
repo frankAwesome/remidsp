@@ -257,7 +257,11 @@ function facePanel(def: FaceDef, onParam?: string, foot = true): HTMLElement {
 function buildHeader(): HTMLElement {
   const h = el('header', 'hdr');
 
-  const logo = el('div', 'hdr__logo');
+  // The mark is the way home: every top-left REMI DSP logo on the site
+  // returns to the landing page, and the rig's header is no exception.
+  const logo = el('a', 'hdr__logo') as HTMLAnchorElement;
+  logo.href = '/';
+  logo.setAttribute('aria-label', 'REMI DSP — back to remidsp.com');
   logo.innerHTML = `<img src="/assets/ui/brand_logo.png" alt="R">
     <div class="hdr__word">Remi DSP<small>Maine · Web</small></div>`;
   h.appendChild(logo);

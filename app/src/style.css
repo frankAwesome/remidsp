@@ -116,7 +116,8 @@ select{font:inherit}
   padding:.7rem .9rem;margin-top:.8rem;
   background:linear-gradient(180deg,#101014,#08080b);
   border:1px solid var(--line);border-bottom-color:var(--line-2)}
-.hdr__logo{display:flex;align-items:center;gap:.6rem;user-select:none}
+.hdr__logo{display:flex;align-items:center;gap:.6rem;user-select:none;
+  text-decoration:none;color:inherit;cursor:pointer}
 .hdr__logo img{height:40px;width:auto;filter:drop-shadow(0 1px 5px rgba(0,0,0,.6))}
 .hdr__word{font-family:var(--font-display);font-weight:600;font-size:.85rem;letter-spacing:.34em;
   text-transform:uppercase;color:var(--text)}
@@ -637,7 +638,8 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   transition:background .4s,border-color .4s,padding .4s var(--ease)}
 .gate__bar.is-stuck{background:rgba(246,248,250,.82);backdrop-filter:blur(12px);
   border-color:var(--line);padding-block:.55rem}
-.gate__brand{display:inline-flex;align-items:center;gap:.6rem;user-select:none}
+.gate__brand{display:inline-flex;align-items:center;gap:.6rem;user-select:none;
+  text-decoration:none;color:inherit;cursor:pointer}
 /* the mark ships white-on-transparent; invert(1) turns it to ink for paper */
 .gate__brand img{height:30px;width:auto;
   filter:invert(1) drop-shadow(0 1px 4px rgba(15,45,68,.18))}
