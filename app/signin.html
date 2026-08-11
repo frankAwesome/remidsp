@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Signing in — REMI DSP · Maine</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <!--
+    This page exists for one reason: it is NOT cross-origin isolated.
+
+    The rig needs COEP require-corp, because the NAM engine is a pthread /
+    SharedArrayBuffer wasm build. But COEP require-corp blocks every document
+    in the frame tree that does not itself carry a compatible COEP header —
+    same-origin ones included — and Firebase's sign-in helper at
+    /__/auth/iframe carries none. Hosting serves that path from its reserved
+    namespace, so no header rule of ours can add one. Inside the rig page the
+    helper is therefore unloadable, and signInWithRedirect can never read its
+    result back.
+
+    So the handshake happens here instead, with isolation switched off. The
+    session Firebase writes lands in localStorage, which is shared with the
+    rig page on the same origin, so it picks the player up on the way back
+    without anything being passed between them.
+  -->
+  <style>
+    /* daylight studio — paper, ink, the plugin's blue (matches src/style.css) */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{background:#f6f8fa;color:#131a24;display:grid;place-items:center;
+      font-family:"Space Grotesk",system-ui,sans-serif;padding:2rem;text-align:center}
+    .wrap{display:flex;flex-direction:column;align-items:center;gap:1rem;max-width:430px}
+    /* the mark ships white-on-transparent; invert(1) turns it to ink */
+    img{height:70px;filter:invert(1);opacity:.92}
+    h1{font-size:.95rem;font-weight:600;letter-spacing:.02em;color:#0b1018}
+    p{font-size:.78rem;color:#57616e;line-height:1.65}
+    .spin{width:22px;height:22px;border:2px solid rgba(11,16,24,.15);
+      border-top-color:#1b84ad;border-radius:50%;animation:s .8s linear infinite}
+    @keyframes s{to{transform:rotate(360deg)}}
+    a{display:inline-block;margin-top:.3rem;padding:.6rem 1.3rem;background:#0b1018;color:#fff;
+      text-decoration:none;font-size:.66rem;font-weight:700;letter-spacing:.2em}
+    .bad h1{color:#a66e1a}
+    code{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:#8b94a1;word-break:break-all}
+  </style>
+</head>
+<body>
+  <div class="wrap" id="w">
+    <img src="/assets/ui/brand_logo.png" alt="REMI DSP" />
+    <div class="spin" id="spin"></div>
+    <h1 id="head">Taking you to your provider…</h1>
+    <p id="body">This step runs on its own page so the rig can keep the audio engine's
+      cross-origin isolation. You will land straight back on the rig.</p>
+  </div>
+  <script type="module" src="/src/signin.ts"></script>
+</body>
+</html>

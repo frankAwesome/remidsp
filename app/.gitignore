@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+
+# Secrets. Nothing in here is ever committed.
+#
+# .dev.vars is Wrangler's local secret file for `wrangler dev` — it holds the
+# Cloudflare API token, the R2 keys and the Firebase project id used by the
+# worker. Its committed twin is .dev.vars.example, which holds NAMES ONLY.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+!.env.example
+# Build-time public config, not a secret — it is the media origin that appears
+# in every image URL. It has to ship with the repo or a fresh clone builds a
+# bundle with uploads silently disabled.
+!.env.production
+*.pem
+*.key
+!public/**/*.key
+
+# Wrangler working state
+.wrangler/
+worker/node_modules/
