@@ -72,6 +72,7 @@
 /* author display rules (display:flex etc.) must never beat the hidden
    attribute — the RIG|FEED view switch and every hidden panel rely on it */
 [hidden]{display:none !important}
+html{overflow-x:clip}
 html,body{height:100%}
 body{
   font-family:var(--font-ui);
@@ -596,7 +597,7 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
    behind it, the active tab's underline, the voice separators — reads off
    those two properties, so switching heads relights the section instead of
    restyling it. */
-.gateway{position:relative;z-index:400;background:var(--paper);
+.gateway{position:relative;z-index:400;background:var(--paper);min-height:100svh;
   transition:opacity .6s,visibility .6s;
   --gpad:clamp(1.15rem,4.5vw,3.2rem);
   --gmaxw:1240px}
@@ -721,7 +722,7 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .gate-hero__lede b{color:var(--text);font-weight:600}
 .gate-hero .gateway__doors{justify-content:flex-start;margin-bottom:1.5rem}
 .gate-hero .gateway__load{margin-bottom:.4rem}
-.gate-hero .gateway__devices{width:min(440px,100%)}
+.gate-hero .gateway__devices{width:100%}
 .gate-hero .gateway__devices>summary{text-align:left;padding-inline:0}
 
 .gate-hero__cue{position:absolute;left:50%;bottom:1.1rem;transform:translateX(-50%);z-index:2;
@@ -805,7 +806,7 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   .gate-hero__copy{max-width:none}
   /* drop the right-edge bleed: stacked, it just shoves the head off centre */
   .gate-rig{justify-self:center;max-width:620px;margin-right:0;margin-top:1rem}
-  .gate-hero__glow{top:66%;right:50%;transform:translate(50%,-50%);width:min(125vw,740px)}
+  .gate-hero__glow{top:66%;right:50%;transform:translate(50%,-50%);width:min(96vw,740px)}
   .gate-hero__cue{display:none}
 }
 
@@ -1222,9 +1223,10 @@ a.feed-card__title:focus-visible{outline:2px solid var(--tone,#9fd8e8);outline-o
 .insw__btn:disabled{opacity:.45;cursor:wait}
 
 /* ── device picker ──────────────────────────────────────────────────────── */
-.devices{width:min(720px,88vw);display:flex;flex-direction:column;gap:.5rem}
-.devices__ask{display:flex;flex-direction:column;align-items:center;gap:.5rem;text-align:center}
-.devices__ask span{font-size:.64rem;color:var(--muted-2);max-width:430px;line-height:1.6}
+.devices{width:100%;display:flex;flex-direction:column;gap:.5rem}
+.devices__ask{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;
+  gap:.6rem 1rem;text-align:left}
+.devices__ask span{flex:1 1 16rem;min-width:0;font-size:.64rem;color:var(--muted-2);line-height:1.6}
 .devices__ask--bad span{color:#a66e1a;max-width:430px}
 .devices__grant{font-family:var(--font-ui);font-weight:700;font-size:.62rem;letter-spacing:.2em;
   padding:.6rem 1.3rem;border:1px solid var(--line-2);color:var(--ink);cursor:pointer;
