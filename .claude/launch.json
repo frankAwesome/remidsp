@@ -1,7 +1,17 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "site", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "8731"], "port": 8731 },
-    { "name": "site-alt", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "8732"], "port": 8732 }
+    {
+      "name": "one-site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "serve"],
+      "port": 8790
+    },
+    {
+      "name": "rig-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5199
+    }
   ]
 }

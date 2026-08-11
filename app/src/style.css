@@ -2104,3 +2104,9 @@ span.dm-thread__ava--blank{display:grid;place-items:center;background:var(--surf
   .view-anim .landing:not([hidden]){animation:viewin .3s var(--ease)}
 }
 @keyframes viewin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* the way back to the one landing — quiet, under the boot status */
+.gate-hero__home{margin-top:1.6rem}
+.gate-hero__home a{color:var(--muted-2);font-size:.58rem;letter-spacing:.22em;text-decoration:none;
+  border-bottom:1px solid var(--line-2);transition:color .25s,border-color .25s}
+.gate-hero__home a:hover{color:var(--accent-hi);border-color:rgba(27,132,173,.5)}
