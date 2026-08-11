@@ -186,6 +186,13 @@ em{font-style:normal;color:var(--gold-hi)}
 .btn--amber:hover::after{border-color:rgba(27,132,173,.55);transform:translate(5px,5px)}
 .btn--ghost{background:rgba(11,16,24,.03);color:var(--ink);border-color:var(--line-2)}
 .btn--ghost:hover{background:rgba(11,16,24,.07);border-color:rgba(27,132,173,.5)}
+/* the live button carries the brand's one lamp — a point of the light, lit */
+.btn--live .btn__lamp{width:7px;height:7px;flex:0 0 auto;background:var(--gold);
+  box-shadow:0 0 10px rgba(27,132,173,.8);animation:lamp 2.2s ease-in-out infinite}
+/* white slab for dark ground (the download section's live strip) */
+.btn--paper{background:#fff;color:var(--ink)}
+.btn--paper:hover{background:var(--ice);box-shadow:0 14px 40px -14px rgba(159,216,232,.6)}
+.btn--paper:hover::after{border-color:rgba(159,216,232,.65);transform:translate(5px,5px)}
 .btn:active{transform:scale(.97)}
 
 /* ════════ logo lockup (exact app wordmark) ════════ */
@@ -377,6 +384,105 @@ em{font-style:normal;color:var(--gold-hi)}
 .marquee:hover .marquee__track{animation-play-state:paused}
 @keyframes marq{to{transform:translateX(-100%)}}
 
+/* ════════ THE LIVE RIG — the demo doors ════════
+   Unnumbered band directly under the hero: the one thing no other amp suite
+   can say — press a door and the rig is playing before the pitch finishes.
+   The section owns the accent's own pastel field (the live rig IS the
+   plugin's light), and the shot wears a drawn browser chrome so "runs in a
+   tab" lands without a word being read. */
+.live{position:relative;isolation:isolate;max-width:calc(var(--maxw) + 4vw);margin:0 auto;
+  padding:clamp(4rem,8vw,6.5rem) var(--pad) clamp(3.5rem,7vw,5.5rem)}
+.live::before{content:"";position:absolute;z-index:-1;left:50%;
+  top:clamp(1rem,2.6vw,2.6rem);bottom:clamp(1rem,2.6vw,2.6rem);width:114vw;
+  transform:translateX(-50%) rotate(2.6deg);
+  background:linear-gradient(150deg,#cde8f5 0%,#e7f4fa 100%);
+  border-top:1px solid rgba(27,132,173,.38);
+  border-bottom:1px solid rgba(27,132,173,.38)}
+.live__bar{display:flex;align-items:center;gap:1.4rem;
+  border-top:1px solid var(--line-3);position:relative;
+  padding-top:1.15rem;margin-bottom:clamp(1.8rem,3.6vw,2.6rem)}
+.live__bar::before{content:"";position:absolute;left:0;right:0;top:4px;height:1px;background:var(--line)}
+.live__bar .badge{margin-bottom:0}
+.live__barmeta{margin-left:auto;font-size:.6rem;letter-spacing:.22em;color:var(--muted-2);text-align:right}
+.live__head{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.5rem,4vw,3rem);
+  align-items:start;margin-bottom:clamp(2.4rem,4.4vw,3.6rem)}
+/* glow rides the h2, never the clipped span — see .hero__mast */
+.live__head h2{filter:drop-shadow(0 10px 36px rgba(27,132,173,.22))}
+.live__lit{background:linear-gradient(180deg,var(--gold),var(--gold-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* the two doors — the web gate's own pair, spoken in this page's slabs */
+.live__doors{display:flex;flex-wrap:wrap;gap:1rem;margin-top:1.5rem}
+.door{position:relative;display:flex;flex-direction:column;gap:.4rem;
+  padding:1.05rem 1.5rem 1rem;min-width:14.5rem;border:1px solid transparent;
+  transition:background .25s,color .25s,border-color .25s,box-shadow .3s}
+.door::after{content:"";position:absolute;inset:0;border:1px solid transparent;pointer-events:none;
+  transition:transform .3s var(--ease),border-color .3s}
+.door__main{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
+  font-size:1.45rem;line-height:1;letter-spacing:.04em}
+.door__sub{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.18em;color:var(--muted)}
+.door--demo{background:var(--ink);color:#fff}
+.door--demo .door__sub{color:var(--ice)}
+.door--demo:hover{background:var(--gold-deep);box-shadow:0 14px 40px -14px rgba(11,82,115,.55)}
+.door--demo:hover::after{border-color:rgba(27,132,173,.55);transform:translate(5px,5px)}
+.door--plug{background:rgba(255,255,255,.72);color:var(--ink);border-color:var(--line-2)}
+.door--plug:hover{background:#fff;border-color:rgba(27,132,173,.5)}
+.door:active{transform:scale(.97)}
+
+/* the shot, wearing a drawn browser: dots, address bar, live lamp */
+.live__stage{position:relative;max-width:1040px;margin-inline:auto}
+.browser{position:relative;overflow:hidden;
+  border:1px solid rgba(11,16,24,.18);background:#fff;
+  box-shadow:var(--shadow-deep);will-change:transform}
+.browser::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;z-index:3;
+  background:linear-gradient(90deg,transparent,rgba(159,216,232,.9),transparent)}
+.browser__bar{position:relative;z-index:2;display:flex;align-items:center;gap:.95rem;
+  padding:.6rem .95rem;border-bottom:1px solid var(--line-2);
+  background:linear-gradient(180deg,#fdfeff,#f2f6f9)}
+.browser__dots{display:flex;gap:5px;flex:0 0 auto}
+.browser__dots i{width:9px;height:9px;border-radius:50%;
+  background:rgba(11,16,24,.12);border:1px solid rgba(11,16,24,.12)}
+.browser__url{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  padding:.32rem .85rem;border:1px solid var(--line-2);background:var(--paper);
+  font-size:.62rem;letter-spacing:.08em;color:var(--muted)}
+.browser__url::before{content:"https://";color:var(--gold-hi)}
+.browser__lamp{margin-left:auto;display:inline-flex;align-items:center;gap:.45rem;flex:0 0 auto;
+  font-size:.52rem;letter-spacing:.24em;color:var(--gold)}
+.browser__lamp i{width:7px;height:7px;background:var(--gold);
+  box-shadow:0 0 10px rgba(27,132,173,.8);animation:lamp 2.2s ease-in-out infinite}
+.browser img{width:100%;display:block}
+.live__caption{margin:1.2rem auto 0;max-width:1040px;text-align:right;
+  color:var(--muted-2);font-size:.62rem}
+.live__caption a{color:var(--gold-hi);border-bottom:1px solid rgba(27,132,173,.4);
+  transition:color .25s,border-color .25s}
+.live__caption a:hover{color:var(--gold-deep);border-color:var(--gold-deep)}
+
+/* the numbers that close the argument — the creed's rack, one size down */
+.live__tally{list-style:none;margin-top:clamp(2rem,4vw,3rem);
+  display:flex;flex-wrap:wrap;justify-content:center;
+  border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
+  background:linear-gradient(180deg,rgba(255,255,255,.55),transparent)}
+.live__tally li{display:flex;flex-direction:column;align-items:center;gap:.5rem;
+  padding:1.3rem clamp(1.1rem,3vw,2.4rem);position:relative}
+.live__tally li + li::before{content:"";position:absolute;left:0;top:22%;bottom:22%;width:1px;
+  background:var(--line)}
+.live__tally .led{font-size:clamp(1.7rem,3.4vw,2.6rem);color:var(--gold);
+  text-shadow:0 0 22px rgba(159,216,232,.9)}
+.live__tally i{font-family:var(--font-mono);font-style:normal;font-size:.58rem;
+  letter-spacing:.28em;color:var(--muted-2)}
+
+@media (max-width:880px){
+  .live__head{grid-template-columns:1fr}
+  .live__barmeta,.browser__lamp{display:none}
+}
+@media (max-width:720px){
+  .live__tally li{padding:1rem .9rem;flex:1 1 40%}
+  .live__tally li:nth-child(3)::before{display:none} /* row break at 2-up */
+}
+@media (max-width:600px){
+  .door{flex:1 1 100%;align-items:center;text-align:center}
+}
+
 /* ════════ THE CREED — the fine print, said out loud ════════
    Centred declaration at poster scale, closed by a rack of LED tallies.
    The zeros are the point: they glow exactly as bright as the threes. */
@@ -390,6 +496,9 @@ em{font-style:normal;color:var(--gold-hi)}
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .creed__sub{color:var(--muted);font-size:clamp(1rem,1.5vw,1.16rem);max-width:44em;
   margin:0 auto clamp(2.4rem,5vw,3.6rem)}
+.creed__sub a{color:var(--gold-hi);border-bottom:1px solid rgba(27,132,173,.4);
+  transition:color .25s,border-color .25s}
+.creed__sub a:hover{color:var(--gold-deep);border-color:var(--gold-deep)}
 .creed__stats{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;
   border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);
   background:linear-gradient(180deg,rgba(255,255,255,.55),transparent)}
@@ -458,13 +567,13 @@ em{font-style:normal;color:var(--gold-hi)}
    second voice. Its rule opens with a tick of the light. */
 .showcase__head{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3rem);
   align-items:end;margin-bottom:clamp(2.4rem,4.4vw,3.6rem)}
-.showcase__lede,.sound__lede{position:relative;max-width:32em;padding:.2rem 0 .45rem 1.6rem;
+.showcase__lede,.sound__lede,.live__lede{position:relative;max-width:32em;padding:.2rem 0 .45rem 1.6rem;
   border-left:1px solid var(--line-2);
   display:flex;flex-direction:column;gap:.75rem}
-.showcase__lede::before,.sound__lede::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:2.6rem;
+.showcase__lede::before,.sound__lede::before,.live__lede::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:2.6rem;
   background:linear-gradient(180deg,var(--gold),var(--ice),transparent)}
-.showcase__lede p,.sound__lede p{color:var(--muted);font-size:.96rem;line-height:1.7}
-.showcase__lede p:first-child,.sound__lede p:first-child{color:var(--text)}
+.showcase__lede p,.sound__lede p,.live__lede p{color:var(--muted);font-size:.96rem;line-height:1.7}
+.showcase__lede p:first-child,.sound__lede p:first-child,.live__lede p:first-child{color:var(--text)}
 /* Both plugin-window shots sit at one width, one class of image. The window
    itself is dark — the one deep black on the page, framed like a print. */
 .showcase__stage{position:relative;max-width:1040px;margin-inline:auto}
@@ -1005,6 +1114,20 @@ em{font-style:normal;color:var(--gold-hi)}
   color:var(--muted);background:rgba(201,132,32,.08);border:1px solid rgba(166,110,26,.35)}
 .dcard__warn strong{color:#8a5c12;font-weight:600}
 .dcard--box{border-color:rgba(27,132,173,.4);background:linear-gradient(180deg,#f2f9fc,var(--card))}
+/* the third road — no installer at all. An ink slab with the ice hairline,
+   so the live rig reads as an equal citizen of the download section. */
+.download__live{position:relative;z-index:1;margin-top:1.5rem;
+  display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;
+  padding:1.8rem 2rem;clip-path:var(--notch);
+  background:linear-gradient(150deg,#10151d,#0b1018);
+  box-shadow:var(--shadow-deep)}
+.download__live::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(159,216,232,.8),transparent)}
+.download__livecopy h3{color:#fff;font-size:1.55rem;margin-bottom:.4rem}
+.download__livecopy p{color:#98a1ac;font-size:.94rem;max-width:52ch}
+.download__live .btn{flex:0 0 auto}
+@media (max-width:720px){.download__live{padding:1.5rem var(--pad)}
+  .download__live .btn{width:100%;justify-content:center}}
 .dcard__list{list-style:none;display:flex;flex-direction:column;gap:.62rem;margin-top:.2rem}
 .dcard__list li{position:relative;padding-left:1.7rem;color:var(--text);font-size:.94rem}
 .dcard__list li::before{content:"";position:absolute;left:0;top:.18em;width:1.05rem;height:1.05rem;
@@ -1071,6 +1194,7 @@ em{font-style:normal;color:var(--gold-hi)}
   [data-reveal],[data-reveal-line]{opacity:1!important;transform:none!important;transition:none!important}
   [data-reveal-wipe] img{clip-path:none!important;transition:none!important}
   .marquee__track,.hero__scrollcue i,.badge::before{animation:none!important}
+  .browser__lamp i,.btn--live .btn__lamp{animation:none!important}
   .hero__strings{display:none}
   .rig__amp{transition:none!important;transform:none!important}
   .rig__glow,.rig__voiceset span{transition:none!important}

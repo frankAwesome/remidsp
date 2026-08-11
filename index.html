@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Maine, the all-in-one guitar rig</title>
-<meta name="description" content="Maine — REMI DSP's all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Standalone, VST3, AU & AAX on macOS; standalone & VST3 on Windows. No account required." />
+<meta name="description" content="Maine — REMI DSP's all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Standalone, VST3, AU & AAX on macOS; standalone & VST3 on Windows. Or play it live in your browser — no install, no guitar needed." />
 <!-- Canonical earns its keep here: this page is reachable as remidsp.com/,
      remidsp.com/index.html, the retired /guitar.html (which now redirects
      here), and (via GitHub's redirect) the old project URL. Without it those
@@ -14,7 +14,7 @@
 <meta property="og:locale" content="en_US" />
 <meta property="og:url" content="https://remidsp.com/" />
 <meta property="og:title" content="REMI DSP — Maine, the all-in-one guitar rig" />
-<meta property="og:description" content="Three amplifiers captured from the real things. A pedalboard that reorders itself. A studio strip that finishes the job." />
+<meta property="og:description" content="Three amplifiers captured from the real things. A pedalboard that reorders itself. A studio strip that finishes the job. And a live version that plays in your browser — right now." />
 <meta property="og:type" content="website" />
 <!-- the head renders carry alpha; social cards must be opaque, so point at the
      pre-flattened 1200x630 card rather than a plugin asset. Built from
@@ -81,8 +81,21 @@
         "Console EQ and FET compressor studio strip",
         "Strobe tuner accurate to a hundredth of a cent",
         "Standalone, VST3, Audio Unit and AAX on macOS; standalone and VST3 on Windows",
-        "Runs at 44.1–96 kHz"
+        "Runs at 44.1–96 kHz",
+        "Live web version — the same rig playable in a browser tab"
       ],
+      "publisher": { "@id": "https://remidsp.com/#org" }
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://remidsp.com/#maine-live",
+      "name": "Maine Live",
+      "url": "https://remidsp-maine.web.app/",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires WebAssembly and AudioWorklet; Chrome or Edge recommended",
+      "isAccessibleForFree": true,
+      "description": "The Maine guitar rig running live in a browser tab: three captured amplifiers, a dual-engine delay, a stereo shimmer reverb, a multitrack looper and a studio strip. Plays any NAM capture at ~2.7 ms added latency. Demo it with no guitar, or plug in and play — no install, no account.",
       "publisher": { "@id": "https://remidsp.com/#org" }
     },
     {
@@ -155,6 +168,7 @@
     <span class="logo__word">REMI DSP</span>
   </a>
   <nav class="nav__links" aria-label="Primary">
+    <a href="#live" data-scramble>Play&nbsp;Live</a>
     <a href="#amps" data-scramble>Amps</a>
     <a href="#sound" data-scramble>Listen</a>
     <a href="#board" data-scramble>Pedalboard</a>
@@ -187,9 +201,12 @@
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
         <span>Download&nbsp;—&nbsp;Free</span>
       </a>
-      <span class="hero__formats mono">VST3 · AU · AAX · STANDALONE</span>
+      <a href="#live" class="btn btn--ghost btn--lg btn--live" data-magnetic>
+        <span class="btn__lamp" aria-hidden="true"></span><span>Play&nbsp;It&nbsp;Live</span>
+      </a>
+      <span class="hero__formats mono">VST3 · AU · AAX · STANDALONE · BROWSER</span>
     </div>
-    <p class="hero__note mono" data-reveal style="--d:.42s">FULL&nbsp;VERSION · NO&nbsp;ACCOUNT · NO&nbsp;ILOK</p>
+    <p class="hero__note mono" data-reveal style="--d:.42s">FULL&nbsp;VERSION · NO&nbsp;ACCOUNT · NO&nbsp;ILOK · DEMO&nbsp;IT&nbsp;WITH&nbsp;NO&nbsp;GUITAR</p>
   </div>
 
   <div class="rig__stage" id="rig" data-card>
@@ -227,12 +244,76 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Camden</span><i>✦</i><span>Portland</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
   </div>
+</section>
+
+<!-- ░░ THE LIVE RIG — the proof, before the pitch ░░
+     Unnumbered like the creed: a declaration, not a chapter. The whole rig
+     runs live at remidsp-maine.web.app, and the LISTEN FIRST door needs no
+     guitar, no mic and no account — so this band sits directly under the
+     hero, where "try it right now" earns the most. The shot wears a drawn
+     browser chrome (tab dots + URL bar) so "it runs in a tab" is read
+     before a single word is. Screenshot of the web rig itself, not a mock. -->
+<section class="live" id="live" data-bg="#e9f3f8">
+  <header class="live__bar" data-reveal>
+    <span class="badge mono">LIVE&nbsp;NOW</span>
+    <p class="kicker">The Live Rig</p>
+    <span class="live__barmeta mono">REMIDSP-MAINE.WEB.APP&nbsp;·&nbsp;CHROME&nbsp;/&nbsp;EDGE</span>
+  </header>
+
+  <div class="live__head">
+    <h2 data-reveal>Demo it right now.<br><span class="live__lit">No guitar needed.</span></h2>
+    <div class="live__lede" data-reveal style="--d:.08s">
+      <p>The whole rig also runs <strong>live in a browser tab</strong> — the same
+         captured heads, the dual-engine delay, the shimmer reverb, a multitrack
+         looper — nothing to download, nobody to sign up to.</p>
+      <p>Press <strong>Listen First</strong> and a demo track plays through the
+         real rig: turn any knob and you'll hear it. Guitar plugged in? Take the
+         other door — ~2.7&nbsp;ms added, whichever you choose.</p>
+      <div class="live__doors" data-reveal style="--d:.16s">
+        <a class="door door--demo" href="https://remidsp-maine.web.app/" target="_blank" rel="noopener"
+           data-placement="live" data-label="Live · Listen First">
+          <span class="door__main">Listen&nbsp;First</span>
+          <span class="door__sub">no guitar · no mic · no account</span>
+        </a>
+        <a class="door door--plug" href="https://remidsp-maine.web.app/" target="_blank" rel="noopener"
+           data-placement="live" data-label="Live · Plug In">
+          <span class="door__main">Plug&nbsp;In</span>
+          <span class="door__sub">my guitar is connected</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="live__stage" data-reveal style="--d:.1s">
+    <div class="browser" data-tilt>
+      <div class="browser__bar" aria-hidden="true">
+        <span class="browser__dots"><i></i><i></i><i></i></span>
+        <span class="browser__url mono">remidsp-maine.web.app</span>
+        <span class="browser__lamp mono"><i></i>LIVE</span>
+      </div>
+      <img src="assets/img/web-rig-daylight.webp" width="2580" height="1760"
+           alt="The Maine web rig running in a browser tab — the Portland head on the stage, the ten-module chain ribbon above and the demo transport live" />
+      <span class="showcase__glare" aria-hidden="true"></span>
+    </div>
+    <span class="bk bk--tl" aria-hidden="true"></span>
+    <span class="bk bk--tr" aria-hidden="true"></span>
+    <span class="bk bk--bl" aria-hidden="true"></span>
+    <span class="bk bk--br" aria-hidden="true"></span>
+  </div>
+  <p class="live__caption mono">A&nbsp;SCREENSHOT&nbsp;OF&nbsp;THE&nbsp;RUNNING&nbsp;WEB&nbsp;RIG&nbsp;—&nbsp;NOT&nbsp;A&nbsp;MOCKUP&nbsp;·&nbsp;<a href="https://remidsp-maine.web.app/" target="_blank" rel="noopener" data-placement="live" data-label="Live · caption link">OPEN&nbsp;IT&nbsp;→</a></p>
+
+  <ul class="live__tally" data-reveal>
+    <li><span class="led">0</span><i>INSTALLS</i></li>
+    <li><span class="led">0</span><i>ACCOUNTS</i></li>
+    <li><span class="led">2.7</span><i>MS ADDED</i></li>
+    <li><span class="led">3</span><i>AMPS LIVE</i></li>
+  </ul>
 </section>
 
 <!-- ░░ THE CREED — the part the others put in the fine print ░░
@@ -242,7 +323,8 @@
   <p class="creed__kicker mono" data-reveal>THE&nbsp;PART&nbsp;THE&nbsp;OTHERS&nbsp;PUT&nbsp;IN&nbsp;THE&nbsp;FINE&nbsp;PRINT</p>
   <h2 class="creed__title" data-reveal style="--d:.06s">The full version.<br><span class="creed__lit">Free. No account.</span></h2>
   <p class="creed__sub" data-reveal style="--d:.14s">No iLok. No per-amp upsell. No trial timer counting down in the corner.
-     Download it, plug in, keep it — every amp, every pedal, every format.</p>
+     Download it, plug in, keep it — every amp, every pedal, every format.
+     And if you can't install today, <a href="#live">the same rig plays live in your browser</a>.</p>
   <ul class="creed__stats" data-reveal style="--d:.2s">
     <li><span class="led">3</span><i>AMPS</i></li>
     <li><span class="led">6</span><i>VOICES</i></li>
@@ -789,6 +871,20 @@
       </ul>
     </article>
   </div>
+
+  <!-- the third road: no installer at all. An ink slab, so it reads as an
+       equal citizen of the download section rather than a footnote. -->
+  <aside class="download__live" data-reveal>
+    <div class="download__livecopy">
+      <h3>Nothing to install here?</h3>
+      <p>The live rig plays in a browser tab — same captures, same delay, same
+         reverb, plus a looper. Demo it with no guitar, or plug in and play.</p>
+    </div>
+    <a class="btn btn--paper" href="https://remidsp-maine.web.app/" target="_blank" rel="noopener"
+       data-magnetic data-placement="download" data-label="Download · Open the live rig">
+      <span>Open&nbsp;The&nbsp;Live&nbsp;Rig</span>
+    </a>
+  </aside>
 </section>
 
 </main>
@@ -803,9 +899,9 @@
     <p class="footer__tag">Maine — the all-in-one guitar rig.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Maine</h4><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#sound">Listen</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a></div>
-    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3, AU &amp; AAX</a><a href="#download">Standalone</a></div>
+    <div><h4>Maine</h4><a href="#live">Play live</a><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#sound">Listen</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a><a href="https://remidsp-maine.web.app/" target="_blank" rel="noopener" data-placement="footer">Maine Live (browser)</a></div>
+    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3, AU &amp; AAX</a><a href="#download">Standalone</a><a href="#live">Browser — live</a></div>
   </div>
   <p class="footer__legal">
     © <span id="year">2026</span> REMI DSP. Built for players and producers.<br>
