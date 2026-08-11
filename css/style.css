@@ -1149,6 +1149,8 @@ em{font-style:normal;color:var(--gold-hi)}
 .footer__cols a:hover{color:var(--ink)}
 .footer__legal{max-width:var(--maxw);margin:2rem auto 0;color:var(--muted-2);font-size:.85rem;line-height:1.8}
 .footer__fine{font-size:.78rem}
+.footer__fine a{color:var(--muted);border-bottom:1px solid var(--line-2);transition:color .25s,border-color .25s}
+.footer__fine a:hover{color:var(--gold-hi);border-color:rgba(27,132,173,.5)}
 /* the sign-off: a giant outline wordmark half-sunk below the page edge */
 .footer__ghost{max-width:var(--maxw);margin:1.5rem auto -.28em;
   font-family:var(--font-display);font-weight:700;text-transform:uppercase;line-height:.8;
