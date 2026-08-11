@@ -795,6 +795,19 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
    right-aligned data note. Every numbered section opens with it. */
 .gate-sec{max-width:calc(var(--gmaxw) + 4vw);margin:0 auto;
   padding:clamp(3.2rem,7vw,6rem) var(--gpad)}
+/* Full-bleed angled colour FIELDS — remidsp.com's own move (rule: whole
+   sections sit inside tilted pastel bands, light blue / green / red / orange,
+   the white page showing at the angled edges). Per-section hue and tilt ride
+   inline custom properties on the section tag; z-index:-1 inside an isolated
+   section keeps the band behind everything the section draws, above the page.
+   width must exceed the viewport so the rotated corners never show. */
+.gate-sec--field{position:relative;isolation:isolate}
+.gate-sec--field::before{content:"";position:absolute;z-index:-1;left:50%;
+  top:clamp(1rem,2.6vw,2.6rem);bottom:clamp(1rem,2.6vw,2.6rem);width:114vw;
+  transform:translateX(-50%) rotate(var(--field-tilt,-2.6deg));
+  background:linear-gradient(150deg,var(--field) 0%,var(--field-2) 100%);
+  border-top:1px solid var(--field-line);
+  border-bottom:1px solid var(--field-line)}
 /* the chapter bar — a double rule (dark over faint) and the section index
    blown up to unlit-segment scale: outlined DSEG7, glass with the light off */
 .gate-shead{position:relative;display:flex;align-items:baseline;gap:1.05rem;
@@ -977,6 +990,9 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
   text-transform:uppercase;color:var(--accent)}
 .gate-specrow dd{font-size:.82rem;line-height:1.7;color:var(--muted)}
 .gate-specrow dd b{color:var(--ink);font-weight:600}
+.gate-specrow dd a{color:var(--accent-hi);text-decoration:none;
+  border-bottom:1px solid rgba(27,132,173,.4);transition:color .25s,border-color .25s}
+.gate-specrow dd a:hover{color:var(--accent-deep);border-color:var(--accent-deep)}
 @media (max-width:700px){.gate-specrow{grid-template-columns:minmax(0,1fr);gap:.4rem}}
 
 /* ── the close ────────────────────────────────────────────────────────────
