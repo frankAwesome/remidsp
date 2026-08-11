@@ -48,9 +48,9 @@
   <meta name="twitter:description" content="Dual-engine delay with tape bloom and >100% feedback. A stereo shimmer reverb. A multitrack looper and a studio strip. Plays any NAM capture — and there is nothing to download." />
   <meta name="twitter:image" content="https://remidsp-maine.web.app/assets/og-card.jpg?v=2" />
   <meta name="twitter:image:alt" content="Portland — a black tolex amplifier head with a gold control plate and brass corners. Three amps. In a browser tab." />
-  <script type="module" crossorigin src="/assets/play-CU82Z5TP.js"></script>
+  <script type="module" crossorigin src="/assets/play-DfIL5IG5.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/fb-qdKn18mn.js">
-  <link rel="stylesheet" crossorigin href="/assets/play-COa1W3YW.css">
+  <link rel="stylesheet" crossorigin href="/assets/play-D0E7PKiu.css">
 </head>
 <body>
   <div class="bg"><div class="bg__grain"></div></div>
@@ -132,14 +132,16 @@
           <div class="gateway__bar"><i id="assetBar"></i></div>
         </div>
 
-        <!-- Devices are chosen here, before launch, so the rig opens on the right
-             interface instead of whatever the OS calls default. Folded away: it is
-             meaningless to the demo path and it is the most intimidating thing on
-             the page to someone who just arrived. -->
-        <details class="gateway__devices" id="devicePickerWrap">
-          <summary>Choose an audio interface</summary>
+        <!-- Devices are chosen here, before launch, so the rig opens on the
+             right interface instead of whatever the OS calls default. Open on
+             the page (not folded): this is the app's power-on screen now, and
+             input / channel / output ARE the panel a player expects to see.
+             The stream-opening channel probe still waits for a real
+             interaction with the panel — see main.ts. -->
+        <section class="gateway__devices gateway__devices--open" id="devicePickerWrap" aria-label="Audio interface">
+          <p class="gateway__devhead mono">AUDIO&nbsp;INTERFACE — INPUT&nbsp;·&nbsp;CHANNEL&nbsp;·&nbsp;OUTPUT</p>
           <div id="devicePicker"></div>
-        </details>
+        </section>
 
         <div class="gateway__status" id="bootStatus"></div>
 

@@ -1,7 +1,11 @@
 /* The TONE3000 capture browser — a right-hand drawer in the site's editorial
- * language. Anonymous TRENDING rails out of the box; connect a free
- * publishable key for full search (newest / popular / gear filters) and
- * per-model loading. Amps load into the capture slot, IRs into the cab. */
+ * language. Anonymous TRENDING rails out of the box; CONNECT on the built-in
+ * key adds the LATEST rail and per-model loading — both inside TONE3000's
+ * free-tier endpoint list (see the scope note atop ../tone3000.ts). FULL
+ * SEARCH (text query, popular / all-time sorts, paging) calls /tones/search,
+ * which the free tier does not cover for a shared key — so it unlocks only
+ * once the player pastes their OWN free publishable key and becomes their own
+ * integration. Amps load into the capture slot, IRs into the cab. */
 
 import { t3k, Tone, T3kModel } from '../tone3000';
 import { engine, CaptureInfo } from '../audio/engine';
@@ -14,7 +18,7 @@ type LoadIr = (buf: AudioBuffer, name: string) => void;
 export class T3kBrowser {
   root: HTMLElement;
   private list: HTMLElement;
-  private mode: 'trending' | 'search' = 'trending';
+  private mode: 'trending' | 'latest' | 'search' = 'trending';
   private gear: string | undefined;
   private sort: 'trending' | 'newest' | 'downloads-all-time' = 'trending';
   private query = '';
@@ -77,16 +81,32 @@ export class T3kBrowser {
     }
     for (const b of this.root.querySelectorAll<HTMLButtonElement>('[data-sort]')) {
       b.addEventListener('click', () => {
+        // LATEST is a bounded free-tier endpoint, so the built-in key may
+        // serve it; the other sorts are /tones/search and need the player's
+        // own key (see the header note). Point at the KEY row instead of
+        // silently doing nothing.
+        const wantsSearch = b.dataset.sort !== 'newest';
+        if (wantsSearch && !this.fullCatalog) {
+          if (t3k.hasCustomKey) {
+            toast('Your key is saved — hit <b>CONNECT</b> to sign in with it, then search away.');
+          } else {
+            this.revealKeyRow();
+            toast('Popular, all-time and text search run on <b>your own free key</b> — '
+              + 'tone3000.com → Settings → API Keys, then paste it below.', 6000);
+          }
+          return;
+        }
         this.root.querySelectorAll('[data-sort]').forEach((x) => x.classList.remove('on'));
         b.classList.add('on');
         this.sort = b.dataset.sort as typeof this.sort;
-        this.mode = t3k.connected ? 'search' : 'trending';
+        this.mode = !t3k.connected ? 'trending' : wantsSearch ? 'search' : this.fullCatalog ? 'search' : 'latest';
         this.page = 1;
         this.refresh();
       });
     }
     this.searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
+        if (!this.fullCatalog) { this.revealKeyRow(); return; }
         this.query = this.searchInput.value;
         this.mode = 'search';
         this.page = 1;
@@ -125,7 +145,9 @@ export class T3kBrowser {
       keyRow.hidden = true;
       syncKeyBtn();
       this.syncConnected();
-      toast('Back on the built-in key.');
+      this.mode = 'trending';
+      this.refresh();
+      toast('Back on the built-in key — trending + latest.');
     });
 
     // The capture gate can connect or re-key without this drawer ever opening.
@@ -137,17 +159,30 @@ export class T3kBrowser {
   open() { this.root.classList.add('open'); this.refresh(); }
   close() { this.root.classList.remove('open'); }
 
+  /** May this session call /tones/search? Only as the player's OWN
+   *  integration: their key, their sign-in — never on the shared default. */
+  private get fullCatalog(): boolean {
+    return t3k.connected && t3k.hasCustomKey;
+  }
+
+  private revealKeyRow() {
+    const keyRow = this.root.querySelector<HTMLElement>('.t3k__keyrow')!;
+    keyRow.hidden = false;
+    keyRow.querySelector('input')!.focus();
+  }
+
   private syncConnected() {
     if (t3k.connected) {
       this.connectBtn.textContent = 'CONNECTED ●';
       this.connectBtn.classList.add('on');
-      this.searchInput.disabled = false;
-      this.searchInput.placeholder = 'search the library…';
     } else {
       this.connectBtn.textContent = 'CONNECT';
       this.connectBtn.classList.remove('on');
-      this.searchInput.disabled = true;
     }
+    this.searchInput.disabled = !this.fullCatalog;
+    this.searchInput.placeholder = this.fullCatalog
+      ? 'search the library…'
+      : 'search needs your own free key — press KEY below';
   }
 
   private async handleConnect() {
@@ -161,7 +196,7 @@ export class T3kBrowser {
       await t3k.connect();
       toast('<b>Connected</b> to TONE3000');
       this.syncConnected();
-      this.mode = 'search';
+      this.mode = this.fullCatalog ? 'search' : 'latest';
       this.refresh();
     } catch (err) {
       const msg = (err as Error).message;
@@ -176,7 +211,7 @@ export class T3kBrowser {
     let tones: Tone[];
     let footNote = '';
     try {
-      if (this.mode === 'search' && t3k.connected) {
+      if (this.mode === 'search' && this.fullCatalog) {
         const gears = this.gear === 'cab' ? 'cab' : this.gear;
         const res = await t3k.search({
           query: this.query || undefined, sort: this.sort, page: this.page,
@@ -184,10 +219,18 @@ export class T3kBrowser {
         });
         tones = res.data ?? [];
         footNote = `page ${res.page} / ${res.total_pages}`;
+      } else if (this.mode === 'latest' && t3k.connected) {
+        // Bounded list endpoint — free-tier legal on the built-in key. It
+        // takes no gear filter; the pills keep filtering TRENDING only.
+        tones = await t3k.latest() ?? [];
+        footNote = this.gear ? 'LATEST is unfiltered — gear pills apply to TRENDING.' : '';
+        if (!this.fullCatalog) footNote += `${footNote ? '<br>' : ''}`
+          + `Full search (popular · all-time · text) runs on <b>your own free key</b> — press KEY below.`;
       } else {
         tones = await t3k.trending(this.gear as Tone['gear'] | undefined) ?? [];
         footNote = t3k.connected ? '' :
-          `Trending only — <b>CONNECT</b> a free TONE3000 key below to search the full library (latest · popular · all-time).`;
+          `Trending only — <b>CONNECT</b> below for the LATEST rail and per-model loading. `
+          + `Full search needs your own free key (KEY below).`;
       }
     } catch (err) {
       this.list.innerHTML = `<div class="t3k__note">TONE3000 unreachable — ${(err as Error).message}</div>`;

@@ -1301,9 +1301,15 @@ const devicePicker = new DevicePicker();
 document.getElementById('devicePicker')?.appendChild(devicePicker.root);
 // The channel probe opens a stream, so it waits until somebody has actually
 // asked for the picker rather than firing on page load.
-document.getElementById('devicePickerWrap')?.addEventListener('toggle', function (this: HTMLDetailsElement) {
-  if (this.open) void devicePicker.reveal();
-});
+// The panel sits open on the gate now, but the channel probe still opens a
+// stream (mic indicator lights) — so it waits for the first real interaction
+// with the panel instead of firing on page load.
+{
+  const wrap = document.getElementById('devicePickerWrap');
+  const arm = () => { void devicePicker.reveal(); };
+  wrap?.addEventListener('pointerdown', arm, { once: true });
+  wrap?.addEventListener('focusin', arm, { once: true });
+}
 engine.input = savedInputChoice();
 
 const assetsWarm = preloadAssets((done, total) => {

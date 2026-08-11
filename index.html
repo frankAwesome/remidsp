@@ -201,7 +201,7 @@
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
         <span>Download&nbsp;—&nbsp;Free</span>
       </a>
-      <a href="#live" class="btn btn--ghost btn--lg btn--live" data-magnetic>
+      <a href="/play/" class="btn btn--ghost btn--lg btn--live" data-magnetic data-placement="hero" data-label="Hero · Play It Live">
         <span class="btn__lamp" aria-hidden="true"></span><span>Play&nbsp;It&nbsp;Live</span>
       </a>
       <span class="hero__formats mono">VST3 · AU · AAX · STANDALONE · BROWSER</span>
@@ -272,41 +272,18 @@
       <p>The whole rig also runs <strong>live in a browser tab</strong> — the same
          captured heads, the dual-engine delay, the shimmer reverb, a multitrack
          looper — nothing to download, nobody to sign up to.</p>
-      <p>Press <strong>Listen First</strong> and a demo track plays through the
-         real rig: turn any knob and you'll hear it. Guitar plugged in? Take the
-         other door — ~2.7&nbsp;ms added, whichever you choose.</p>
+      <p>Press <strong>Play It Live</strong> and the rig opens right here in
+         your browser — a demo track plays through it even with no guitar
+         plugged in, and your own interface takes over at ~2.7&nbsp;ms added
+         the moment you're ready.</p>
       <div class="live__doors" data-reveal style="--d:.16s">
-        <a class="door door--demo" href="/play/"
-           data-placement="live" data-label="Live · Listen First">
-          <span class="door__main">Listen&nbsp;First</span>
-          <span class="door__sub">no guitar · no mic · no account</span>
-        </a>
-        <a class="door door--plug" href="/play/"
-           data-placement="live" data-label="Live · Plug In">
-          <span class="door__main">Plug&nbsp;In</span>
-          <span class="door__sub">my guitar is connected</span>
+        <a class="door door--demo" href="/play/" data-placement="live" data-label="Live · Play It Live">
+          <span class="door__main">Play&nbsp;It&nbsp;Live</span>
+          <span class="door__sub">in your browser · no guitar needed · no account</span>
         </a>
       </div>
     </div>
   </div>
-
-  <div class="live__stage" data-reveal style="--d:.1s">
-    <div class="browser" data-tilt>
-      <div class="browser__bar" aria-hidden="true">
-        <span class="browser__dots"><i></i><i></i><i></i></span>
-        <span class="browser__url mono">remidsp.com/play</span>
-        <span class="browser__lamp mono"><i></i>LIVE</span>
-      </div>
-      <img src="assets/img/web-rig-daylight.webp" width="2580" height="1760"
-           alt="The Maine web rig running in a browser tab — the Portland head on the stage, the ten-module chain ribbon above and the demo transport live" />
-      <span class="showcase__glare" aria-hidden="true"></span>
-    </div>
-    <span class="bk bk--tl" aria-hidden="true"></span>
-    <span class="bk bk--tr" aria-hidden="true"></span>
-    <span class="bk bk--bl" aria-hidden="true"></span>
-    <span class="bk bk--br" aria-hidden="true"></span>
-  </div>
-  <p class="live__caption mono">A&nbsp;SCREENSHOT&nbsp;OF&nbsp;THE&nbsp;RUNNING&nbsp;WEB&nbsp;RIG&nbsp;—&nbsp;NOT&nbsp;A&nbsp;MOCKUP&nbsp;·&nbsp;<a href="/play/" data-placement="live" data-label="Live · caption link">OPEN&nbsp;IT&nbsp;→</a></p>
 
   <ul class="live__tally" data-reveal>
     <li><span class="led">0</span><i>INSTALLS</i></li>
@@ -315,40 +292,6 @@
     <li><span class="led">3</span><i>AMPS LIVE</i></li>
   </ul>
 
-  <!-- The Scene — folded in from the web rig's old landing page: the one
-       thing a desktop plugin structurally cannot do. A drawing, not a
-       screenshot — the real card is built by the rig's feed code and a
-       screenshot would drift out of date the day it changes. -->
-  <div class="live__scene">
-    <div class="live__scenecopy">
-      <h3 data-reveal>Send a tone.<br>They just press play.</h3>
-      <p data-reveal style="--d:.06s">Post a sound in the live rig and it gets a link. Whoever opens
-         it lands on the rig with your patch loaded and the capture already on the
-         amp — turn one knob and it is theirs. Profiles, walls, messages: the bell
-         lights up the moment somebody hears you.</p>
-      <p class="live__scenefine mono" data-reveal style="--d:.1s">TONES&nbsp;·&nbsp;PROFILES&nbsp;·&nbsp;WALLS&nbsp;·&nbsp;MESSAGES&nbsp;·&nbsp;ONE&nbsp;URL&nbsp;PER&nbsp;SOUND</p>
-    </div>
-    <div class="tonecard" data-reveal style="--d:.08s" data-card>
-      <div class="tonecard__top">
-        <span class="tonecard__avatar" aria-hidden="true">R</span>
-        <span class="tonecard__who"><b>@remi</b><i>Portland · Pushed</i></span>
-        <span class="tonecard__live mono">LIVE</span>
-      </div>
-      <div class="tonecard__name">Bloom On The Edge</div>
-      <div class="tonecard__wave" aria-hidden="true">
-        <i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:88%"></i><i style="--h:71%"></i>
-        <i style="--h:96%"></i><i style="--h:52%"></i><i style="--h:78%"></i><i style="--h:41%"></i>
-        <i style="--h:84%"></i><i style="--h:63%"></i><i style="--h:92%"></i><i style="--h:35%"></i>
-        <i style="--h:70%"></i><i style="--h:49%"></i><i style="--h:81%"></i><i style="--h:28%"></i>
-      </div>
-      <div class="tonecard__chips">
-        <span class="chip mono">DELAY 3/16</span>
-        <span class="chip mono">FDN 8</span>
-        <span class="chip mono">FET 4:1</span>
-      </div>
-      <a class="tonecard__link mono" href="/play/" data-placement="live" data-label="Live · tone card">remidsp.com/play#/t/…</a>
-    </div>
-  </div>
 </section>
 
 <!-- ░░ THE CREED — the part the others put in the fine print ░░

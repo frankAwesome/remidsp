@@ -129,14 +129,16 @@
           <div class="gateway__bar"><i id="assetBar"></i></div>
         </div>
 
-        <!-- Devices are chosen here, before launch, so the rig opens on the right
-             interface instead of whatever the OS calls default. Folded away: it is
-             meaningless to the demo path and it is the most intimidating thing on
-             the page to someone who just arrived. -->
-        <details class="gateway__devices" id="devicePickerWrap">
-          <summary>Choose an audio interface</summary>
+        <!-- Devices are chosen here, before launch, so the rig opens on the
+             right interface instead of whatever the OS calls default. Open on
+             the page (not folded): this is the app's power-on screen now, and
+             input / channel / output ARE the panel a player expects to see.
+             The stream-opening channel probe still waits for a real
+             interaction with the panel — see main.ts. -->
+        <section class="gateway__devices gateway__devices--open" id="devicePickerWrap" aria-label="Audio interface">
+          <p class="gateway__devhead mono">AUDIO&nbsp;INTERFACE — INPUT&nbsp;·&nbsp;CHANNEL&nbsp;·&nbsp;OUTPUT</p>
           <div id="devicePicker"></div>
-        </details>
+        </section>
 
         <div class="gateway__status" id="bootStatus"></div>
 

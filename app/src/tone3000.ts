@@ -7,6 +7,15 @@
  *
  *  Terms: per-user delivery, no bulk caching, keep creator attribution +
  *  licenses visible, "Powered by TONE3000". https://www.tone3000.com/api/terms
+ *
+ *  FREE-TIER SCOPE (verified Aug 2026): an integration on the free tier may
+ *  use the OAuth prompt flows and the BOUNDED list endpoints — favorited,
+ *  downloaded, created, trending, latest — plus per-tone model loading the
+ *  user asked for. /tones/search is NOT on that list, so the app never calls
+ *  it on the baked-in DEFAULT_PUB_KEY (every visitor rides that key as ONE
+ *  integration). Full search unlocks only after the player pastes their own
+ *  free publishable key — then they are their own integration. The UI side of
+ *  this rule lives in ui/t3kBrowser.ts.
  */
 
 const API = 'https://www.tone3000.com/api/v1';
