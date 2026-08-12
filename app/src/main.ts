@@ -842,7 +842,7 @@ async function loadBundledVoice(stem: string): Promise<boolean> {
     // Per-voice loudness: the Katahdin's high-gain voice runs +2 dB (crest-
     // factor compensation — see the worklet's voiceTrim note); every other
     // bundled voice, and any custom capture, sits on the plain anchor.
-    engine.sendParam('amp_vtrim', AMP_ONLY_STEMS.has(stem) ? 2 : 0);
+    engine.sendParam('amp_vtrim', AMP_ONLY_STEMS.has(stem) ? 3.5 : 0);
     // Cab pairing, mirroring the plugin's loadAmpCapture: an amp-only voice
     // switches the cab ON with its paired factory IR (its default speaker);
     // a full-rig voice switches the cab section off. Straight through the
