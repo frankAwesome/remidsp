@@ -1793,6 +1793,11 @@ class RemiChainProcessor extends AudioWorkletProcessor {
       this.tone = new ToneStack(sr);
       this.master = new Smooth(1, 20, sr); // neutral at its 0.7 default
       this.ampTrim = new Smooth(1, 20, sr);
+      // Per-VOICE loudness trim (hidden 'amp_vtrim', dB): the Katahdin's
+      // high-gain factory voice runs +2 dB — heavy distortion is maximally
+      // compressed, so at equal RMS it reads softer than the cleans.
+      // Mirrors the plugin's AmpSlot::captureNormTargetRms.
+      this.voiceTrim = new Smooth(1, 20, sr);
       this.ampOn = true;
       this.sauce = new SaucePedal(sr);
       this.eq = new StudioEq(sr);
@@ -1841,6 +1846,7 @@ class RemiChainProcessor extends AudioWorkletProcessor {
           // (v-0.7)*20 dB — the PLUGIN's AmpVoicing master curve. This ran
           // *30 here, so the same preset value trimmed 1.5x harder on the
           // web; shared presets must mean the same dB on both platforms.
+          if (rest === 'vtrim') { this.voiceTrim.set(dbToGain(v)); return; }
           if (rest === 'master') this.master.set(dbToGain((v - 0.7) * 20));
           else if (rest === 'output') this.ampTrim.set(dbToGain((v - 0.5) * 24));
           else if (rest === 'on') this.ampOn = v > 0.5;
@@ -1899,7 +1905,7 @@ class RemiChainProcessor extends AudioWorkletProcessor {
       if (this.ampOn) {
         this.tone.process(L, R, n);
         for (let i = 0; i < n; i++) {
-          const m = this.master.next() * this.ampTrim.next();
+          const m = this.master.next() * this.ampTrim.next() * this.voiceTrim.next();
           L[i] *= m; R[i] *= m;
         }
       }

@@ -228,7 +228,7 @@ export const FACTORY_PRESETS: Preset[] = [
   P('Harmonic Minor Riff', 'SIGNATURE', 'katahdin', 'katahdin_red', {
     tempo: 136, comp_on: 0, drive_on: 0,
     amp_gain: 0.45, amp_bass: 0.48, amp_mid: 0.52, amp_treble: 0.56, amp_cut: 0.28,
-    amp_master: 0.37,
+    amp_master: 0.31,
     gate_on: 1, gate_thresh: -44, gate_release: 60,
     dlyA_div: 3, dlyA_fb: 0.24, dlyA_mix: 0.2, dlyA_mode: 1, dlyA_grit: 0.2,
     dlyA_hicut: 7000,

@@ -839,6 +839,10 @@ async function loadBundledVoice(stem: string): Promise<boolean> {
     await engine.loadCapture(json, info, quality === 'eco');
     currentVoice = stem;
     currentCaptureRef = { source: 'bundled', stem, label: stem.replace('_', ' ') };
+    // Per-voice loudness: the Katahdin's high-gain voice runs +2 dB (crest-
+    // factor compensation — see the worklet's voiceTrim note); every other
+    // bundled voice, and any custom capture, sits on the plain anchor.
+    engine.sendParam('amp_vtrim', AMP_ONLY_STEMS.has(stem) ? 2 : 0);
     // Cab pairing, mirroring the plugin's loadAmpCapture: an amp-only voice
     // switches the cab ON with its paired factory IR (its default speaker);
     // a full-rig voice switches the cab section off. Straight through the
@@ -885,6 +889,7 @@ async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> 
       creator: ref.creator, license: ref.license, toneUrl: ref.toneUrl,
     };
     addRecent(ref);
+    engine.sendParam('amp_vtrim', 0); // custom captures sit on the plain anchor
     store.set('amp_on', 1);
     toast(`<b>${esc(ref.label)}</b> on the amp${ref.creator ? ` · by ${esc(ref.creator)}` : ''}`);
     // Plugin-parity cab cross-check, straight from the tone's gear tag: an
