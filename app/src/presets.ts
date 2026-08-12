@@ -55,7 +55,8 @@ export const FACTORY_PRESETS: Preset[] = [
   // a small dark room, not a wash: this should sound like a venue, not a hall.
   P('Dublin Jangle', 'FACTORY', 'portland', 'portland_bloom', {
     tempo: 176, comp_on: 0,
-    amp_gain: 0.55, amp_bass: 0.45, amp_mid: 0.55, amp_treble: 0.6, amp_cut: 0.2,
+    amp_gain: 0.55, amp_bass: 0.45, amp_mid: 0.55, amp_treble: 0.5, amp_cut: 0.2,
+    eq_hmf_g: -1,
     drive_on: 1, drive_gain: 0.34, drive_treble: 0.62, drive_bass: 0.42, drive_level: 0.68,
     dlyA_div: 3, dlyA_fb: 0.18, dlyA_mix: 0.15, dlyA_mode: 3, dlyA_grit: 0.45,
     dlyA_hicut: 4800,
@@ -227,7 +228,7 @@ export const FACTORY_PRESETS: Preset[] = [
   P('Harmonic Minor Riff', 'SIGNATURE', 'katahdin', 'katahdin_red', {
     tempo: 136, comp_on: 0, drive_on: 0,
     amp_gain: 0.45, amp_bass: 0.48, amp_mid: 0.52, amp_treble: 0.56, amp_cut: 0.28,
-    amp_master: 0.68,
+    amp_master: 0.33,
     gate_on: 1, gate_thresh: -44, gate_release: 60,
     dlyA_div: 3, dlyA_fb: 0.24, dlyA_mix: 0.2, dlyA_mode: 1, dlyA_grit: 0.2,
     dlyA_hicut: 7000,

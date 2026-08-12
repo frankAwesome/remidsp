@@ -80,7 +80,7 @@ export const PARAMS: ParamDef[] = [
   { id: 'amp_output', label: 'OUTPUT', min: 0, max: 1, def: 0.5, format: dial },
 
   { id: 'cab_on', label: 'CAB', min: 0, max: 1, def: 0 },
-  { id: 'cab_ir', label: 'IR', min: 0, max: 3, def: 0, choices: ['UK 2x12 ON-AXIS', 'UK 2x12 OFF-AXIS', 'US 1x12 ON-AXIS', 'US 1x12 OFF-AXIS'] },
+  { id: 'cab_ir', label: 'IR', min: 0, max: 4, def: 0, choices: ['UK 2x12 ON-AXIS', 'UK 2x12 OFF-AXIS', 'US 1x12 ON-AXIS', 'US 1x12 OFF-AXIS', 'KATAHDIN FACTORY'] },
 
   { id: 'sauce_on', label: 'SAUCE', min: 0, max: 1, def: 0 },
   { id: 'sauce_body', label: 'BODY', min: 0, max: 1, def: 0, format: dial },

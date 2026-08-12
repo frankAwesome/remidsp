@@ -1831,7 +1831,11 @@ class RemiChainProcessor extends AudioWorkletProcessor {
       }
     } else {
       switch (head) {
-        case 'out': this.outGain.set(dbToGain(v)); return;
+        // +6 dB fixed make-up over the -18 dBFS internal anchor, mirroring the
+        // plugin's kOutputMakeupDb: the rig used to leave the browser clearly
+        // soft next to commercial amp sims. The knob still reads 0 dB; the
+        // soft safety ceiling below the output loop keeps overs musical.
+        case 'out': this.outGain.set(dbToGain(v + 6)); return;
         case 'amp':
           if (rest === 'master') this.master.set(dbToGain((v - 0.7) * 30));
           else if (rest === 'output') this.ampTrim.set(dbToGain((v - 0.5) * 24));

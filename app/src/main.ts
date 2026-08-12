@@ -14,7 +14,7 @@ import {
 import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
 import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
-import { openCabWarning } from './ui/cabWarning';
+import { openCabWarning, openNoCabWarning } from './ui/cabWarning';
 import { ICONS, withIcon } from './ui/icons';
 import { openTempoClash } from './ui/tempoClash';
 import { DevicePicker, savedInputChoice, loadSaved } from './ui/devices';
@@ -104,7 +104,14 @@ let notices: NoticesUI;
 const BUNDLED_IRS = [
   'uk_2x12_blue_onaxis', 'uk_2x12_blue_offaxis',
   'us_1x12_deluxe_onaxis', 'us_1x12_deluxe_offaxis',
+  'katahdin_cab', // the Katahdin's factory cab (1966 Bassman / Jensen C12N)
 ];
+/** cab_ir index of the Katahdin's paired factory cab. */
+const KATAHDIN_CAB_IR = 4;
+/** The one amp-only bundled voice: the Katahdin's Bogner Ueberschall capture
+ *  carries no speaker — it pairs the factory cab IR above (mirrors the
+ *  plugin's AmpSlot::ampCabIr). Every other bundled voice is full-rig. */
+const AMP_ONLY_STEMS = new Set(['katahdin_red']);
 
 const app = document.getElementById('app')!;
 
@@ -191,9 +198,22 @@ async function requestCabOn() {
   store.set('cab_on', 1);
 }
 
+/** Turn the cabinet off, after a warning when the capture is amp-only (the
+ *  cab IR is that capture's speaker — the double-cab guard's mirror image). */
+async function requestCabOff() {
+  const cap = engine.capture;
+  if (cap?.hasCab === false) {
+    const keepOn = await openNoCabWarning({ captureName: cap.name, moment: 'off' });
+    if (keepOn) return;
+    toast('Cab IR <b>off</b> under an amp-only capture — that is a raw amp with no '
+          + 'speaker. Turn it back on if the rig goes harsh.', 5000);
+  }
+  store.set('cab_on', 0);
+}
+
 function toggleParam(id: string) {
   const on = store.get(id) > 0.5;
-  if (!on && id === 'cab_on') { void requestCabOn(); return; }
+  if (id === 'cab_on') { void (on ? requestCabOff() : requestCabOn()); return; }
   store.set(id, on ? 0 : 1);
 }
 
@@ -807,13 +827,25 @@ async function loadBundledVoice(stem: string): Promise<boolean> {
   try {
     toast(`Loading <b>${stem.replace('_', ' ')}</b>…`);
     const json = await (await fetch(`/assets/captures/${stem}.nam`)).text();
-    // Every bundled voice is a full-rig capture — cab, mic and room included —
-    // which is what arms the double-cab warning if the cabinet gets switched on.
-    const info: CaptureInfo = { name: stem.replace('_', ' '), source: 'bundled', hasCab: true };
+    // Camden/Portland voices are full-rig captures — cab, mic and room in the
+    // file — which is what arms the double-cab warning if the cabinet gets
+    // switched on. The Katahdin's voice is AMP-ONLY (see AMP_ONLY_STEMS).
+    const hasCab = !AMP_ONLY_STEMS.has(stem);
+    const info: CaptureInfo = { name: stem.replace('_', ' '), source: 'bundled', hasCab };
     lastCaptureJson = json;
     await engine.loadCapture(json, info, quality === 'eco');
     currentVoice = stem;
     currentCaptureRef = { source: 'bundled', stem, label: stem.replace('_', ' ') };
+    // Cab pairing, mirroring the plugin's loadAmpCapture: an amp-only voice
+    // switches the cab ON with its paired factory IR (its default speaker);
+    // a full-rig voice switches the cab section off. Straight through the
+    // store — this is the amp's own wiring, not a user click to warn about.
+    if (hasCab) {
+      store.set('cab_on', 0);
+    } else {
+      store.set('cab_ir', KATAHDIN_CAB_IR);
+      store.set('cab_on', 1);
+    }
     if (selectedSlot === 'amp') renderStage();
     return true;
   } catch (err) {
@@ -852,6 +884,19 @@ async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> 
     addRecent(ref);
     store.set('amp_on', 1);
     toast(`<b>${esc(ref.label)}</b> on the amp${ref.creator ? ` · by ${esc(ref.creator)}` : ''}`);
+    // Plugin-parity cab cross-check, straight from the tone's gear tag: an
+    // amp-only capture with the cab off is missing its speaker (offer to fix);
+    // an amp+cab capture with the cab on is stacking two (warn). A ref with no
+    // gear tag stays quiet rather than guessing.
+    if (!quiet) {
+      if (ref.gear === 'amp' && store.get('cab_on') < 0.5) {
+        void openNoCabWarning({ captureName: ref.label, moment: 'load' })
+          .then((cabOn) => { if (cabOn) store.set('cab_on', 1); });
+      } else if (ref.gear === 'amp-cab' && store.get('cab_on') > 0.5) {
+        void openCabWarning({ captureName: ref.label, source: 'tone3000' })
+          .then((keepOn) => { if (!keepOn) store.set('cab_on', 0); });
+      }
+    }
     if (selectedSlot === 'amp') renderStage();
     return true;
   } catch (err) {
