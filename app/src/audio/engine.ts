@@ -194,7 +194,10 @@ export class RigEngine {
    *  over a microphone, and asking before they have heard anything is how the
    *  product used to lose them at the door. The mic can be opened later, on
    *  purpose, by someone who has decided they want it. */
-  async start(defaultCaptureUrl: string, defaultCapture: CaptureInfo,
+  // Takes the capture's JSON TEXT (not a URL): factory captures are served
+  // encrypted and decrypted by the caller (src/vault.ts) — the engine never
+  // needs to know where the bytes came from.
+  async start(defaultCaptureJson: string, defaultCapture: CaptureInfo,
               opts: { source?: 'mic' | 'di' } = {}): Promise<void> {
     if (this.state === 'running' || this.state === 'booting') return;
     this.setState('booting', 'loading engine');
@@ -207,7 +210,7 @@ export class RigEngine {
     this.module = await this.waitForModule();
 
     this.setState('booting', 'loading capture');
-    const namJson = await (await fetch(defaultCaptureUrl)).text();
+    const namJson = defaultCaptureJson;
     // First setDsp spins up the module's AudioContext + worklet thread.
     await this.setDsp(namJson);
 
@@ -237,7 +240,10 @@ export class RigEngine {
     this.ampBypass.gain.value = 0;
     const cabSum = ctx.createGain();
     this.convolver = ctx.createConvolver();
-    this.convolver.normalize = true;
+    // Normalisation is done by hand in setCabIr (the plugin's energy rule);
+    // WebAudio's own rule plays the same IR several dB apart from the plugin —
+    // the Katahdin factory cab came in ~15 dB quiet under it.
+    this.convolver.normalize = false;
     this.cabWet = ctx.createGain();
     this.cabDry = ctx.createGain();
     this.cabWet.gain.value = 0;
@@ -598,9 +604,30 @@ export class RigEngine {
     }
   }
 
-  /** Load a cab IR from a decoded AudioBuffer; null clears + bypasses. */
+  /** Load a cab IR from a decoded AudioBuffer; null clears + bypasses.
+   *  Energy-normalised IN PLACE to the plugin's rule (0.75 / sqrt(energy) of
+   *  the mono sum), convolver.normalize off — one rule on both platforms, so
+   *  a cab sits at the same level here as in the desktop plugin. */
   setCabIr(buffer: AudioBuffer | null) {
     if (!this.convolver) return;
+    if (buffer) {
+      const len = Math.min(buffer.length, Math.floor(buffer.sampleRate * 2));
+      const chans = Math.min(buffer.numberOfChannels, 2);
+      let energy = 0;
+      for (let i = 0; i < len; i++) {
+        let m = 0;
+        for (let c = 0; c < chans; c++) m += buffer.getChannelData(c)[i];
+        m /= chans;
+        energy += m * m;
+      }
+      if (energy > 1e-9) {
+        const g = 0.75 / Math.sqrt(energy);
+        for (let c = 0; c < buffer.numberOfChannels; c++) {
+          const d = buffer.getChannelData(c);
+          for (let i = 0; i < d.length; i++) d[i] *= g;
+        }
+      }
+    }
     this.convolver.buffer = buffer;
     if (!buffer) this.enableCab(false);
   }

@@ -1783,7 +1783,7 @@ class RemiChainProcessor extends AudioWorkletProcessor {
     this.inGain = new Smooth(1, 20, sr);
     this.outGain = new Smooth(1, 20, sr);
     this.meterCount = 0;
-    this.peakIn = 0; this.peakOut = 0;
+    this.peakIn = 0; this.peakOut = 0; this.peakRawOut = 0;
     if (this.stage === 'pre') {
       this.gate = new NoiseGate(sr);
       this.comp = new StompComp(sr);
@@ -1831,13 +1831,17 @@ class RemiChainProcessor extends AudioWorkletProcessor {
       }
     } else {
       switch (head) {
-        // +6 dB fixed make-up over the -18 dBFS internal anchor, mirroring the
-        // plugin's kOutputMakeupDb: the rig used to leave the browser clearly
-        // soft next to commercial amp sims. The knob still reads 0 dB; the
-        // soft safety ceiling below the output loop keeps overs musical.
-        case 'out': this.outGain.set(dbToGain(v + 6)); return;
+        // +2 dB fixed make-up, MEASURED against the demo track: the web chain
+        // runs hotter than the plugin's (-18 anchor + its own staging), so the
+        // plugin's +4 was too much here — at +6 the whole bank pre-ceiling
+        // peaked 1.0-2.0 (the Airship clipping bug). +2 lands the bank median
+        // at ~0.8 peak. The knob still reads 0 dB; the ceiling below stays.
+        case 'out': this.outGain.set(dbToGain(v + 2)); return;
         case 'amp':
-          if (rest === 'master') this.master.set(dbToGain((v - 0.7) * 30));
+          // (v-0.7)*20 dB — the PLUGIN's AmpVoicing master curve. This ran
+          // *30 here, so the same preset value trimmed 1.5x harder on the
+          // web; shared presets must mean the same dB on both platforms.
+          if (rest === 'master') this.master.set(dbToGain((v - 0.7) * 20));
           else if (rest === 'output') this.ampTrim.set(dbToGain((v - 0.5) * 24));
           else if (rest === 'on') this.ampOn = v > 0.5;
           else this.tone.set(rest, v);
@@ -1907,10 +1911,20 @@ class RemiChainProcessor extends AudioWorkletProcessor {
       this.reverb.process(L, R, n, L, R);
       for (let i = 0; i < n; i++) {
         const g = this.outGain.next();
-        // Soft safety ceiling — musical instead of digital wrap.
+        // Soft safety ceiling, matched to the plugin standalone's: this buffer
+        // feeds the DAC, which hard-clips at ±1.0 — the old ±1.2 threshold let
+        // 0..+1.6 dB overs through as digital hash. Bit-transparent below the
+        // 0.82 knee; above it the top rounds into a ~-0.1 dBFS ceiling.
         let l = L[i] * g, r = R[i] * g;
-        if (l > 1.2 || l < -1.2) l = Math.tanh(l * 0.8) * 1.25;
-        if (r > 1.2 || r < -1.2) r = Math.tanh(r * 0.8) * 1.25;
+        const KNEE = 0.82, CEIL = 0.988, RANGE = CEIL - KNEE;
+        const al = Math.abs(l), ar = Math.abs(r);
+        // Pre-ceiling peak: what the level WOULD be — the meters report it so
+        // loudness QA (and a future "too hot" lamp) can see real overs even
+        // though the ceiling stops them from ever reaching the DAC.
+        const raw = al > ar ? al : ar;
+        if (raw > this.peakRawOut) this.peakRawOut = raw;
+        if (al > KNEE) l = Math.sign(l) * (KNEE + RANGE * Math.tanh((al - KNEE) / RANGE));
+        if (ar > KNEE) r = Math.sign(r) * (KNEE + RANGE * Math.tanh((ar - KNEE) / RANGE));
         L[i] = l; R[i] = r;
       }
       // Looper taps the finished rig sound, then adds loop + click on top.
@@ -1936,11 +1950,12 @@ class RemiChainProcessor extends AudioWorkletProcessor {
       } else {
         const lp = this.looper;
         this.port.postMessage({
-          type: 'meters', out: this.peakOut, gr: this.fet.grDb,
+          type: 'meters', out: this.peakOut, outRaw: this.peakRawOut, gr: this.fet.grDb,
           loopState: lp.state,
           loopPos: lp.len ? (lp.state === 'rec' ? lp.recPos : lp.playPos) / lp.len : 0,
         });
         this.peakOut = 0;
+        this.peakRawOut = 0;
         this.fet.grDb *= 0.6;
       }
     }

@@ -15,6 +15,7 @@ import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, C
 import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
 import { openCabWarning, openNoCabWarning } from './ui/cabWarning';
+import { fetchVaultText, fetchVaultBytes } from './vault';
 import { ICONS, withIcon } from './ui/icons';
 import { openTempoClash } from './ui/tempoClash';
 import { DevicePicker, savedInputChoice, loadSaved } from './ui/devices';
@@ -826,7 +827,9 @@ let lastCaptureError: T3kFailure | null = null;
 async function loadBundledVoice(stem: string): Promise<boolean> {
   try {
     toast(`Loading <b>${stem.replace('_', ' ')}</b>…`);
-    const json = await (await fetch(`/assets/captures/${stem}.nam`)).text();
+    // Factory captures are served encrypted (.namx) and decrypted here — see
+    // src/vault.ts. The plain .nam never sits on the CDN.
+    const json = await fetchVaultText(`/assets/captures/${stem}.namx`);
     // Camden/Portland voices are full-rig captures — cab, mic and room in the
     // file — which is what arms the double-cab warning if the cabinet gets
     // switched on. The Katahdin's voice is AMP-ONLY (see AMP_ONLY_STEMS).
@@ -1327,8 +1330,12 @@ function closePresetMenu() {
 
 async function loadBundledIr(index: number) {
   try {
-    const url = `/assets/irs/${BUNDLED_IRS[index]}.wav`;
-    const arr = await (await fetch(url)).arrayBuffer();
+    // The Katahdin factory cab ships in the web vault (encrypted); the four
+    // synthesized reference IRs are REMI's own work and stay plain files.
+    const name = BUNDLED_IRS[index];
+    const arr = index === KATAHDIN_CAB_IR
+      ? await fetchVaultBytes(`/assets/irs/${name}.wavx`)
+      : await (await fetch(`/assets/irs/${name}.wav`)).arrayBuffer();
     const buf = await engine.ctx!.decodeAudioData(arr);
     engine.setCabIr(buf);
     customIrName = null;
@@ -1434,14 +1441,15 @@ async function boot(source: BootSource = 'mic') {
   engine.onStateChange = (s, detail) => { status.textContent = detail ?? s; };
   try {
     // Boot straight into the first patch in the bank — its voice on the amp,
-    // every param it does not name left at its default.
-    const bootUrl = `/assets/captures/${BOOT.voice}.nam`;
-    const engineUp = engine.start(bootUrl,
+    // every param it does not name left at its default. The capture comes out
+    // of the web vault (served encrypted, decrypted here).
+    const bootJson = await fetchVaultText(`/assets/captures/${BOOT.voice}.namx`);
+    const engineUp = engine.start(bootJson,
       { name: BOOT_LABEL, source: 'bundled', hasCab: true }, { source });
     status.textContent = 'warming ui assets';
     await assetsWarm;
     await engineUp;
-    lastCaptureJson = await (await fetch(bootUrl)).text();
+    lastCaptureJson = bootJson;
   } catch (err) {
     status.textContent = `failed: ${(err as Error).message}`;
     for (const d of doors) d.disabled = false;
@@ -1460,6 +1468,19 @@ async function boot(source: BootSource = 'mic') {
   void loadBundledIr(0);
 
   engine.onMeters = (m) => meterBus.dispatch(m);
+  // Diagnostics tap for loudness QA: window.__remiLvl accumulates the output
+  // peak (post-ceiling) and the pre-ceiling raw peak, so a scripted preset
+  // sweep can survey the bank for real overs (reset pk/raw to re-arm).
+  meterBus.hooks.add((m) => {
+    if (m.out === undefined) return;
+    const w = window as unknown as {
+      __remiLvl?: { pk: number; raw: number; last: number };
+    };
+    const s = (w.__remiLvl ??= { pk: 0, raw: 0, last: 0 });
+    s.pk = Math.max(s.pk, m.out as number);
+    s.raw = Math.max(s.raw, (m as { outRaw?: number }).outRaw ?? 0);
+    s.last = m.out as number;
+  });
   meterBus.hooks.add((m) => {
     if (m.in !== undefined && meters.in) meters.in.style.height = `${levelPct(m.in)}%`;
     if (m.out !== undefined && meters.out) meters.out.style.height = `${levelPct(m.out)}%`;

@@ -111,7 +111,7 @@ export const FACTORY_PRESETS: Preset[] = [
   P('Airship Swagger', 'SIGNATURE', 'portland', 'portland_pushed', {
     tempo: 90, comp_on: 0, drive_on: 0,
     amp_gain: 0.6, amp_bass: 0.55, amp_mid: 0.58, amp_treble: 0.58, amp_cut: 0.22,
-    amp_master: 0.66,
+    amp_master: 0.48,
     dlyA_div: 7, dlyA_fb: 0.12, dlyA_mix: 0.14, dlyA_mode: 3, dlyA_grit: 0.45,
     dlyA_hicut: 5600,
     rvb_machine: 2, rvb_decay: 2.2, rvb_predelay: 25, rvb_mix: 0.2, rvb_tone: -0.1,
@@ -228,7 +228,7 @@ export const FACTORY_PRESETS: Preset[] = [
   P('Harmonic Minor Riff', 'SIGNATURE', 'katahdin', 'katahdin_red', {
     tempo: 136, comp_on: 0, drive_on: 0,
     amp_gain: 0.45, amp_bass: 0.48, amp_mid: 0.52, amp_treble: 0.56, amp_cut: 0.28,
-    amp_master: 0.33,
+    amp_master: 0.37,
     gate_on: 1, gate_thresh: -44, gate_release: 60,
     dlyA_div: 3, dlyA_fb: 0.24, dlyA_mix: 0.2, dlyA_mode: 1, dlyA_grit: 0.2,
     dlyA_hicut: 7000,

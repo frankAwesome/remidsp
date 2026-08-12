@@ -1,1 +1,5 @@
 .DS_Store
+
+# Plain factory captures/IR sources — the page serves only the encrypted
+# twins (tools/pack_web_captures.mjs); never commit or serve the plain files.
+assets-src/
