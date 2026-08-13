@@ -113,7 +113,7 @@ function envelope() {
    Everything the rig learns about this visit, flushed once. */
 const state = {
   booted: false,
-  bootSource: null as string | null,   // 'demo' (LISTEN FIRST) | 'guitar' (PLUG IN)
+  bootSource: null as string | null,   // engine BootSource: 'mic' (LISTEN FIRST) | 'di' (PLUG IN)
   isolated: false,                     // did cross-origin isolation succeed
   sampleRate: null as number | null,
   audioMs: 0,                          // engine running AND making sound

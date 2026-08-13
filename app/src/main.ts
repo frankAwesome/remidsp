@@ -1480,6 +1480,9 @@ async function boot(source: BootSource = 'mic') {
     // Metrics: the rig actually started. Source separates "pressed LISTEN
     // FIRST" from "plugged a guitar in" — the two are very different visits.
     rigMetrics.rigBooted(source, engine.ctx?.sampleRate ?? null);
+    // The boot voice counts too: without this a visit that never switched
+    // amps reported no amp at all, which read as "nobody uses the amps".
+    rigMetrics.noteAmp(BOOT.amp, BOOT.voice);
   } catch (err) {
     status.textContent = `failed: ${(err as Error).message}`;
     for (const d of doors) d.disabled = false;
