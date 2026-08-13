@@ -839,10 +839,16 @@ async function loadBundledVoice(stem: string): Promise<boolean> {
     await engine.loadCapture(json, info, quality === 'eco');
     currentVoice = stem;
     currentCaptureRef = { source: 'bundled', stem, label: stem.replace('_', ' ') };
-    // Per-voice loudness: the Katahdin's high-gain voice runs +2 dB (crest-
-    // factor compensation — see the worklet's voiceTrim note); every other
-    // bundled voice, and any custom capture, sits on the plain anchor.
-    engine.sendParam('amp_vtrim', AMP_ONLY_STEMS.has(stem) ? 3.5 : 0);
+    // Per-voice loudness: the Katahdin's high-gain voice runs +5 dB here.
+    // It is the effective lever for this voice: the studio FET comp sits
+    // downstream, but at the Katahdin patch's low MIX it stays mostly dry,
+    // so a lift here survives it — while the comp's own make-up (post-
+    // compression, but only 22% wet) could not move the total.
+    // (crest-factor compensation — see the worklet's voiceTrim note; the
+    // desktop plugin needs far less, hence a per-platform number). Kept OUT
+    // of the preset on purpose: preset values must mean the same thing on
+    // both platforms, so the compensation lives beside them, not inside.
+    engine.sendParam('amp_vtrim', AMP_ONLY_STEMS.has(stem) ? 5 : 0);
     // Cab pairing, mirroring the plugin's loadAmpCapture: an amp-only voice
     // switches the cab ON with its paired factory IR (its default speaker);
     // a full-rig voice switches the cab section off. Straight through the
