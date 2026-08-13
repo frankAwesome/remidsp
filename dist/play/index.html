@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <!-- Cross-origin isolation, client side (see /coi-sw.js). GitHub Pages
+       cannot set COOP/COEP headers, and without them SharedArrayBuffer does
+       not exist — so the pthreads wasm engine cannot start. The worker
+       re-serves this page with the headers; the first visit reloads once to
+       pick them up. Scoped to /play/ so sign-in stays un-isolated. Inert on
+       a host that already sends the headers (Firebase, the dev server).
+       Must run BEFORE the app, hence its place at the top of <head>. -->
+  <script>
+    (function () {
+      if (window.crossOriginIsolated || !('serviceWorker' in navigator)) return;
+      if (!location.pathname.startsWith('/play')) return;
+      navigator.serviceWorker
+        .register('/coi-sw.js', { scope: '/play/' })
+        .then(function (reg) {
+          // Registered but not yet controlling this document: one reload is
+          // what makes the headers apply. Guard against a reload loop on a
+          // browser where isolation can never be reached (older Safari).
+          if (!navigator.serviceWorker.controller && !sessionStorage.getItem('coiReloaded')) {
+            sessionStorage.setItem('coiReloaded', '1');
+            location.reload();
+          }
+          return reg;
+        })
+        .catch(function (e) { console.error('[coi] registration failed', e); });
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Play Maine live — the whole rig in this tab · REMI DSP</title>
+  <!-- The hook is the tab, not the amp. NAM in WASM is an npm install since
+       TONE3000 open-sourced it, so leading with the capture engine is leading
+       with the commodity. The dual-engine delay and the stereo reverb are
+       what nothing else at this tier ships — so they lead, here and on the
+       gate, and "no install" is the first thing anyone reads.
+       The reverb's in-rig name stays on the rig; out here it is described by
+       what it does, because a name nobody has heard yet sells nothing. -->
+  <meta name="description" content="The Maine guitar rig, live in this tab. Press Listen First to hear it with no guitar, or plug in and play — no install, no account." />
+  <link rel="canonical" href="https://remidsp.com/play/" />
+  <!-- The site's own favicon, so a tab of the web rig and a tab of
+       remidsp.com are recognisably the same product. -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="/assets/icon-512.png" />
+  <link rel="apple-touch-icon" href="/assets/icon-512.png" />
+  <meta name="theme-color" content="#f6f8fa" />
+
+  <!-- The hero is one photograph-sized render and the page is worth nothing
+       until it lands, so the FIRST head is fetched at high priority alongside
+       the two faces the headline is set in. The other two heads are lazy —
+       they are behind a 4.5s rotation nobody has reached yet. -->
+  <link rel="preload" href="/assets/site/amp-head-camden.webp" as="image" type="image/webp" fetchpriority="high" />
+  <link rel="preload" href="/assets/fonts/OswaldBold.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preload" href="/assets/fonts/SpaceGroteskMedium.ttf" as="font" type="font/ttf" crossorigin />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://remidsp.com/play/" />
+  <meta property="og:site_name" content="REMI DSP · Maine" />
+  <meta property="og:title" content="A full guitar rig that runs in a browser tab. No install." />
+  <meta property="og:description" content="Dual-engine delay with tape bloom and >100% feedback. A stereo shimmer reverb. A multitrack looper and a studio strip. Plays any NAM capture — and there is nothing to download." />
+  <!-- 1200x630, rendered by tools/render-og.mjs from tools/og-card.html —
+       the same Portland head and layout remidsp.com uses, so the two links
+       preview as one product. Bump ?v= after re-rendering: Slack, X, iMessage
+       and Facebook cache a scraped card hard and will keep serving the old
+       picture otherwise. -->
+  <meta property="og:image" content="https://remidsp-maine.web.app/assets/og-card.jpg?v=2" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Portland — a black tolex amplifier head with a gold control plate and brass corners. Three amps. In a browser tab." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="A full guitar rig that runs in a browser tab. No install." />
+  <meta name="twitter:description" content="Dual-engine delay with tape bloom and >100% feedback. A stereo shimmer reverb. A multitrack looper and a studio strip. Plays any NAM capture — and there is nothing to download." />
+  <meta name="twitter:image" content="https://remidsp-maine.web.app/assets/og-card.jpg?v=2" />
+  <meta name="twitter:image:alt" content="Portland — a black tolex amplifier head with a gold control plate and brass corners. Three amps. In a browser tab." />
+  <script type="module" crossorigin src="/assets/play-CAqjpUii.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/fb-D1elNV34.js">
+  <link rel="stylesheet" crossorigin href="/assets/play-BSf0Xlks.css">
+</head>
+<body>
+  <div class="bg"><div class="bg__grain"></div></div>
+  <div class="hud" aria-hidden="true">
+    <i class="hud__corner hud__corner--tl"></i><i class="hud__corner hud__corner--tr"></i>
+    <i class="hud__corner hud__corner--bl"></i><i class="hud__corner hud__corner--br"></i>
+  </div>
+
+  <!-- ░░ THE GATE — a landing page that happens to be a boot screen ░░
+       Everything here lives inside #gateway, which is a fixed, scrolling
+       overlay that main.ts hides the moment an engine exists. So the page
+       scrolls INSIDE this element, not on <body> — every scroll-driven effect
+       in ui/gate.ts observes with root:#gateway for that reason. -->
+  <div class="gateway" id="gateway">
+    <span class="gate__progress" aria-hidden="true"><i id="gateProgress"></i></span>
+
+    <!-- sticky chrome: brand left, live boot readout right -->
+    <header class="gate__bar">
+      <a class="gate__brand" href="/" aria-label="REMI DSP — back to remidsp.com">
+        <img src="/assets/site/logo-mark.png" width="42" height="34" alt="" />
+        <span class="gate__brandword">REMI DSP</span>
+      </a>
+      <span class="gate__barmeta mono">MAINE&nbsp;·&nbsp;WEB&nbsp;SUITE</span>
+      <span class="gate__barload">
+        <span class="mono">BOOT</span>
+        <span class="gate__barbar"><i id="gateBarFill"></i></span>
+        <span class="led-text" id="gateBarPct">0</span>
+      </span>
+    </header>
+
+    <!-- ░░ HERO ░░ -->
+    <section class="gate-hero" id="gateHero">
+      <span class="gate-hero__glow" aria-hidden="true"></span>
+
+      <div class="gate-hero__copy">
+        <p class="gate-hero__eyebrow" data-reveal>REMI&nbsp;DSP&nbsp;·&nbsp;MAINE&nbsp;·&nbsp;WEB&nbsp;GUITAR&nbsp;SUITE</p>
+
+        <!-- The h1 has to carry the product's name for anything that reads the
+             page as a document rather than a picture, and the visible lines
+             are a claim, not a name — hence the aria-label. -->
+        <h1 class="gate-hero__title" aria-label="Maine — the REMI DSP web guitar suite. Three amps, one tab.">
+          <span class="gate-hero__line"><span data-reveal-line style="--d:.04s">Three amps.</span></span>
+          <span class="gate-hero__line"><span class="gate-hero__shine" data-reveal-line style="--d:.13s">One tab.</span></span>
+        </h1>
+
+        <p class="gate-hero__lede" data-reveal style="--d:.24s">
+          The whole rig runs <b>on this page</b> — three captured heads, a dual-engine
+          delay, a stereo shimmer reverb, a multitrack looper and a studio strip.
+          Nothing to download. Nobody to sign up to.
+        </p>
+
+        <!-- TWO DOORS, and the wide one is deliberately first.
+             The rig used to open exactly one way: a microphone permission prompt
+             before the visitor had heard a single note. Most people do not have a
+             guitar plugged into the machine they are reading this on, and asking
+             a stranger for their microphone to prove that a website makes sound
+             is the whole reason they leave. LISTEN FIRST boots the identical rig
+             with a demo track running through it and never calls getUserMedia. -->
+        <!-- data-door, not the id, is what main.ts binds and disables — the
+             same two doors appear again at the foot of the page, and a
+             stranger who scrolled the whole thing should not have to come back
+             up here to press one. -->
+        <div class="gateway__doors" data-reveal style="--d:.32s">
+          <button class="gateway__cta gateway__cta--demo" id="demoBtn" data-door="di">
+            <span class="gateway__cta-main">Listen First</span>
+            <span class="gateway__cta-sub">no guitar · no mic · no account</span>
+          </button>
+          <button class="gateway__cta gateway__cta--plug" id="startBtn" data-door="mic">
+            <span class="gateway__cta-main">Plug In</span>
+            <span class="gateway__cta-sub">my guitar is connected</span>
+          </button>
+        </div>
+
+        <div class="gateway__load" id="assetLoad" data-reveal style="--d:.38s">
+          <div class="gateway__load-head">
+            <span>INITIALIZING UI ASSETS</span>
+            <span class="led-text" id="assetPct">0</span><span class="gateway__load-unit">%</span>
+          </div>
+          <div class="gateway__bar"><i id="assetBar"></i></div>
+        </div>
+
+        <!-- Devices are chosen here, before launch, so the rig opens on the
+             right interface instead of whatever the OS calls default. Open on
+             the page (not folded): this is the app's power-on screen now, and
+             input / channel / output ARE the panel a player expects to see.
+             The stream-opening channel probe still waits for a real
+             interaction with the panel — see main.ts. -->
+        <section class="gateway__devices gateway__devices--open" id="devicePickerWrap" aria-label="Audio interface">
+          <p class="gateway__devhead mono">AUDIO&nbsp;INTERFACE — INPUT&nbsp;·&nbsp;CHANNEL&nbsp;·&nbsp;OUTPUT</p>
+          <div id="devicePicker"></div>
+        </section>
+
+        <div class="gateway__status" id="bootStatus"></div>
+
+        <p class="gate-hero__home mono"><a href="/">&larr;&nbsp;REMIDSP.COM — THE STORY, THE SOUND &amp; THE DESKTOP PLUGIN</a></p>
+      </div>
+
+      <!-- The heads carry real alpha, so they sit straight on the black with no
+           card, no halo and no seam. Nothing hard-edged may go behind them:
+           alpha = max(r,g,b), so every dark pixel is part-transparent and any
+           type back there reads straight through the cabinet. -->
+      <div class="gate-rig" id="gateRig">
+        <div class="gate-rig__amps">
+          <img class="gate-rig__amp is-active" src="/assets/site/amp-head-camden.webp"
+               width="1672" height="941" fetchpriority="high"
+               alt="Camden — a cream-and-gold amplifier head with a stained-glass front panel" />
+          <img class="gate-rig__amp" src="/assets/site/amp-head-portland.webp"
+               width="1672" height="941" loading="lazy"
+               alt="Portland — a black tolex amplifier head with a gold control plate and brass corners" />
+          <img class="gate-rig__amp" src="/assets/site/amp-head-katahdin.webp"
+               width="1672" height="941" loading="lazy"
+               alt="Katahdin — an amplifier head carved with baroque cherubs playing lutes" />
+          <span class="gate-rig__sheen" aria-hidden="true"></span>
+        </div>
+
+        <div class="gate-rig__sel">
+          <ul class="gate-rig__tabs" id="gateRigTabs" role="tablist" aria-label="Amplifiers">
+            <li><button type="button" data-goto="0" class="is-active" role="tab" aria-selected="true">CAMDEN</button></li>
+            <li><button type="button" data-goto="1" role="tab" aria-selected="false">PORTLAND</button></li>
+            <li><button type="button" data-goto="2" role="tab" aria-selected="false">KATAHDIN</button></li>
+          </ul>
+          <div class="gate-rig__voices" id="gateRigVoices">
+            <div class="gate-rig__voiceset is-active"><span>CLEAN</span><span>DRIVEN</span><span>MAX</span></div>
+            <div class="gate-rig__voiceset"><span>BLOOM</span><span>PUSHED</span></div>
+            <div class="gate-rig__voiceset"><span>RED</span></div>
+          </div>
+          <p class="gate-rig__cap mono">3&nbsp;HEADS&nbsp;·&nbsp;6&nbsp;VOICES&nbsp;·&nbsp;CAPTURED&nbsp;FROM&nbsp;REAL&nbsp;RIGS</p>
+        </div>
+      </div>
+
+
+    </section>
+
+
+  </div>
+
+  <main class="app" id="app" hidden></main>
+
+  <div class="toast" id="toast"></div>
+
+</body>
+</html>

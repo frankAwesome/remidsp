@@ -1,0 +1,15 @@
+# Copy to .dev.vars and fill in. .dev.vars is gitignored and must stay that way.
+#
+#   cp .dev.vars.example .dev.vars
+#
+# CF_API_TOKEN     Cloudflare API token with Workers Scripts:Edit and R2:Edit.
+#                  Create at Cloudflare → My Profile → API Tokens.
+#                  For the deployed Worker use `npx wrangler secret put` rather
+#                  than shipping it in wrangler.toml — [vars] there is PUBLIC,
+#                  readable by anyone who can view the Worker.
+# FIREBASE_PROJECT_ID  Whose Firestore the share Worker reads. Reads are
+#                  unauthenticated by design, so this is not a secret; it lives
+#                  here only so local and deployed config come from one place.
+
+CF_API_TOKEN=
+FIREBASE_PROJECT_ID=remidsp-98208

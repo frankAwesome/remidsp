@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>TONE3000 — connecting…</title>
+<style>body{background:#050506;color:#9aa0ab;font:14px/1.6 system-ui;display:grid;place-items:center;height:100vh}</style>
+</head>
+<body>
+<p>Connected — you can close this window.</p>
+<script>
+  const q = new URLSearchParams(location.search);
+  const bc = new BroadcastChannel('t3k_oauth');
+  bc.postMessage({
+    type: 't3k_oauth_callback',
+    code: q.get('code'),
+    state: q.get('state'),
+    error: q.get('error'),
+    canceled: q.get('canceled'),
+    tone_id: q.get('tone_id'),
+    model_id: q.get('model_id'),
+  });
+  bc.close();
+  setTimeout(() => window.close(), 400);
+</script>
+</body>
+</html>

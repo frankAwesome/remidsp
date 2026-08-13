@@ -1,24 +1,5 @@
 rules_version = '2';
 
-// ⚠️  THIS FILE IS THE WHOLE PROJECT'S RULES, NOT JUST THIS SITE'S.
-//
-// remidsp-98208 is shared: the analytics collections below belong to
-// remidsp.com, and the social collections further down (profiles, posts, dms,
-// messages, presets, likes, comments, …) belong to the other app on this
-// project. Firestore has ONE ruleset per project — deploying replaces
-// everything, it does not merge.
-//
-// On 2026-08-09 a deploy from the other side overwrote the `public/summary`
-// rule and the metrics dashboard went dark with "insufficient permissions".
-// The same mistake in the other direction would take that app's data offline.
-//
-// So: before `firebase deploy --only firestore:rules`, pull the live ruleset
-// and diff it against this file. If they differ, someone else deployed and
-// this copy is stale — merge, don't overwrite.
-//
-//   firebase firestore:rules get      # or the Rules tab in the console
-//
-
 // REMI DSP — analytics rules
 //
 // The browser writes these collections unauthenticated, so the rules are the

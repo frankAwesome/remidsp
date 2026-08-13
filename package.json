@@ -1,0 +1,13 @@
+{
+  "name": "remidsp-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "REMI DSP — one site: the landing at /, the live web rig at /play.",
+  "type": "module",
+  "scripts": {
+    "build": "npm --prefix app run build && node tools/assemble-dist.mjs",
+    "dev": "npm --prefix app run dev",
+    "serve": "node tools/serve-dist.mjs",
+    "deploy": "npm run build && npx firebase-tools deploy --only hosting,firestore"
+  }
+}
