@@ -73,6 +73,16 @@ let customIrName: string | null = null;
 let presetIdx = 0;
 let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: BOOT.voice, label: BOOT_LABEL };
 let account: AccountUI;
+/* Header controls that only mean anything with a profile behind them: SAVE
+ * (a preset belongs to a profile, and the dialog's publish/share half needs
+ * one) and the INBOX pair (activity + messages, which can never be populated
+ * for a signed-out visitor). Hidden until sign-in rather than shown-then-
+ * failing, and re-evaluated on every session change. */
+const signedInOnly: HTMLElement[] = [];
+function syncSignedInUi() {
+  const on = session.user !== null;
+  for (const elm of signedInOnly) elm.hidden = !on;
+}
 type View = 'rig' | 'feed' | 'profile' | 'landing';
 /* Declared HERE, with the other module state, and not next to setView().
  *
@@ -315,6 +325,7 @@ function buildHeader(): HTMLElement {
   save.innerHTML = withIcon('save', 'SAVE');
   save.title = 'save the rig as a preset';
   strip.append(prev, name, next, save);
+  signedInOnly.push(save);
   pr.append(strip, el('div', 'hdr__caption', 'PRESETS'));
   h.appendChild(pr);
   prev.addEventListener('click', () => stepPreset(-1));
@@ -406,6 +417,7 @@ function buildHeader(): HTMLElement {
   irow.append(bellBtn, dmBtn);
   ig.append(irow, el('div', 'hdr__caption', 'INBOX'));
   h.appendChild(ig);
+  signedInOnly.push(ig);
   bellBtn.addEventListener('click', () => void notices.open());
   dmBtn.addEventListener('click', () => void messages.open());
 
@@ -1620,12 +1632,14 @@ function build() {
   profileView.onLibraryChanged = () => resyncPresetStrip();
   profileView.onMessage = (target) => void messages.open(target);
   account.onSessionChange = () => {
+    syncSignedInUi();
     void switchPresetBank();
     watchInbox();
     if (currentView === 'feed') void feedView.refresh();
     if (currentView === 'profile') void profileView.refresh();
   };
   app.appendChild(buildHeader());
+  syncSignedInUi(); // signed-out until Firebase says otherwise
   app.appendChild(buildRibbon());
   stage.className = 'stage';
   app.appendChild(stage);
