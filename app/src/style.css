@@ -304,7 +304,13 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .drive-status{width:100%;height:100%;display:grid;place-items:center;
   background:rgba(6,6,9,.9);border:1px solid rgba(255,255,255,.16);
   font-size:clamp(5px,.62vw,8px);font-weight:600;letter-spacing:.16em;
-  color:#cfd3da;text-align:center;white-space:nowrap;overflow:hidden}
+  color:#cfd3da;text-align:center;white-space:nowrap;overflow:hidden;
+  font-family:inherit;padding:0;cursor:pointer;text-overflow:ellipsis}
+.drive-status:hover{border-color:rgba(255,255,255,.3)}
+/* a pedal capture the player picked — named, and in the TONE3000 blue the
+   amp and cab provenance lines use, so the three read as one system */
+.drive-status--t3k{color:var(--ice);border-color:color-mix(in oklab,var(--ice) 45%,transparent);
+  letter-spacing:.08em}
 .seat--fill{display:flex}
 .seat--fill>*{flex:1}
 
@@ -317,6 +323,13 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 .drawer__caption{font-size:.52rem;font-weight:600;letter-spacing:.34em;color:var(--muted-2);text-transform:uppercase}
 .drawer__status{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;color:var(--muted)}
 .drawer__status b{color:var(--light)}
+/* Provenance, in the desktop plugin's two colours: FACTORY in the gold the
+   amp faces are lit with, anything the player brought in from TONE3000 in
+   the cool blue. Whose capture is playing should never need looking up. */
+.drawer__status--factory{color:#c69a52}
+.drawer__status--factory b{color:#e9b765}
+.drawer__status--t3k{color:color-mix(in oklab,var(--ice) 72%,var(--muted))}
+.drawer__status--t3k b{color:var(--ice)}
 .drawer__spacer{flex:1}
 
 /* stomp footswitch / power dot */
@@ -481,6 +494,10 @@ button:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visib
 #captureGate{z-index:500}
 .gate__body{font-size:.82rem;line-height:1.65;color:var(--text)}
 .gate__body b{color:var(--ice);font-weight:600}
+/* the caveat paragraph — present, readable, not shouting */
+.gate__body--quiet{font-size:.76rem;color:var(--muted);margin-top:.7rem;
+  border-left:2px solid color-mix(in oklab,var(--ice) 40%,transparent);padding-left:.7rem}
+.gate__body--quiet b{color:var(--light)}
 .gate__by{font-size:.66rem;letter-spacing:.06em;color:var(--muted);margin-top:.5rem}
 .gate__by b{color:var(--light)}
 .gate__steps{margin:.9rem 0 0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.45rem;

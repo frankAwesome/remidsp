@@ -10,7 +10,12 @@ export interface SaveState {
   amp: string;
   voice: string;
   params: Record<string, number>;
+  /** The three capture slots: the amp, the drive pedal, the cab IR. Each is
+   *  a reference — TONE3000 files are delivered per player and never ride
+   *  inside a preset. */
   capture: CaptureRefDoc | null;
+  drive?: CaptureRefDoc | null;
+  ir?: CaptureRefDoc | null;
 }
 
 export function openSaveDialog(
@@ -84,6 +89,8 @@ export function openSaveDialog(
           voice: st.voice,
           params: st.params,
           capture: st.capture,
+          drive: st.drive ?? null,
+          ir: st.ir ?? null,
           shared: share,
           description: (desc?.value ?? '').trim().slice(0, 500),
         });

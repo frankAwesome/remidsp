@@ -11,9 +11,10 @@ import {
   FACTORY_PRESETS, loadUserPresets, saveUserPreset, tagUserPresetCloudId,
   deleteUserPresetAt, setPresetScope, replaceUserPresets, Preset,
 } from './presets';
-import { BUNDLED_AMP_CAPTURES, BUNDLED_PEDAL_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
+import { BUNDLED_AMP_CAPTURES, loadRecents, addRecent, CaptureRef } from './captures';
 import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
+import { openPedalNotice } from './ui/pedalNotice';
 import { openCabWarning, openNoCabWarning } from './ui/cabWarning';
 import { fetchVaultText, fetchVaultBytes } from './vault';
 import * as rigMetrics from './analytics';
@@ -70,9 +71,19 @@ let currentVoice = BOOT.voice;
 let selectedSlot: SlotKey = 'amp';
 let delayEngineShown: 0 | 1 = 0;
 let quality: 'full' | 'eco' = 'full';
-let customIrName: string | null = null;
 let presetIdx = 0;
 let currentCaptureRef: CaptureRefDoc = { source: 'bundled', stem: BOOT.voice, label: BOOT_LABEL };
+/* ── the other two capture slots ───────────────────────────────────────────
+ * The amp is not the only thing a TONE3000 pick can fill. A pedal profile
+ * belongs in the DRIVE slot and an IR belongs in the CABINET, and each has
+ * to be nameable on its own module and re-fetchable from a preset — the same
+ * contract the amp capture has had all along (see the plugin's
+ * TONE3000_PRESET_SYNC.md, which these mirror field for field).
+ *
+ * Null means "nothing picked": the bundled drive voicing and the bundled IR
+ * bank, exactly as before. */
+let driveCaptureRef: CaptureRefDoc | null = null;
+let cabIrRef: CaptureRefDoc | null = null;
 let account: AccountUI;
 /* Header controls that only mean anything with a profile behind them: SAVE
  * (a preset belongs to a profile, and the dialog's publish/share half needs
@@ -120,6 +131,10 @@ const BUNDLED_IRS = [
 ];
 /** cab_ir index of the Katahdin's paired factory cab. */
 const KATAHDIN_CAB_IR = 4;
+/** cab_ir index that means "not one of the bundled files" — a TONE3000 cab.
+ *  It has to be a real value of the param so a preset can carry it; see the
+ *  note on cab_ir in params.ts. */
+const CUSTOM_IR = 5;
 /** The one amp-only bundled voice: the Katahdin's Bogner Ueberschall capture
  *  carries no speaker — it pairs the factory cab IR above (mirrors the
  *  plugin's AmpSlot::ampCabIr). Every other bundled voice is full-rig. */
@@ -333,11 +348,17 @@ function buildHeader(): HTMLElement {
   next.addEventListener('click', () => stepPreset(1));
   name.addEventListener('click', openPresetMenu);
   save.addEventListener('click', () => {
+    // All three capture slots go into the save, local and cloud alike: the
+    // amp, the drive pedal and the cab. A preset that carried only the amp
+    // came back as two thirds of the sound it was saved as.
+    const slots = () => ({
+      capture: currentCaptureRef, drive: driveCaptureRef, ir: cabIrRef,
+    });
     openSaveDialog(
-      () => ({ amp: currentAmp, voice: currentVoice, params: store.snapshot(), capture: currentCaptureRef }),
+      () => ({ amp: currentAmp, voice: currentVoice, params: store.snapshot(), ...slots() }),
       (n) => saveUserPreset({
         name: n, group: 'USER', amp: currentAmp, voice: currentVoice,
-        params: store.snapshot(), capture: currentCaptureRef,
+        params: store.snapshot(), ...slots(),
       }),
       borrowedFrom(),
       // Remember which cloud document the local copy became, so deleting it
@@ -609,9 +630,23 @@ function pedalPanel(key: SlotKey): HTMLElement {
   if (pg) ov.appendChild(pilotLed(m.on, pg[0], pg[1], pg[2]));
   if (key === 'drive') {
     // Live status bar covering the print's baked one under the name plate
-    // (desktop resizedExtras geometry).
-    const status = el('div', 'drive-status');
-    status.textContent = 'CAPTURE LOADED';
+    // (desktop resizedExtras geometry). It NAMES the pedal capture in the
+    // slot, exactly as the plugin's DrivePanel button does — the bundled
+    // voicing stays anonymous, a picked one is called by its name so the
+    // player can tell at a glance which pedal they are hearing.
+    const status = el('button', 'drive-status') as HTMLButtonElement;
+    status.type = 'button';
+    const ref = driveCaptureRef;
+    status.classList.toggle('drive-status--t3k', !!ref);
+    status.textContent = ref ? shortName(ref.label) : 'CAPTURE LOADED';
+    status.title = ref
+      ? `Pedal capture: ${ref.label}${ref.creator ? ` — by ${ref.creator}` : ''}`
+        + ' · click for what this slot does in the browser build'
+      : 'The bundled drive voicing. Pick a TONE3000 pedal in CAPTURES to name one here.';
+    status.addEventListener('click', async () => {
+      if (!driveCaptureRef) { t3kBrowser.open(); return; }
+      if (await openPedalNotice(driveCaptureRef, 'info') === 'remove') clearDriveCapture();
+    });
     ov.appendChild(seat(status, 0.5014, 0.7489, 0.272, 0.08));
   }
   if (key === 'gate') {
@@ -784,15 +819,17 @@ function ampPanel(): HTMLElement {
     }
     capSel.appendChild(g);
   };
-  const recents = loadRecents();
+  // Amp recents only. A pedal profile and a cab IR are remembered too, but
+  // they belong to their own modules — listing them here is how one of them
+  // ends up on the amp by accident.
+  const recents = loadRecents('amp');
   addGroup('AMPS — BUNDLED', BUNDLED_AMP_CAPTURES, 'b');
-  addGroup('PEDALS — BUNDLED', BUNDLED_PEDAL_CAPTURES, 'b');
   addGroup('TONE3000 — RECENT', recents, 'r');
   const loadBtn = el('button', 'hdr__btn', 'LOAD');
   loadBtn.addEventListener('click', () => {
     const [kind, id] = (capSel.value ?? '').split(/:(.*)/s);
     const ref = kind === 'b'
-      ? [...BUNDLED_AMP_CAPTURES, ...BUNDLED_PEDAL_CAPTURES].find((r) => r.id === id)
+      ? BUNDLED_AMP_CAPTURES.find((r) => r.id === id)
       : recents.find((r) => r.id === id);
     if (ref) void loadCaptureRef(ref);
   });
@@ -802,14 +839,22 @@ function ampPanel(): HTMLElement {
 
   drawer.appendChild(el('div', 'drawer__spacer'));
 
-  // capture status
+  /* Capture provenance, in the plugin's own language: FACTORY in the gold,
+   * a capture the player brought in from TONE3000 in the cool blue. Same two
+   * colours, same "whose work am I hearing" question — the point is that the
+   * answer never has to be hunted for, and that the creator's name and
+   * license stay on screen wherever their capture is playing (which is also
+   * what the TONE3000 terms ask for). */
   const status = el('div', 'drawer__status');
   const syncStatus = () => {
     const c = engine.capture;
+    status.classList.toggle('drawer__status--t3k', c?.source === 'tone3000');
+    status.classList.toggle('drawer__status--factory', c?.source === 'bundled');
     status.innerHTML = c
       ? c.source === 'tone3000'
-        ? `<b>${c.name}</b> · by ${c.creator ?? '—'} · ${c.license ?? ''} · TONE3000`
-        : `<b>${c.name}</b> · bundled capture`
+        ? `TONE3000 · <b>${esc(c.name)}</b>${c.creator ? ` · by ${esc(c.creator)}` : ''}`
+          + `${c.license ? ` · ${esc(c.license)}` : ''}${cabTagFor(c.hasCab)}`
+        : `FACTORY CAPTURE · <b>${esc(c.name)}</b>${cabTagFor(c.hasCab)}`
       : 'no capture — amp runs clean';
   };
   syncStatus();
@@ -869,6 +914,11 @@ async function loadBundledVoice(stem: string): Promise<boolean> {
     if (hasCab) {
       store.set('cab_on', 0);
     } else {
+      // AWAITED, then switched on. An amp-only capture with the cabinet
+      // armed over the PREVIOUS preset's IR is a speaker, so it was never
+      // catastrophic — but it is a different speaker than the one this amp
+      // was voiced against, and the gap is long enough to hear.
+      await loadBundledIr(KATAHDIN_CAB_IR);
       store.set('cab_ir', KATAHDIN_CAB_IR);
       store.set('cab_on', 1);
     }
@@ -959,21 +1009,62 @@ function cabPanel(): HTMLElement {
   const drawer = el('div', 'drawer');
   drawer.appendChild(paramToggle('cab_on', 'CAB IR', 'tab tab--lightlit'));
   const sel = paramSelect('cab_ir');
-  if (customIrName) {
-    const o = document.createElement('option');
-    o.value = '99';
-    o.textContent = `T3K · ${customIrName}`;
-    o.selected = true;
-    sel.appendChild(o);
+  // The CUSTOM entry is only meaningful once something has actually been
+  // loaded into it; until then it would be a choice that selects nothing.
+  const custom = sel.querySelector<HTMLOptionElement>(`option[value="${CUSTOM_IR}"]`);
+  if (custom) {
+    if (cabIrRef) custom.textContent = `TONE3000 · ${cabIrRef.label}`;
+    else custom.disabled = true;
   }
   drawer.appendChild(sel);
+  const browse = el('button', 'hdr__btn', 'BROWSE CAB IRS');
+  browse.title = 'load a cab IR from TONE3000';
+  browse.addEventListener('click', () => t3kBrowser.open());
+  drawer.appendChild(browse);
   drawer.appendChild(el('div', 'drawer__spacer'));
+
+  // Whose speaker is on, in the amp drawer's language — TONE3000 blue for a
+  // picked cab, factory gold for one of ours.
+  const status = el('div', 'drawer__status');
+  const paint = () => {
+    const off = store.get('cab_on') > 0.5 ? '' : ' · (CAB IS OFF)';
+    const onT3k = !!cabIrRef && (store.get('cab_ir') | 0) === CUSTOM_IR;
+    status.classList.toggle('drawer__status--t3k', onT3k);
+    status.classList.toggle('drawer__status--factory', !onT3k);
+    status.innerHTML = onT3k
+      ? `TONE3000 · <b>${esc(cabIrRef!.label)}</b>`
+        + `${cabIrRef!.creator ? ` · by ${esc(cabIrRef!.creator)}` : ''}`
+        + `${cabIrRef!.license ? ` · ${esc(cabIrRef!.license)}` : ''}${off}`
+      : `FACTORY IR · <b>${esc(paramById.get('cab_ir')?.choices?.[store.get('cab_ir') | 0] ?? '—')}</b>${off}`;
+  };
+  paint();
+  const unPaint = store.subscribe((id) => {
+    if (!status.isConnected) { unPaint(); return; }
+    if (id === 'cab_on' || id === 'cab_ir' || id === '*') paint();
+  });
+  drawer.appendChild(status);
+
   const note = el('div', 'drawer__status drawer__status--warn');
   note.innerHTML = `${ICONS.warn}<span>Bundled amps are <b>full-rig</b> captures (cab baked in) — leave the cab
     OFF for those, or you get two speakers stacked. Pair it with amp-only DI captures from TONE3000.</span>`;
   drawer.appendChild(note);
   wrap.appendChild(drawer);
   return wrap;
+}
+
+/** What the amp status appends about the capture's own speaker — the
+ *  plugin's cabTagFor, word for word. `undefined` adds nothing: most
+ *  community captures simply do not say, and the line must not claim what
+ *  the file never stated. */
+function cabTagFor(hasCab: boolean | undefined): string {
+  return hasCab === true ? ' · [CAB BAKED IN]'
+    : hasCab === false ? ' · [AMP ONLY — NO CAB]'
+      : '';
+}
+
+/** A capture name cut to what a pedal's name plate can hold. */
+function shortName(s: string): string {
+  return s.length > 22 ? `${s.slice(0, 21).trimEnd()}…` : s;
 }
 
 function delayPanel(): HTMLElement {
@@ -1131,7 +1222,8 @@ async function switchPresetBank() {
       const cloud = await myPresets(uid);
       replaceUserPresets(cloud.map((c) => ({
         name: c.name, group: 'USER' as const, amp: c.amp, voice: c.voice,
-        params: c.params, capture: c.capture, cloudId: c.id,
+        params: c.params, capture: c.capture, drive: c.drive ?? null, ir: c.ir ?? null,
+        cloudId: c.id,
       })));
     } catch { /* offline, or rules said no — the local bank still stands */ }
   }
@@ -1181,6 +1273,56 @@ async function applyPreset(p: Preset): Promise<boolean> {
   if (snap.gate_global > 0.5) {
     for (const k of GATE_KEYS) snap[k] = store.get(k);
   }
+
+  /* ── the quiet traverse ───────────────────────────────────────────────
+   *
+   * A patch change is not one event. The knob positions are numbers and land
+   * at once; the capture they belong to is a fetch, a decrypt and a wasm
+   * reload behind them. In between, the OUTGOING amp plays the INCOMING
+   * preset's settings, and for the high-gain voice that was genuinely
+   * painful: its capture carries no speaker of its own — the cab IR IS its
+   * speaker — so the instant the cabinet followed the new preset, the Bogner
+   * was heard raw, at whatever master the next patch asked for. Fizz with
+   * nothing over it, straight into the ears.
+   *
+   * Two things fix it, and both are needed.
+   *
+   * ONE: the rig goes quiet for the whole traverse and comes back when the
+   * new capture is actually in (engine.beginQuietSwap). A hardware rig is
+   * silent while it changes; so is this. The looper sits upstream of that
+   * gate, so a patch change during a take does not punch a hole in it.
+   *
+   * TWO: the CABINET does not move until the capture it belongs to has
+   * arrived. Held below, applied after. Without this the gate would only be
+   * hiding the problem — and the moment it lifted, a preset that says
+   * nothing about the cab would still have stripped the speaker off an
+   * amp-only capture.
+   */
+  const heldCabOn = store.get('cab_on');
+  const heldCabIr = store.get('cab_ir');
+  snap.cab_on = heldCabOn;
+  snap.cab_ir = heldCabIr;
+  // Did this preset state a cab of its own? Read from the preset's OWN
+  // params, before the default fill above hands every patch a cab_on it
+  // never wrote — the same `explicitCab` distinction the plugin makes in
+  // WebPreset.cpp. Stated: the preset wins. Silent: the voice's own pairing
+  // rule decides (full-rig voices bypass the cab, amp-only ones need it).
+  const wantsCab = Object.prototype.hasOwnProperty.call(p.params, 'cab_on')
+    ? { on: p.params.cab_on, ir: p.params.cab_ir } : null;
+
+  engine.beginQuietSwap();
+  try {
+    return await applyPresetBody(p, snap, wantsCab);
+  } finally {
+    engine.endQuietSwap();
+  }
+}
+
+/** The body of a preset recall, wrapped by applyPreset's quiet gate. */
+async function applyPresetBody(
+  p: Preset, snap: Record<string, number>,
+  wantsCab: { on: number; ir?: number } | null,
+): Promise<boolean> {
   store.load(snap);
   currentAmp = p.amp;
   // The face is the preset's (p.amp), so the rig looks the way it did when
@@ -1202,7 +1344,15 @@ async function applyPreset(p: Preset): Promise<boolean> {
     if (!await loadCaptureRef(ref, true)) {
       // Never leave the player guessing why the amp sounds wrong: name the
       // capture, say what is missing, and offer to fix it right here.
+      //
+      // The quiet gate comes UP for the duration. It is there to cover a
+      // swap, and this is not a swap any more — it is a person reading a
+      // screen, for as long as they take. Holding a rig silent behind a
+      // dialog would be its own bug, and the cab is still held to whatever
+      // the outgoing capture needed, which is what made the traverse safe in
+      // the first place.
       const fallback = p.voice.replace('_', ' ');
+      engine.endQuietSwap();
       const ok = await openCaptureGate({
         presetName: p.name,
         captureLabel: cap.label,
@@ -1211,6 +1361,7 @@ async function applyPreset(p: Preset): Promise<boolean> {
         reason: lastCaptureError ?? 'unknown',
         retry: () => loadCaptureRef(ref, true),
       });
+      engine.beginQuietSwap();
       if (!ok) {
         captureOk = false;
         await loadBundledVoice(p.voice);
@@ -1221,6 +1372,73 @@ async function applyPreset(p: Preset): Promise<boolean> {
   } else {
     await loadBundledVoice(p.voice);
   }
+
+  /* The cab, now that the amp it belongs to is actually in. A preset that
+   * named its own cab gets it back — including a TONE3000 IR, which is
+   * re-fetched here for the same reason the amp capture is: the file stays
+   * on TONE3000 and is delivered per player, never carried in the preset. */
+  /* What the patch asked for and did not get. Collected rather than
+   * announced one at a time: the notice line holds ONE message, so a preset
+   * missing both its pedal and its cab used to report whichever failed last
+   * and silently drop the other. */
+  const missing: string[] = [];
+
+  let gotT3kIr = false;
+  if (p.ir?.source === 'tone3000' && p.ir.modelUrl) {
+    const irRef: CaptureRef = {
+      kind: 'tone3000', id: p.ir.modelId ?? p.ir.modelUrl, label: p.ir.label,
+      url: p.ir.modelUrl, creator: p.ir.creator, license: p.ir.license,
+      toneUrl: p.ir.toneUrl, slot: 'cab',
+    };
+    gotT3kIr = await loadCabIrRef(irRef, { quiet: true });   // sets cab_ir itself
+    // Deliberately not a modal in the middle of a patch change: the amp's own
+    // capture gate may already be up, and stacking a second dialog on it is
+    // how a preset change turns into an interrogation.
+    if (!gotT3kIr) missing.push(`its cab IR (<b>${esc(p.ir.label)}</b>)`);
+  }
+  if (wantsCab && !gotT3kIr) {
+    // cab_ir first, cab_on second: arming the cabinet and then swapping the
+    // file underneath it is a change you can hear, in that order.
+    //
+    // A preset pointing at the CUSTOM slot with nothing to fill it — no ref,
+    // or a ref that would not download — has to land on a real file, or the
+    // picker would name a cab the convolver never received. The amp's OWN
+    // pairing is the stand-in (loadBundledVoice has just set it), because a
+    // capture voiced against a particular speaker should not fall back to an
+    // unrelated one; index 0 is the last resort when there is no pairing.
+    const asked = wantsCab.ir;
+    const paired = store.get('cab_ir') | 0;
+    const ir = asked === undefined || asked === CUSTOM_IR
+      ? (paired === CUSTOM_IR ? 0 : paired)
+      : asked;
+    if (paired !== ir || cabIrRef) await loadBundledIr(ir);
+    store.set('cab_ir', ir);
+  }
+  if (wantsCab) store.set('cab_on', wantsCab.on);
+
+  /* The pedal. A reference, bound and named — see loadDriveCaptureRef for
+   * why the browser cannot also play it. Quiet on recall: a patch landing is
+   * not the moment to explain the architecture, and the module says whose
+   * pedal it is either way. */
+  driveCaptureRef = null;
+  if (p.drive?.source === 'tone3000' && p.drive.modelUrl) {
+    const pedalRef: CaptureRef = {
+      kind: 'tone3000', id: p.drive.modelId ?? p.drive.modelUrl, label: p.drive.label,
+      url: p.drive.modelUrl, creator: p.drive.creator, license: p.drive.license,
+      toneUrl: p.drive.toneUrl, slot: 'drive',
+    };
+    if (!await loadDriveCaptureRef(pedalRef, { quiet: true })) {
+      driveCaptureRef = null;
+      missing.push(`its pedal capture (<b>${esc(p.drive.label)}</b>)`);
+    }
+  }
+
+  if (missing.length) {
+    captureOk = false;
+    toast(`<b>${esc(p.name)}</b> loaded, but ${missing.join(' and ')} could not be fetched `
+          + `from TONE3000 — everything else in the patch applied.`, 6000);
+  }
+
   rigMetrics.notePresetLoad();
   setPresetLabel(p.name);
   renderStage();
@@ -1355,19 +1573,163 @@ function closePresetMenu() {
 
 /* ────────────────────────── cab IR loading ────────────────────────── */
 
-async function loadBundledIr(index: number) {
+/* Decoded IRs, kept. Every amp switch re-selects one of five files, and a
+ * preset recall may select the same one the rig is already playing — fetching
+ * and decoding it again each time is work nobody asked for, and the decode
+ * happens on the main thread. engine.setCabIr normalises into a copy, so
+ * handing the same buffer back twice is safe (it did not used to be). */
+const irCache = new Map<number, AudioBuffer>();
+
+async function loadBundledIr(index: number): Promise<boolean> {
   try {
-    // The Katahdin factory cab ships in the web vault (encrypted); the four
-    // synthesized reference IRs are REMI's own work and stay plain files.
-    const name = BUNDLED_IRS[index];
-    const arr = index === KATAHDIN_CAB_IR
-      ? await fetchVaultBytes(`/assets/irs/${name}.wavx`)
-      : await (await fetch(`/assets/irs/${name}.wav`)).arrayBuffer();
-    const buf = await engine.ctx!.decodeAudioData(arr);
+    let buf = irCache.get(index);
+    if (!buf) {
+      // The Katahdin factory cab ships in the web vault (encrypted); the four
+      // synthesized reference IRs are REMI's own work and stay plain files.
+      const name = BUNDLED_IRS[index];
+      if (!name) return false;
+      const arr = index === KATAHDIN_CAB_IR
+        ? await fetchVaultBytes(`/assets/irs/${name}.wavx`)
+        : await (await fetch(`/assets/irs/${name}.wav`)).arrayBuffer();
+      buf = await engine.ctx!.decodeAudioData(arr);
+      irCache.set(index, buf);
+    }
     engine.setCabIr(buf);
-    customIrName = null;
+    cabIrRef = null;
+    if (selectedSlot === 'cab') renderStage();
+    return true;
   } catch (err) {
     toast(`IR load failed — ${(err as Error).message}`);
+    return false;
+  }
+}
+
+/* ── TONE3000 cab IRs ──────────────────────────────────────────────────────
+ *
+ * A cab picked on TONE3000 goes in the convolver the bundled ones use, and
+ * the picker gains a CUSTOM entry pointing at it — so it survives a preset
+ * round trip instead of recalling as UK 2x12 and quietly playing the wrong
+ * speaker, which is what a flag beside the param would have done. */
+async function loadCabIrRef(ref: CaptureRef, opts: { quiet?: boolean } = {}): Promise<boolean> {
+  if (!engine.ctx) { toast('The rig is not running yet.'); return false; }
+  try {
+    if (!opts.quiet) toast(`Loading cab <b>${esc(ref.label)}</b>…`);
+    const res = await t3k.fetchModelFile(ref.url!, { trusted: ref.trusted === true });
+    const buf = await engine.ctx.decodeAudioData(await res.arrayBuffer());
+    engine.setCabIr(buf);
+    cabIrRef = {
+      source: 'tone3000', label: ref.label, modelId: ref.id, modelUrl: ref.url,
+      creator: ref.creator, license: ref.license, toneUrl: ref.toneUrl, gear: ref.gear,
+    };
+    // The picker has to agree with the convolver, or the next store.load()
+    // would re-select a bundled file over the top of this one.
+    store.set('cab_ir', CUSTOM_IR);
+    addRecent({ ...ref, slot: 'cab' });
+    if (!opts.quiet) {
+      // Loading a cab arms the cabinet — through the same guard, because
+      // "I just loaded an IR" is exactly when someone stacks it on a full-rig
+      // capture without realising.
+      await requestCabOn();
+      toast(`<b>${esc(ref.label)}</b> in the cab${ref.creator ? ` · by ${esc(ref.creator)}` : ''}`);
+    }
+    if (selectedSlot === 'cab') renderStage();
+    return true;
+  } catch (err) {
+    lastSlotError = err instanceof T3kError ? err.reason : t3k.connected ? 'unknown' : 'not-connected';
+    if (!opts.quiet) await openSlotFailure('cab', ref.label, err as Error, () => loadCabIrRef(ref, { quiet: true }));
+    return false;
+  }
+}
+
+/* ── TONE3000 pedal captures ───────────────────────────────────────────────
+ *
+ * A pedal profile belongs in the DRIVE slot, and this is where the browser
+ * build and the desktop plugin genuinely differ, so it is stated plainly
+ * rather than papered over.
+ *
+ * The plugin gives its Drive its OWN neural capture engine, so a picked pedal
+ * is what you hear. The browser cannot: the vendored NAM wasm
+ * (tone-3000/neural-amp-modeler-wasm, see public/t3k-wasm-module.js) exposes
+ * exactly ONE global `setDsp` — a single capture for the whole page — and
+ * that one is the amp. Running a second capture in front of it would need a
+ * second instance the build does not offer.
+ *
+ * So the slot is honest about what it does: it BINDS the reference — names
+ * the pedal on the module, keeps the creator's credit visible, and carries it
+ * through save and recall so the preset is complete and plays in full on the
+ * desktop plugin — while the browser's own circuit-model drive keeps making
+ * the sound. openPedalNotice says exactly this, once, at the moment of
+ * picking. Nothing pretends the capture is being heard. */
+async function loadDriveCaptureRef(ref: CaptureRef, opts: { quiet?: boolean } = {}): Promise<boolean> {
+  try {
+    if (!opts.quiet) toast(`Binding pedal <b>${esc(ref.label)}</b>…`);
+    // Fetched even though the browser will not run it: a reference that has
+    // never been checked is how a preset ends up carrying a dead link, and
+    // this is the one moment the player is present to be told.
+    const res = await t3k.fetchModelFile(ref.url!, { trusted: ref.trusted === true });
+    const text = await res.text();
+    // A NAM capture is JSON with weights in it. Anything else — an HTML error
+    // page, a truncated download — must fail here rather than be remembered
+    // as a working pedal.
+    const parsed = JSON.parse(text) as { weights?: unknown; architecture?: unknown };
+    if (!parsed || (parsed.weights === undefined && parsed.architecture === undefined)) {
+      throw new Error('that file is not a NAM capture');
+    }
+    driveCaptureRef = {
+      source: 'tone3000', label: ref.label, modelId: ref.id, modelUrl: ref.url,
+      creator: ref.creator, license: ref.license, toneUrl: ref.toneUrl, gear: ref.gear,
+    };
+    addRecent({ ...ref, slot: 'drive' });
+    store.set('drive_on', 1);
+    if (!opts.quiet && await openPedalNotice(driveCaptureRef, 'loaded') === 'remove') {
+      clearDriveCapture();
+      return false;
+    }
+    if (selectedSlot === 'drive') renderStage();
+    return true;
+  } catch (err) {
+    lastSlotError = err instanceof T3kError ? err.reason : t3k.connected ? 'unknown' : 'not-connected';
+    if (!opts.quiet) await openSlotFailure('drive', ref.label, err as Error, () => loadDriveCaptureRef(ref, { quiet: true }));
+    return false;
+  }
+}
+
+/** Put the drive back on its own voicing. */
+function clearDriveCapture() {
+  driveCaptureRef = null;
+  toast('Drive slot cleared — back to the pedal’s own voicing.');
+  if (selectedSlot === 'drive') renderStage();
+}
+
+/** Why the last pedal / cab fetch failed, so a preset recall can explain
+ *  itself in the same terms the amp's capture gate already does. */
+let lastSlotError: T3kFailure | null = null;
+
+/** One place a slot load says it failed, with a way out. A toast is not
+ *  enough here: a failed pedal or cab is a preset that is not the sound it
+ *  claims to be, and the player has to be able to do something about it. */
+async function openSlotFailure(
+  slot: 'drive' | 'cab', label: string, err: Error, retry: () => Promise<boolean>,
+): Promise<void> {
+  const what = slot === 'cab' ? 'cab IR' : 'pedal capture';
+  const reason = lastSlotError === 'not-connected'
+    ? 'It lives on TONE3000, and downloading it needs a free account and a publishable key — '
+      + 'open CAPTURES and hit CONNECT.'
+    : lastSlotError === 'auth' ? 'Your TONE3000 sign-in has expired — open CAPTURES and reconnect.'
+      : lastSlotError === 'missing' ? 'The creator has taken it down, so it cannot be loaded.'
+        : lastSlotError === 'network' ? 'TONE3000 could not be reached. Nothing is wrong with the preset.'
+          : err.message;
+  const again = await confirmDialog({
+    title: `Could not load that ${what}`,
+    body: `“${label}” did not make it into the ${slot === 'cab' ? 'cabinet' : 'drive pedal'}. ${reason}`,
+    note: slot === 'cab'
+      ? 'The cab is still playing whatever IR it had — nothing else in the rig changed.'
+      : 'The drive is still running its own voicing — nothing else in the rig changed.',
+    confirmLabel: 'TRY AGAIN',
+    cancelLabel: 'CARRY ON',
+  });
+  if (again && !await retry()) {
+    toast(`<b>${esc(label)}</b> still would not load.`, 4500);
   }
 }
 
@@ -1493,7 +1855,9 @@ async function boot(source: BootSource = 'mic') {
   store.subscribe((id, v) => {
     if (id === 'amp_on') engine.enableAmp(v > 0.5);
     else if (id === 'cab_on') engine.enableCab(v > 0.5);
-    else if (id === 'cab_ir' && v < 90) void loadBundledIr(v | 0);
+    // CUSTOM is not a file — it points at whatever loadCabIrRef put in the
+    // convolver, so re-selecting it must not fetch a bundled IR over the top.
+    else if (id === 'cab_ir' && (v | 0) !== CUSTOM_IR) void loadBundledIr(v | 0);
     else if (id.startsWith('gate_') || id === '*') persistGlobalGate();
   });
   restoreGlobalGate();
@@ -1673,14 +2037,14 @@ function build() {
   // sitting in `app` would put it inside the view switch's hidden/shown
   // sections and take it down with whichever one it landed in.
   document.body.appendChild(tuner.root);
-  t3kBrowser = new T3kBrowser((buf, name) => {
-    engine.setCabIr(buf);
-    customIrName = name;
-    // Loading a cab IR arms the cabinet — through the same guard, because
-    // "I just loaded an IR" is exactly when someone stacks it on a full-rig
-    // capture without realising.
-    void requestCabOn();
-    if (selectedSlot === 'cab') renderStage();
+  /* Three slots, three installers. The browser decides WHERE a pick belongs
+   * (the creator's gear tag says so); these decide what that means to the
+   * rig. Keeping the decision there and the installation here is what stops
+   * a pedal profile from landing on the amp, which is what it used to do. */
+  t3kBrowser = new T3kBrowser({
+    amp: (ref) => loadCaptureRef(ref),
+    drive: (ref) => loadDriveCaptureRef(ref),
+    cab: (ref) => loadCabIrRef(ref),
   });
   // Land on the boot patch for real. engine.start already loaded its voice, so
   // only the params are applied here — loading it through applyPreset would
@@ -1706,7 +2070,22 @@ if (import.meta.env.DEV) {
       // The looper is here so its timing can be checked without a guitar in
       // the room: drive a known signal into the bus, bounce the loop twice at
       // two alignments, and the difference should be exactly the delta.
-      get looper() { return looper; }, tuner };
+      get looper() { return looper; }, tuner,
+      /* The capture slots, for the same reason: the pedal and cab paths can
+       * only be walked end to end with a TONE3000 account and a network, and
+       * "we could not test it" is how the amp slot got three of its bugs.
+       * bindSlot stands a reference up without a download so the drawers,
+       * the provenance lines and a save/recall round trip can be checked on
+       * a machine that is not signed in. It installs no audio and claims to
+       * install none — the loaders below are the real path. */
+      applyPreset, loadCabIrRef, loadDriveCaptureRef,
+      slots: () => ({ capture: currentCaptureRef, drive: driveCaptureRef, ir: cabIrRef }),
+      bindSlot: (slot: 'drive' | 'cab', ref: CaptureRefDoc | null) => {
+        if (slot === 'drive') driveCaptureRef = ref;
+        else { cabIrRef = ref; store.set('cab_ir', ref ? CUSTOM_IR : 0); }
+        renderStage();
+      },
+    };
 }
 // The router runs BEFORE the engine, on purpose. A deep link must show its
 // tone to someone who has not pressed a door yet and may never press one —
@@ -1719,16 +2098,14 @@ for (const door of gateDoors()) {
 // decorative, and deliberately the last thing wired: nothing above it depends
 // on this having run.
 initGate();
-// A TONE3000 load lands in the CAPTURE menu's recents — refresh the drawer
-// and remember it as the current capture for cloud saves.
-window.addEventListener('remi:capture-loaded', () => {
-  const r = loadRecents()[0];
-  if (r) currentCaptureRef = {
-    source: 'tone3000', label: r.label, modelId: r.id, modelUrl: r.url,
-    creator: r.creator, license: r.license, toneUrl: r.toneUrl,
-  };
-  if (selectedSlot === 'amp') renderStage();
-});
+/* The 'remi:capture-loaded' listener that used to sit here is gone with the
+ * thing that fired it. The capture browser installed captures itself and then
+ * shouted so this file could catch up — reading the top of the recents list
+ * back out to work out what had just been loaded, which is a guess dressed as
+ * a fact (a race with any other load, and wrong for a slot it did not know
+ * about). The browser now hands the reference to a loader in this file, which
+ * sets currentCaptureRef from the ref it was given and repaints. No event, no
+ * re-derivation, and the same route for all three slots. */
 
 /* ── rig / feed / profile view switch + cloud preset apply ── */
 
@@ -1869,7 +2246,7 @@ async function applyCloudPreset(p: CloudPreset, opts: { fromLink?: boolean } = {
   // reports whether the rig ended up as its author heard it.
   const whole = await applyPreset({
     name: p.name, group: 'USER', amp: p.amp, voice: p.voice,
-    params: p.params, capture: p.capture,
+    params: p.params, capture: p.capture, drive: p.drive ?? null, ir: p.ir ?? null,
   });
   // Mark it as borrowed only if it is somebody else's. Reloading your own
   // sound leaves you free to post it, which you always were.

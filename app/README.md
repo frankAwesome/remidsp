@@ -52,6 +52,35 @@ The **CAPTURES** drawer browses the TONE3000 catalog:
   the cab convolver. Creator names + licenses stay visible per the
   [API terms](https://www.tone3000.com/api/terms) — non-commercial use is free.
 
+### Three slots, one contract
+
+Where a pick lands is the creator's gear tag, not a second button (`slotForTone` in
+`src/captures.ts`): `pedal` → **DRIVE**, `cab` / `format: ir` → **CABINET**, everything
+else → **AMP**. The browser decides *where*; `src/main.ts` decides *what it means*.
+
+Each slot names what is in it — the amp and cab drawers carry a provenance line
+(**FACTORY** gold vs **TONE3000** ice blue, the desktop plugin's own two colours), and the
+drive pedal's status bar carries the pedal's name.
+
+All three ride a preset as a **reference and never the file** — the API terms require
+per-user delivery, so each player re-fetches on recall:
+
+| slot | web preset (local + Firestore) | plugin file dialect |
+|---|---|---|
+| amp | `capture` | `capture` |
+| drive pedal | `drive` | `plugin.driveRef` |
+| cab IR | `ir` | `plugin.irRef` |
+
+All three are `CaptureRefDoc`, so the mapping is a rename. See the plugin's
+`TONE3000_PRESET_SYNC.md`.
+
+**One honest asymmetry.** A pedal capture is *bound and carried* here, not *played*: the
+vendored NAM engine exposes a single global `setDsp` — one capture per page — and the amp
+has it. The browser's drive keeps running its own circuit model, the preset still travels
+complete, and the desktop plugin (which gives its Drive a second engine) plays the pedal
+for real. `src/ui/pedalNotice.ts` says exactly this at the moment of picking. Lifting it
+would mean a NAM wasm build with more than one DSP slot.
+
 ## Run
 
 ```bash

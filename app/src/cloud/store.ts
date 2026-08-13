@@ -57,6 +57,11 @@ export interface CaptureRefDoc {
   creator?: string;
   license?: string;
   toneUrl?: string;
+  /** What the creator tagged the tone as ('amp' / 'amp-cab' / 'pedal' /
+   *  'cab'). It is what decides whether a cab IR under this capture helps or
+   *  ruins it, so it travels with the reference rather than being guessed
+   *  again on the far side. */
+  gear?: string;
 }
 
 export interface CloudPreset {
@@ -69,6 +74,15 @@ export interface CloudPreset {
   voice: string;
   params: Record<string, number>;
   capture: CaptureRefDoc | null;
+  /* The other two slots a TONE3000 pick can fill. Same shape as `capture`
+   * and the same contract: a REFERENCE, never the file — the API terms
+   * require per-user delivery, so each player's rig re-fetches them.
+   *
+   * The desktop plugin carries the identical pair as `plugin.driveRef` /
+   * `plugin.irRef` in its file dialect (see the plugin's WebPreset.cpp), so
+   * the three slots line up across both platforms. */
+  drive?: CaptureRefDoc | null;
+  ir?: CaptureRefDoc | null;
   shared: boolean;
   description: string;
   likesCount: number;
@@ -422,13 +436,19 @@ export async function followingFeed(sort: FeedSort, ids: string[]): Promise<Clou
 export async function savePreset(
   user: User, profile: Profile,
   data: { name: string; amp: string; voice: string; params: Record<string, number>;
-          capture: CaptureRefDoc | null; shared: boolean; description: string },
+          capture: CaptureRefDoc | null; drive?: CaptureRefDoc | null;
+          ir?: CaptureRefDoc | null; shared: boolean; description: string },
 ): Promise<string> {
   const ref = await addDoc(presetsCol(), {
     uid: user.uid,
     username: profile.username,
     avatarUrl: profile.avatarUrl ?? '',
     ...data,
+    // Firestore rejects `undefined` outright, and an empty slot is a fact
+    // worth writing: null says "this preset has no pedal capture", where a
+    // missing key would leave a recall wondering whether it was ever asked.
+    drive: data.drive ?? null,
+    ir: data.ir ?? null,
     likesCount: 0, commentsCount: 0, downloadsCount: 0,
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   });

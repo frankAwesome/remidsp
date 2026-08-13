@@ -579,10 +579,47 @@ service cloud.firestore {
       }
     }
 
+    /* One capture reference: the amp's, the drive pedal's, or the cab's.
+     *
+     * Three slots share one shape and therefore one predicate — writing the
+     * checks out three times is how the second and third copies drift from
+     * the first, and every one of these strings is rendered on somebody
+     * else's screen. A preset carries a REFERENCE and never the file (the
+     * TONE3000 terms require per-user delivery), so what has to be safe here
+     * is a handful of short strings and two URLs. */
+    /* A url on a capture reference: https, and short. One predicate rather
+     * than sOrNull() + httpsOrNull() side by side, because THREE references
+     * are now validated per write and Firestore caps a rule evaluation at
+     * 1000 expressions — the pair spelled out separately went over it, and
+     * over the cap means every save is denied, not just the big ones. */
+    function refUrlOk(v) {
+      // The lower bound is load-bearing, not tidiness: v[0:8] on a string
+      // shorter than eight characters is an evaluation ERROR, and an error
+      // takes the whole write down rather than just this field.
+      return v == null || v == ''
+        || (v is string && v.size() > 8 && v.size() <= 500 && v[0:8] == 'https://');
+    }
+    function captureRefOk(v) {
+      return v == null
+        || (v is map && v.keys().hasOnly(
+              ['source', 'label', 'stem', 'modelId', 'modelUrl',
+               'creator', 'license', 'toneUrl', 'gear'])
+            && v.source in ['bundled', 'tone3000']
+            && sOrNull(v.get('label', null), 120)
+            && sOrNull(v.get('stem', null), 80)
+            && sOrNull(v.get('modelId', null), 80)
+            && sOrNull(v.get('creator', null), 80)
+            && sOrNull(v.get('license', null), 120)
+            && sOrNull(v.get('gear', null), 40)
+            && refUrlOk(v.get('modelUrl', null))
+            && refUrlOk(v.get('toneUrl', null)));
+    }
+
     function presetShapeOk() {
       let d = request.resource.data;
       return d.keys().hasOnly(
                ['uid', 'username', 'avatarUrl', 'name', 'amp', 'voice', 'params', 'capture',
+                'drive', 'ir',
                 'shared', 'description', 'likesCount', 'commentsCount',
                 'downloadsCount', 'createdAt', 'updatedAt'])
         && d.uid == request.auth.uid
@@ -603,25 +640,16 @@ service cloud.firestore {
         // instead (src/ui/feed.ts, the g() accessor plus a per-card try), where
         // a bad value costs one unrendered card rather than the whole feed.
         && d.params.size() <= 200
-        && (d.capture == null
-            || (d.capture is map && d.capture.keys().hasOnly(
-                  ['source', 'label', 'stem', 'modelId', 'modelUrl',
-                   'creator', 'license', 'toneUrl'])
-                && d.capture.source in ['bundled', 'tone3000']
-                // EVERY string here is rendered on somebody else's screen, and
-                // until now only modelUrl was checked at all — label and
-                // creator could be any type and any length, which is what let
-                // a shared tone carry markup into the capture gate's innerHTML.
-                // The client escapes them now; this is the second lock.
-                && sOrNull(d.capture.get('label', null), 120)
-                && sOrNull(d.capture.get('stem', null), 80)
-                && sOrNull(d.capture.get('modelId', null), 80)
-                && sOrNull(d.capture.get('creator', null), 80)
-                && sOrNull(d.capture.get('license', null), 120)
-                && sOrNull(d.capture.get('toneUrl', null), 500)
-                && sOrNull(d.capture.get('modelUrl', null), 500)
-                && httpsOrNull(d.capture.get('modelUrl', null))
-                && httpsOrNull(d.capture.get('toneUrl', null))))
+        // The three capture slots — amp, drive pedal, cab IR. EVERY string in
+        // one of these is rendered on somebody else's screen, and before the
+        // predicate existed only modelUrl was checked at all: label and
+        // creator could be any type and any length, which is what let a
+        // shared tone carry markup into the capture gate's innerHTML. The
+        // client escapes them now; this is the second lock, and it is the
+        // same lock on all three.
+        && captureRefOk(d.capture)
+        && captureRefOk(d.get('drive', null))
+        && captureRefOk(d.get('ir', null))
         && d.shared is bool
         && d.description is string && d.description.size() <= 500
         && d.likesCount is int && d.commentsCount is int && d.downloadsCount is int;

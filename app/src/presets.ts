@@ -33,6 +33,13 @@ export interface Preset {
   /** What was actually on the amp when this was saved. A TONE3000 model is
    *  re-fetched on recall; absent (older presets) means the bundled voice. */
   capture?: CaptureRefDoc | null;
+  /** The pedal capture in the DRIVE slot, and the cab IR in the CABINET —
+   *  the other two places a TONE3000 pick can land. References only, like
+   *  `capture`: the files stay on TONE3000 and are re-fetched per player.
+   *  Absent on anything saved before the slots existed, which reads as
+   *  "nothing was picked" and leaves the bundled drive / bundled IR alone. */
+  drive?: CaptureRefDoc | null;
+  ir?: CaptureRefDoc | null;
   /** The cloud document this local copy mirrors, when there is one. A save
    *  writes to both libraries, so a delete has to be able to find the twin —
    *  otherwise the sound disappears from the profile and stays in the preset

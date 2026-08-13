@@ -69,7 +69,12 @@ const preset = (over = {}) => ({
   amp: 'camden',
   voice: 'camden_clean',
   params: { tempo: 92, amp_gain: 0.32, rvb_decay: 6.2 },
+  // The three capture slots the client always writes — amp, drive pedal,
+  // cab IR — null when nothing is picked. Written explicitly rather than
+  // omitted, because that is what savePreset() sends.
   capture: null,
+  drive: null,
+  ir: null,
   shared: false,
   description: '',
   likesCount: 0, commentsCount: 0, downloadsCount: 0,
@@ -97,6 +102,27 @@ const T3K_CAPTURE = {
   creator: 'somecreator',
   license: 'CC BY-NC 4.0',
   toneUrl: 'https://www.tone3000.com/tones/48213',
+  gear: 'amp-cab',
+};
+const T3K_PEDAL = {
+  source: 'tone3000',
+  label: 'Morning Glory V4',
+  modelId: '99001',
+  modelUrl: 'https://storage.tone3000.com/models/99001/model.nam',
+  creator: 'pedalperson',
+  license: 'CC BY-NC 4.0',
+  toneUrl: 'https://www.tone3000.com/tones/99001',
+  gear: 'pedal',
+};
+const T3K_IR = {
+  source: 'tone3000',
+  label: 'Greenback 4x12 · SM57 cap edge',
+  modelId: '77042',
+  modelUrl: 'https://storage.tone3000.com/models/77042/ir.wav',
+  creator: 'cabperson',
+  license: 'CC BY 4.0',
+  toneUrl: 'https://www.tone3000.com/tones/77042',
+  gear: 'cab',
 };
 
 /** Mocks for the two lookups holdsHandle() performs. */
@@ -131,6 +157,32 @@ const CASES = [
   { name: 'save a preset built on a TONE3000 capture',
     expect: 'ALLOW', method: 'create', path: `presets/new4`,
     data: preset({ capture: T3K_CAPTURE, avatarUrl: GOOGLE_AVA }) },
+
+  // All three slots at once: the amp, the drive pedal and the cab, each a
+  // reference and never the file. This is the shape that has to survive, or
+  // a rig saved with a full TONE3000 front end comes back as a third of it.
+  { name: 'save a preset with TONE3000 amp + pedal + cab refs',
+    expect: 'ALLOW', method: 'create', path: `presets/new5`,
+    data: preset({ capture: T3K_CAPTURE, drive: T3K_PEDAL, ir: T3K_IR, avatarUrl: GOOGLE_AVA }) },
+
+  // The same lock the amp ref has, on the other two: no http, no javascript:,
+  // no unbounded strings on a document thirty of which the feed renders.
+  { name: 'REJECT a pedal ref whose model url is not https',
+    expect: 'DENY', method: 'create', path: `presets/bad1`,
+    data: preset({ drive: { ...T3K_PEDAL, modelUrl: 'http://evil.example/model.nam' } }) },
+
+  { name: 'REJECT a cab ref carrying an unknown field',
+    expect: 'DENY', method: 'create', path: `presets/bad2`,
+    data: preset({ ir: { ...T3K_IR, payload: 'x'.repeat(50) } }) },
+
+  // A url too short to slice: must DENY, not error the whole write out.
+  { name: 'REJECT a stub tone url on a pedal ref',
+    expect: 'DENY', method: 'create', path: `presets/bad3`,
+    data: preset({ drive: { ...T3K_PEDAL, toneUrl: 'https:/' } }) },
+
+  { name: 'REJECT an oversized creator on a cab ref',
+    expect: 'DENY', method: 'create', path: `presets/bad4`,
+    data: preset({ ir: { ...T3K_IR, creator: 'z'.repeat(400) } }) },
 
   { name: 'SHARE TO THE FEED (update shared -> true)',
     expect: 'ALLOW', method: 'update', path: `presets/existing`,
