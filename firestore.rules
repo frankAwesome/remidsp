@@ -169,6 +169,41 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // The web rig at /play — ONE document per session (see app/src/analytics.ts),
+    // not one per action: a rig visit is long and chatty, and a write per click
+    // would cost a document per interaction while saying less. Same envelope as
+    // every other event, so the aggregator needs no special case.
+    match /rig_sessions/{id} {
+      allow create: if createOnly()
+        && request.resource.data.keys().hasOnly(
+             envelopeKeys().concat(['booted', 'bootSource', 'isolated', 'sampleRate',
+                                    'audioSec', 'amps', 'voices', 'presetLoads',
+                                    'captureLoads', 't3kOpened', 'looperUsed',
+                                    'signedIn']))
+        && request.resource.data.booted is bool
+        && sOrNull(request.resource.data.get('bootSource', null), 20)
+        && request.resource.data.isolated is bool
+        && numOrNull(request.resource.data.get('sampleRate', null))
+        // A session cannot claim more audio than a very long sitting: this is
+        // the one field worth inflating, so it is bounded server-side (24 h).
+        && request.resource.data.audioSec is int
+        && request.resource.data.audioSec >= 0
+        && request.resource.data.audioSec <= 86400
+        && request.resource.data.amps is list
+        && request.resource.data.amps.size() <= 10
+        && request.resource.data.voices is list
+        && request.resource.data.voices.size() <= 20
+        && request.resource.data.presetLoads is int
+        && request.resource.data.presetLoads >= 0
+        && request.resource.data.captureLoads is int
+        && request.resource.data.captureLoads >= 0
+        && request.resource.data.t3kOpened is bool
+        && request.resource.data.looperUsed is bool
+        && request.resource.data.signedIn is bool;
+      allow read: if dashboardReader();
+      allow update, delete: if false;
+    }
+
     match /downloads/{id} {
       allow create: if createOnly()
         && request.resource.data.keys().hasOnly(

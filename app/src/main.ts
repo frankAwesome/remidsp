@@ -16,6 +16,7 @@ import { t3k, T3kError, type T3kFailure } from './tone3000';
 import { openCaptureGate } from './ui/captureGate';
 import { openCabWarning, openNoCabWarning } from './ui/cabWarning';
 import { fetchVaultText, fetchVaultBytes } from './vault';
+import * as rigMetrics from './analytics';
 import { ICONS, withIcon } from './ui/icons';
 import { openTempoClash } from './ui/tempoClash';
 import { DevicePicker, savedInputChoice, loadSaved } from './ui/devices';
@@ -871,6 +872,7 @@ async function loadBundledVoice(stem: string): Promise<boolean> {
       store.set('cab_ir', KATAHDIN_CAB_IR);
       store.set('cab_on', 1);
     }
+    rigMetrics.noteAmp(currentAmp, stem);
     if (selectedSlot === 'amp') renderStage();
     return true;
   } catch (err) {
@@ -907,6 +909,7 @@ async function loadCaptureRef(ref: CaptureRef, quiet = false): Promise<boolean> 
       creator: ref.creator, license: ref.license, toneUrl: ref.toneUrl,
     };
     addRecent(ref);
+    rigMetrics.noteCaptureLoad();
     engine.sendParam('amp_vtrim', 0); // custom captures sit on the plain anchor
     store.set('amp_on', 1);
     toast(`<b>${esc(ref.label)}</b> on the amp${ref.creator ? ` · by ${esc(ref.creator)}` : ''}`);
@@ -1218,6 +1221,7 @@ async function applyPreset(p: Preset): Promise<boolean> {
   } else {
     await loadBundledVoice(p.voice);
   }
+  rigMetrics.notePresetLoad();
   setPresetLabel(p.name);
   renderStage();
   return captureOk;
@@ -1473,6 +1477,9 @@ async function boot(source: BootSource = 'mic') {
     await assetsWarm;
     await engineUp;
     lastCaptureJson = bootJson;
+    // Metrics: the rig actually started. Source separates "pressed LISTEN
+    // FIRST" from "plugged a guitar in" — the two are very different visits.
+    rigMetrics.rigBooted(source, engine.ctx?.sampleRate ?? null);
   } catch (err) {
     status.textContent = `failed: ${(err as Error).message}`;
     for (const d of doors) d.disabled = false;
@@ -1632,12 +1639,14 @@ function build() {
   profileView.onLibraryChanged = () => resyncPresetStrip();
   profileView.onMessage = (target) => void messages.open(target);
   account.onSessionChange = () => {
+    rigMetrics.noteSignedIn(session.user !== null);
     syncSignedInUi();
     void switchPresetBank();
     watchInbox();
     if (currentView === 'feed') void feedView.refresh();
     if (currentView === 'profile') void profileView.refresh();
   };
+  rigMetrics.armRigMetrics();
   app.appendChild(buildHeader());
   syncSignedInUi(); // signed-out until Firebase says otherwise
   app.appendChild(buildRibbon());
