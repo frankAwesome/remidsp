@@ -2,6 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <!-- Cross-origin isolation, client side (see /coi-sw.js). GitHub Pages
+       cannot set COOP/COEP headers, and without them SharedArrayBuffer does
+       not exist — so the pthreads wasm engine cannot start. The worker
+       re-serves this page with the headers; the first visit reloads once to
+       pick them up. Scoped to /play/ so sign-in stays un-isolated. Inert on
+       a host that already sends the headers (Firebase, the dev server).
+       Must run BEFORE the app, hence its place at the top of <head>. -->
+  <script>
+    (function () {
+      if (window.crossOriginIsolated || !('serviceWorker' in navigator)) return;
+      if (!location.pathname.startsWith('/play')) return;
+      navigator.serviceWorker
+        .register('/coi-sw.js', { scope: '/play/' })
+        .then(function (reg) {
+          // Registered but not yet controlling this document: one reload is
+          // what makes the headers apply. Guard against a reload loop on a
+          // browser where isolation can never be reached (older Safari).
+          if (!navigator.serviceWorker.controller && !sessionStorage.getItem('coiReloaded')) {
+            sessionStorage.setItem('coiReloaded', '1');
+            location.reload();
+          }
+          return reg;
+        })
+        .catch(function (e) { console.error('[coi] registration failed', e); });
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Play Maine live — the whole rig in this tab · REMI DSP</title>
   <!-- The hook is the tab, not the amp. NAM in WASM is an npm install since
