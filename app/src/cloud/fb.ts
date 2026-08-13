@@ -52,7 +52,16 @@ import { getFirestore } from 'firebase/firestore';
  * does not just lose a hardening step, it breaks provider sign-in outright.
  */
 const SAME_ORIGIN_AUTH = true;
-const PROD_HOSTS = ['remidsp-maine.web.app', 'remidsp-maine.firebaseapp.com'];
+// remidsp.com is the live apex (Firebase Hosting custom domain, 2026-08-13):
+// it serves /__/auth/handler same-origin, and it is in Firebase Auth's
+// authorized domains. Without it here the SDK fell back to the
+// firebaseapp.com authDomain, and the redirect result came back through a
+// cross-origin iframe that Chrome/Safari partition away — the
+// "provider sent you back without a sign-in" failure.
+// NOTE: each host listed here must ALSO have https://<host>/__/auth/handler
+// registered on the Google OAuth client, or Google answers 400
+// redirect_uri_mismatch at the consent screen.
+const PROD_HOSTS = ['remidsp.com', 'remidsp-maine.web.app', 'remidsp-maine.firebaseapp.com'];
 
 const app = initializeApp({
   apiKey: 'AIzaSyCc5q1QVR5KlV3khzwCryrO0ScB6P-D1xY',
