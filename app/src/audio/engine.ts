@@ -463,6 +463,26 @@ export class RigEngine {
 
   /** (Re)start the loop. An AudioBufferSourceNode is single-use by spec, so
    *  every start builds a new one — reusing one silently does nothing. */
+  /* How much demo track has actually been heard, in seconds of playback.
+     The node loops, so elapsed time IS playthrough time; dividing by the
+     buffer length gives whole loops. Accumulated across every start/stop so
+     pausing and resuming the demo does not reset the count. */
+  private diSeconds = 0;
+  private diStartedAt: number | null = null;
+
+  /** Seconds of demo track played this session. */
+  get demoSeconds(): number {
+    const live = this.diStartedAt !== null && this.ctx
+      ? this.ctx.currentTime - this.diStartedAt : 0;
+    return this.diSeconds + Math.max(0, live);
+  }
+
+  /** Whole playthroughs of the demo track this session. */
+  get demoLoops(): number {
+    const len = this.diBuffer?.duration || 0;
+    return len > 0 ? this.demoSeconds / len : 0;
+  }
+
   private restartDi() {
     if (!this.ctx || !this.diBuffer || !this.inputBus) return;
     this.stopDi();
@@ -475,9 +495,14 @@ export class RigEngine {
     this.diNode.connect(this.diGain);
     this.diGain.connect(this.inputBus);
     this.diNode.start();
+    this.diStartedAt = ctx.currentTime;
   }
 
   private stopDi() {
+    if (this.diStartedAt !== null && this.ctx) {
+      this.diSeconds += Math.max(0, this.ctx.currentTime - this.diStartedAt);
+      this.diStartedAt = null;
+    }
     try { this.diNode?.stop(); } catch { /* never started */ }
     this.diNode?.disconnect();
     this.diGain?.disconnect();

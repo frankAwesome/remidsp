@@ -1650,6 +1650,8 @@ function build() {
     if (currentView === 'profile') void profileView.refresh();
   };
   rigMetrics.armRigMetrics();
+  // The engine owns the demo clock; hand the flush a way to read it.
+  rigMetrics.provideDemoStats(() => ({ seconds: engine.demoSeconds, loops: engine.demoLoops }));
   app.appendChild(buildHeader());
   syncSignedInUi(); // signed-out until Firebase says otherwise
   app.appendChild(buildRibbon());

@@ -179,7 +179,7 @@ service cloud.firestore {
              envelopeKeys().concat(['booted', 'bootSource', 'isolated', 'sampleRate',
                                     'audioSec', 'amps', 'voices', 'presetLoads',
                                     'captureLoads', 't3kOpened', 'looperUsed',
-                                    'signedIn']))
+                                    'signedIn', 'demoSec', 'demoLoops']))
         && request.resource.data.booted is bool
         && sOrNull(request.resource.data.get('bootSource', null), 20)
         && request.resource.data.isolated is bool
@@ -199,7 +199,15 @@ service cloud.firestore {
         && request.resource.data.captureLoads >= 0
         && request.resource.data.t3kOpened is bool
         && request.resource.data.looperUsed is bool
-        && request.resource.data.signedIn is bool;
+        && request.resource.data.signedIn is bool
+        // Demo listening: seconds heard, and whole playthroughs of the loop.
+        // Bounded like audioSec so a client cannot inflate the headline.
+        && request.resource.data.demoSec is int
+        && request.resource.data.demoSec >= 0
+        && request.resource.data.demoSec <= 86400
+        && request.resource.data.demoLoops is number
+        && request.resource.data.demoLoops >= 0
+        && request.resource.data.demoLoops <= 10000;
       allow read: if dashboardReader();
       allow update, delete: if false;
     }

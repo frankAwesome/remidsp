@@ -124,6 +124,8 @@ const state = {
   t3kOpened: false,
   looperUsed: false,
   signedIn: false,
+  demoSec: 0,      // seconds of the demo track actually heard
+  demoLoops: 0,    // whole playthroughs of it
   sent: false,
 };
 
@@ -159,12 +161,27 @@ export function noteCaptureLoad() { state.captureLoads++; }
 export function noteT3kOpened() { state.t3kOpened = true; }
 export function noteLooperUsed() { state.looperUsed = true; }
 export function noteSignedIn(on: boolean) { state.signedIn = on; }
+/** Demo-track listening, read off the engine at flush time. */
+export function noteDemo(seconds: number, loops: number) {
+  state.demoSec = Math.max(state.demoSec, Math.round(seconds));
+  state.demoLoops = Math.max(state.demoLoops, Math.round(loops * 10) / 10);
+}
 
 /* ── the flush ────────────────────────────────────────────────
    keepalive so the browser finishes the POST after the tab is gone; `ts`
    comes from the server transform so rules can pin it to request.time. */
+/* The page registers this so the flush can read the engine's live totals
+   at the last possible moment, without this module importing the engine. */
+let demoProvider: (() => { seconds: number; loops: number }) | null = null;
+export function provideDemoStats(fn: () => { seconds: number; loops: number }) {
+  demoProvider = fn;
+}
+
 function flush() {
   if (state.sent) return;
+  try {
+    if (demoProvider) { const d = demoProvider(); noteDemo(d.seconds, d.loops); }
+  } catch { /* metrics never break the page */ }
   // A visitor who opened /play and never started the engine is still worth
   // counting — that IS the gate→play conversion denominator.
   state.sent = true;
@@ -184,6 +201,8 @@ function flush() {
     t3kOpened: state.t3kOpened,
     looperUsed: state.looperUsed,
     signedIn: state.signedIn,
+    demoSec: state.demoSec,
+    demoLoops: state.demoLoops,
   };
 
   let body: string;
