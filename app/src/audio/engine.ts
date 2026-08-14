@@ -134,6 +134,23 @@ export class RigEngine {
   /** The last thing before the speakers, so the tuner can mute the rig
    *  without disconnecting anything. */
   private outGain: GainNode | null = null;
+  /* ── the swap gate ────────────────────────────────────────────────────
+   * A second, independent mute, in front of the tuner's one, held down for
+   * as long as the rig is BETWEEN two sounds.
+   *
+   * Its own node rather than a second writer on outGain: the tuner can be
+   * open while a preset changes, and two ramps racing on one AudioParam is
+   * how you get a rig that comes back at full volume with the tuner still
+   * up. Multiplying two gates is exactly right — quiet if EITHER says so.
+   *
+   * It sits AFTER the post worklet, so the looper (which lives inside that
+   * worklet) keeps recording through a patch change instead of punching a
+   * hole in the take. */
+  private swapGain: GainNode | null = null;
+  /** How many overlapping swaps are in flight. A preset change wraps a
+   *  capture load which may wrap an IR fetch; the gate lifts on the last
+   *  one out, never on the first. */
+  private swapDepth = 0;
   /** Time-domain tap on the raw input, ahead of the whole chain: the tuner
    *  reads the guitar, not the amp's distortion of it. */
   tunerTap: AnalyserNode | null = null;
@@ -264,6 +281,7 @@ export class RigEngine {
     this.inputBus.connect(this.tunerTap);
 
     this.outGain = ctx.createGain();
+    this.swapGain = ctx.createGain();
 
     this.pre.connect(this.namIn);
     this.namIn.connect(node);
@@ -276,7 +294,8 @@ export class RigEngine {
     cabSum.connect(this.cabDry);
     this.cabWet.connect(this.post);
     this.cabDry.connect(this.post);
-    this.post.connect(this.outGain);
+    this.post.connect(this.swapGain);
+    this.swapGain.connect(this.outGain);
     this.outGain.connect(ctx.destination);
 
     const onMsg = (e: MessageEvent) => {
@@ -616,9 +635,75 @@ export class RigEngine {
       && 'setSinkId' in AudioContext.prototype;
   }
 
-  /** Swap the amp capture (bundled path or a fetched NAM json string). */
+  /* ── going quiet between two sounds ───────────────────────────────────
+   *
+   * WHY THIS EXISTS. Changing patch is not one event, it is a sequence: the
+   * knob positions land first (instantly, they are numbers), and the capture
+   * they belong to arrives later (a fetch, a decrypt, a wasm reload). In
+   * between, the OUTGOING amp plays the INCOMING preset's settings — and for
+   * the high-gain voice that is genuinely dangerous to listen to. Its capture
+   * carries no speaker (the cab IR is its speaker), so the moment the cabinet
+   * follows the new preset the amp is heard raw: fizz with nothing over it,
+   * at whatever master the next patch asked for.
+   *
+   * A hardware rig solves this by being silent while it changes. So does
+   * this: hold the gate down for the whole traverse and lift it when the new
+   * capture is actually in. Nothing downstream has to know, and the looper
+   * upstream never hears the gap.
+   *
+   * 12 ms down / 45 ms up: below "I heard a click" in both directions, and
+   * the slower return keeps the first note after a patch change from
+   * arriving as a step.
+   *
+   * The way back in also WAITS 50 ms before it starts. The cabinet is a
+   * setTargetAtTime ramp with a 15 ms time constant, so it is only ~96 %
+   * of the way in after that long — and letting the gate rise alongside it
+   * means the first audible instant of an amp-only capture is heard through
+   * a cab that is not all the way up yet. Quiet, brief, and exactly the
+   * frequency range this whole change exists to keep out of someone's ears.
+   * Let the speaker settle first, then open the door.
+   */
+  private static readonly SWAP_LEAD_IN = 0.05;
+
+  /** Hold the rig quiet until the matching endQuietSwap(). Nestable. */
+  beginQuietSwap() {
+    this.swapDepth++;
+    if (this.swapDepth > 1) return;
+    this.rampSwap(0, 0.012);
+  }
+
+  /** Let it back in, once every swap in flight has finished. */
+  endQuietSwap() {
+    this.swapDepth = Math.max(0, this.swapDepth - 1);
+    if (this.swapDepth > 0) return;
+    this.rampSwap(1, 0.045, RigEngine.SWAP_LEAD_IN);
+  }
+
+  private rampSwap(to: number, seconds: number, holdFirst = 0) {
+    const g = this.swapGain?.gain;
+    if (!g || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    // Held flat across the lead-in, then ramped. setValueAtTime twice is what
+    // makes the ramp START at `t + holdFirst` instead of being interpolated
+    // all the way from now, which would defeat the wait entirely.
+    if (holdFirst > 0) g.setValueAtTime(g.value, t + holdFirst);
+    g.linearRampToValueAtTime(to, t + holdFirst + seconds);
+  }
+
+  /** Swap the amp capture (bundled path or a fetched NAM json string).
+   *
+   *  Quiet for the whole of it: suspending the context silences the swap
+   *  itself, but the resume lands the new capture mid-note at whatever level
+   *  the new settings ask for, which is the part that used to be heard. */
   async loadCapture(namJson: string, info: CaptureInfo, forceNano = false): Promise<void> {
     if (!this.ctx || !this.module) throw new Error('engine not running');
+    this.beginQuietSwap();
+    // One render quantum of ramp before the context stops, so the fade the
+    // line above scheduled actually gets rendered rather than being frozen
+    // half-way by the suspend.
+    await new Promise((r) => setTimeout(r, 20));
     await this.ctx.suspend();
     try {
       await this.setDsp(namJson, forceNano);
@@ -626,34 +711,22 @@ export class RigEngine {
       this.onCaptureChange?.(info);
     } finally {
       await this.ctx.resume();
+      this.endQuietSwap();
     }
   }
 
   /** Load a cab IR from a decoded AudioBuffer; null clears + bypasses.
-   *  Energy-normalised IN PLACE to the plugin's rule (0.75 / sqrt(energy) of
-   *  the mono sum), convolver.normalize off — one rule on both platforms, so
-   *  a cab sits at the same level here as in the desktop plugin. */
+   *  Energy-normalised to the plugin's rule (0.75 / sqrt(energy) of the mono
+   *  sum), convolver.normalize off — one rule on both platforms, so a cab
+   *  sits at the same level here as in the desktop plugin.
+   *
+   *  Normalised into a COPY, never in place. The caller's buffer may be a
+   *  cached decode that gets handed back the next time this IR is chosen,
+   *  and scaling the same samples twice would drop the cab ~2.5 dB on every
+   *  re-selection until it faded away. */
   setCabIr(buffer: AudioBuffer | null) {
     if (!this.convolver) return;
-    if (buffer) {
-      const len = Math.min(buffer.length, Math.floor(buffer.sampleRate * 2));
-      const chans = Math.min(buffer.numberOfChannels, 2);
-      let energy = 0;
-      for (let i = 0; i < len; i++) {
-        let m = 0;
-        for (let c = 0; c < chans; c++) m += buffer.getChannelData(c)[i];
-        m /= chans;
-        energy += m * m;
-      }
-      if (energy > 1e-9) {
-        const g = 0.75 / Math.sqrt(energy);
-        for (let c = 0; c < buffer.numberOfChannels; c++) {
-          const d = buffer.getChannelData(c);
-          for (let i = 0; i < d.length; i++) d[i] *= g;
-        }
-      }
-    }
-    this.convolver.buffer = buffer;
+    this.convolver.buffer = buffer ? normalisedIr(buffer, this.ctx!) : null;
     if (!buffer) this.enableCab(false);
   }
 
@@ -778,6 +851,27 @@ export class RigEngine {
   }
 
   sampleRate(): number | null { return this.ctx?.sampleRate ?? null; }
+}
+
+/** The plugin's cab-IR energy rule, applied to a fresh buffer. */
+function normalisedIr(src: AudioBuffer, ctx: BaseAudioContext): AudioBuffer {
+  const len = Math.min(src.length, Math.floor(src.sampleRate * 2));
+  const chans = Math.min(src.numberOfChannels, 2);
+  let energy = 0;
+  for (let i = 0; i < len; i++) {
+    let m = 0;
+    for (let c = 0; c < chans; c++) m += src.getChannelData(c)[i];
+    m /= chans;
+    energy += m * m;
+  }
+  const g = energy > 1e-9 ? 0.75 / Math.sqrt(energy) : 1;
+  const out = ctx.createBuffer(src.numberOfChannels, src.length, src.sampleRate);
+  for (let c = 0; c < src.numberOfChannels; c++) {
+    const s = src.getChannelData(c);
+    const d = out.getChannelData(c);
+    for (let i = 0; i < s.length; i++) d[i] = s[i] * g;
+  }
+  return out;
 }
 
 export const engine = new RigEngine();

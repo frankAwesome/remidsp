@@ -80,7 +80,12 @@ export const PARAMS: ParamDef[] = [
   { id: 'amp_output', label: 'OUTPUT', min: 0, max: 1, def: 0.5, format: dial },
 
   { id: 'cab_on', label: 'CAB', min: 0, max: 1, def: 0 },
-  { id: 'cab_ir', label: 'IR', min: 0, max: 4, def: 0, choices: ['UK 2x12 ON-AXIS', 'UK 2x12 OFF-AXIS', 'US 1x12 ON-AXIS', 'US 1x12 OFF-AXIS', 'KATAHDIN FACTORY'] },
+  /* The last index is not a file — it is "whatever was loaded from outside
+   * the picker", which today means a TONE3000 cab IR. It has to BE a value
+   * of this param rather than a flag beside it, or a preset saved with a
+   * TONE3000 cab recalls as UK 2x12 ON-AXIS and quietly plays the wrong
+   * speaker. main.ts's CUSTOM_IR must stay pointed at it. */
+  { id: 'cab_ir', label: 'IR', min: 0, max: 5, def: 0, choices: ['UK 2x12 ON-AXIS', 'UK 2x12 OFF-AXIS', 'US 1x12 ON-AXIS', 'US 1x12 OFF-AXIS', 'KATAHDIN FACTORY', 'TONE3000 CAB'] },
 
   { id: 'sauce_on', label: 'SAUCE', min: 0, max: 1, def: 0 },
   { id: 'sauce_body', label: 'BODY', min: 0, max: 1, def: 0, format: dial },

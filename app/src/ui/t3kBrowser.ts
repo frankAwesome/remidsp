@@ -8,12 +8,18 @@
  * integration. Amps load into the capture slot, IRs into the cab. */
 
 import { t3k, Tone, T3kModel } from '../tone3000';
-import { engine, CaptureInfo } from '../audio/engine';
-import { store } from '../params';
+import { engine } from '../audio/engine';
 import { toast } from './toast';
-import { addRecent } from '../captures';
+import { CaptureRef, slotForTone } from '../captures';
 
-type LoadIr = (buf: AudioBuffer, name: string) => void;
+/** Hand a picked model to whichever module owns it. The browser knows WHERE
+ *  a tone belongs (the creator's gear tag says so); main.ts knows HOW to
+ *  install it, and is the only place that may touch the rig's state. */
+export interface T3kSink {
+  amp: (ref: CaptureRef) => Promise<boolean>;
+  drive: (ref: CaptureRef) => Promise<boolean>;
+  cab: (ref: CaptureRef) => Promise<boolean>;
+}
 
 export class T3kBrowser {
   root: HTMLElement;
@@ -25,10 +31,10 @@ export class T3kBrowser {
   private page = 1;
   private connectBtn!: HTMLButtonElement;
   private searchInput!: HTMLInputElement;
-  private onLoadIr: LoadIr;
+  private sink: T3kSink;
 
-  constructor(onLoadIr: LoadIr) {
-    this.onLoadIr = onLoadIr;
+  constructor(sink: T3kSink) {
+    this.sink = sink;
     this.root = document.createElement('div');
     this.root.className = 't3k';
     this.root.innerHTML = `
@@ -294,7 +300,7 @@ export class T3kBrowser {
           (await t3k.models(t.id, 2)).length ? await t3k.models(t.id, 2) : await t3k.models(t.id, 1);
         modelsBox.innerHTML = '';
         if (!models.length) modelsBox.innerHTML = `<div class="t3k__note">No loadable files on this tone.</div>`;
-        for (const m of models) modelsBox.appendChild(this.modelRow(t, m, isIr));
+        for (const m of models) modelsBox.appendChild(this.modelRow(t, m));
       } catch (err) {
         modelsBox.innerHTML = `<div class="t3k__note">${(err as Error).message}</div>`;
       }
@@ -302,49 +308,43 @@ export class T3kBrowser {
     return el;
   }
 
-  private modelRow(t: Tone, m: T3kModel, isIr: boolean): HTMLElement {
+  /* One row per loadable file. WHERE it loads is the creator's call, not a
+   * guess and not a second button: a tone tagged `pedal` is a pedal profile
+   * and belongs in the DRIVE slot, an IR is a speaker and belongs in the
+   * CABINET, and everything else is an amp. Sending all three to the amp is
+   * what used to make picking a Tube Screamer silently replace the JTM45. */
+  private modelRow(t: Tone, m: T3kModel): HTMLElement {
+    const slot = slotForTone(t.gear, t.format);
+    const label = m.name || t.title;
+    const kindTag = slot === 'cab' ? 'IR' : `A${m.architecture_version ?? '?'}`;
+    const action = slot === 'cab' ? 'LOAD CAB' : slot === 'drive' ? 'LOAD PEDAL' : 'LOAD AMP';
     const row = document.createElement('div');
     row.className = 't3k__model';
-    row.innerHTML = `<b>${escapeHtml(m.name || `model ${m.id}`)}</b>
-      <span>${isIr ? 'IR' : `A${escapeHtml(m.architecture_version ?? '?')}`}${m.size && m.size !== 'custom' ? ` · ${escapeHtml(m.size)}` : ''}</span>
-      <button>${isIr ? 'LOAD CAB' : 'LOAD AMP'}</button>`;
-    row.querySelector('button')!.addEventListener('click', async () => {
+    row.innerHTML = `<b>${escapeHtml(label)}</b>
+      <span>${escapeHtml(kindTag)}${m.size && m.size !== 'custom' ? ` · ${escapeHtml(m.size)}` : ''}</span>
+      <button>${action}</button>`;
+    const btn = row.querySelector('button')!;
+    btn.addEventListener('click', async () => {
+      const ref: CaptureRef = {
+        kind: 'tone3000', id: String(m.id), label,
+        url: m.model_url, creator: t.user?.username, license: t.license, toneUrl: t.url,
+        gear: t.gear, slot,
+        // Straight off the API in this session, so it is the trusted kind and
+        // keeps its Bearer header when it is re-loaded from RECENT. A ref
+        // that arrives inside somebody's preset never gets this flag.
+        trusted: true,
+      };
+      btn.disabled = true;
       try {
-        toast(`Loading <b>${escapeHtml(m.name || t.title)}</b>…`);
-        // This url came straight off the API response in this session, so it
-        // is the trusted kind and keeps its Bearer header.
-        const res = await t3k.fetchModelFile(m.model_url, { trusted: true });
-        if (isIr) {
-          const arr = await res.arrayBuffer();
-          const buf = await engine.ctx!.decodeAudioData(arr);
-          this.onLoadIr(buf, m.name || t.title);
-          toast(`<b>${escapeHtml(m.name || t.title)}</b> in the cab`);
-        } else {
-          const json = await res.text();
-          const info: CaptureInfo = {
-            name: m.name || t.title, source: 'tone3000',
-            toneTitle: t.title, creator: t.user?.username,
-            license: t.license, url: t.url,
-            // 'amp-cab' means the speaker is already in there, so the cab IR
-            // would be a second one; 'amp' is a DI that actually wants one.
-            hasCab: t.gear === 'amp-cab' ? true : t.gear === 'amp' ? false : undefined,
-          };
-          await engine.loadCapture(json, info);
-          store.set('amp_on', 1);
-          // Remember it — the amp drawer's CAPTURE menu lists recent loads.
-          addRecent({
-            kind: 'tone3000', id: String(m.id), label: m.name || t.title,
-            url: m.model_url, creator: t.user?.username, license: t.license, toneUrl: t.url,
-            gear: t.gear,
-            // Straight off the API, so re-loading it from RECENT keeps the
-            // bearer header. A preset's capture never gets this flag.
-            trusted: true,
-          });
-          window.dispatchEvent(new CustomEvent('remi:capture-loaded'));
-          toast(`<b>${escapeHtml(info.name)}</b> on the amp · by ${escapeHtml(info.creator ?? '')}`);
+        // The rig can only take a capture once it exists. Saying so is far
+        // better than the TypeError the old IR path threw on engine.ctx!.
+        if (!engine.ctx) {
+          toast('The rig is not running yet — press a door on the way in, then pick again.', 5000);
+          return;
         }
-      } catch (err) {
-        toast(`Load failed — ${(err as Error).message}`);
+        await this.sink[slot](ref);
+      } finally {
+        btn.disabled = false;
       }
     });
     return row;
