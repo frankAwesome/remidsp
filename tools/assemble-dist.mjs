@@ -9,7 +9,7 @@
  *
  * The app's runtime paths are root-absolute (/assets/ui/…, /worklet/…,
  * /t3k-wasm-module.js, /t3k-callback.html) ON PURPOSE: the two trees are
- * disjoint below /assets (landing owns img/fonts+css/js/audio, the rig owns
+ * disjoint below /assets (landing owns img/fonts+css/js, the rig owns
  * ui/site/captures + hashed bundles), so merging them at the root means not
  * one path in the app's source had to change. Keep it that way — a new
  * landing asset dir must not collide with an app public dir.
@@ -33,7 +33,7 @@ mkdirSync(dist);
 // the rig first, the landing second — on a same-name collision (favicon.ico)
 // the landing's file is the site's face and wins
 cpSync(appDist, dist, { recursive: true });
-for (const entry of ['index.html', '404.html', 'css', 'js', 'assets', 'audio',
+for (const entry of ['index.html', '404.html', 'css', 'js', 'assets',
                      'favicon.ico', 'robots.txt', 'sitemap.xml']) {
   const src = join(root, entry);
   if (existsSync(src)) cpSync(src, join(dist, entry), { recursive: true, force: true });

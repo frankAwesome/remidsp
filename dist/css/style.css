@@ -516,8 +516,8 @@ em{font-style:normal;color:var(--gold-hi)}
    the angled edges. Tilt alternates down the page so the fields hang like
    a series. z-index:-1 inside an isolated section: behind everything the
    section draws, above the page. */
-.showcase,.sound,.studio,.cab{position:relative;isolation:isolate}
-.showcase::before,.sound::before,.studio::before,.cab::before{
+.showcase,.studio,.cab{position:relative;isolation:isolate}
+.showcase::before,.studio::before,.cab::before{
   content:"";position:absolute;z-index:-1;
   left:50%;top:clamp(1rem,2.6vw,2.6rem);bottom:clamp(1rem,2.6vw,2.6rem);
   width:114vw;transform:translateX(-50%) rotate(var(--field-tilt,-2.5deg));
@@ -525,9 +525,8 @@ em{font-style:normal;color:var(--gold-hi)}
   border-top:1px solid var(--field-line);
   border-bottom:1px solid var(--field-line)}
 .showcase{--field:#bfe0f2;--field-2:#ddeef8;--field-line:rgba(27,132,173,.36);--field-tilt:-3deg}
-.sound{--field:#c4e7d4;--field-2:#e0f3e9;--field-line:rgba(47,138,86,.34);--field-tilt:-2.8deg}
 .studio{--field:#f5c8bf;--field-2:#fadfd9;--field-line:rgba(190,84,70,.34);--field-tilt:3deg}
-.cab{--field:#f5d3ad;--field-2:#fae6cc;--field-line:rgba(196,120,42,.36);--field-tilt:-3.2deg}
+.cab{--field:#c4e7d4;--field-2:#e0f3e9;--field-line:rgba(47,138,86,.34);--field-tilt:-3.2deg}
 
 /* ════════ 01 · SHOWCASE — the product, full width ════════ */
 .showcase{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
@@ -537,13 +536,13 @@ em{font-style:normal;color:var(--gold-hi)}
    second voice. Its rule opens with a tick of the light. */
 .showcase__head{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3rem);
   align-items:end;margin-bottom:clamp(2.4rem,4.4vw,3.6rem)}
-.showcase__lede,.sound__lede,.live__lede{position:relative;max-width:32em;padding:.2rem 0 .45rem 1.6rem;
+.showcase__lede,.live__lede{position:relative;max-width:32em;padding:.2rem 0 .45rem 1.6rem;
   border-left:1px solid var(--line-2);
   display:flex;flex-direction:column;gap:.75rem}
-.showcase__lede::before,.sound__lede::before,.live__lede::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:2.6rem;
+.showcase__lede::before,.live__lede::before{content:"";position:absolute;left:-1px;top:0;width:1px;height:2.6rem;
   background:linear-gradient(180deg,var(--gold),var(--ice),transparent)}
-.showcase__lede p,.sound__lede p,.live__lede p{color:var(--muted);font-size:.96rem;line-height:1.7}
-.showcase__lede p:first-child,.sound__lede p:first-child,.live__lede p:first-child{color:var(--text)}
+.showcase__lede p,.live__lede p{color:var(--muted);font-size:.96rem;line-height:1.7}
+.showcase__lede p:first-child,.live__lede p:first-child{color:var(--text)}
 /* Both plugin-window shots sit at one width, one class of image. The window
    itself is dark — the one deep black on the page, framed like a print. */
 .showcase__stage{position:relative;max-width:1040px;margin-inline:auto}
@@ -665,153 +664,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .ampcol__voices li span{display:none}
 }
 
-/* ════════ 03 · THE SOUND — the listening deck ════════
-   A rack unit in the page's hairline language: transport strip on top, one
-   ruled row per clip. The light is spent on exactly one thing at a time —
-   the clip that is playing. All three clips stay on screen, drawn, seekable:
-   this is emphatically not a switcher. */
-.sound{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
-  padding:clamp(4.5rem,9vw,7rem) var(--pad)}
-.sound__head{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(1.5rem,4vw,3rem);
-  align-items:end;margin-bottom:clamp(2.2rem,4vw,3.2rem)}
-@media (max-width:880px){.sound__head{grid-template-columns:1fr;align-items:start}}
-
-.deck{position:relative;overflow:hidden;isolation:isolate;
-  border:1px solid var(--line-2);
-  clip-path:var(--notch);
-  background:linear-gradient(180deg,var(--card),var(--card-2));
-  box-shadow:var(--shadow-deep);
-  --mx:50%;--my:0%}
-/* faceplate light — parked dim, blooms from the top edge once a clip is live */
-.deck::before{content:"";position:absolute;left:0;right:0;top:0;height:34%;z-index:0;
-  pointer-events:none;opacity:.12;
-  background:radial-gradient(130% 100% at 50% 0,var(--ice),transparent 74%);
-  transition:opacity .8s var(--ease)}
-.deck.is-live::before{opacity:.4}
-/* shared cursor spotlight — same [data-card] pointer handler as the tiles */
-.deck::after{content:"";position:absolute;inset:0;z-index:4;opacity:0;pointer-events:none;
-  background:radial-gradient(440px circle at var(--mx) var(--my),rgba(159,216,232,.14),transparent 62%);
-  transition:opacity .35s}
-.deck:hover::after{opacity:1}
-
-/* ── transport strip ── */
-.deck__bar{position:relative;z-index:2;display:flex;align-items:center;gap:1.05rem;
-  padding:1.05rem clamp(1.1rem,2.6vw,1.8rem);border-bottom:1px solid var(--line-2);
-  background-image:repeating-linear-gradient(180deg,rgba(11,16,24,.02) 0 1px,transparent 1px 4px)}
-.deck__lamp{width:9px;height:9px;flex:0 0 auto;background:var(--muted-2);
-  box-shadow:none;transition:background .3s,box-shadow .3s}
-.deck.is-live .deck__lamp{background:var(--gold);
-  box-shadow:0 0 14px rgba(27,132,173,.85);animation:lamp 2.2s ease-in-out infinite}
-.deck__state{flex:0 0 auto;font-size:.6rem;letter-spacing:.28em;color:var(--muted-2)}
-.deck.is-live .deck__state{color:var(--gold)}
-.deck__now{flex:0 0 auto;font-family:var(--font-display);font-weight:600;
-  text-transform:uppercase;letter-spacing:.12em;font-size:1rem;line-height:1;
-  color:var(--muted-2);transition:color .3s}
-.deck.is-live .deck__now{color:var(--ink)}
-/* flex-basis 0 (not auto): the canvas has an intrinsic 520px from its width
-   attribute, which as a basis would shove the clock off the strip */
-.deck__spectrum{flex:1 1 0;min-width:0;max-width:100%;height:36px;display:block;opacity:.9}
-.deck__clock{flex:0 0 auto;display:flex;align-items:baseline;gap:.4rem;
-  font-size:.92rem;color:var(--gold);text-shadow:0 0 14px rgba(159,216,232,.7)}
-.deck__clock i{font-family:var(--font-mono);font-style:normal;font-size:.62rem;color:var(--muted-2)}
-.deck__clock .led:last-of-type{color:var(--muted-2);text-shadow:none}
-
-/* ── the clip rows ── */
-.deck__list{position:relative;z-index:2;list-style:none}
-@media (hover:hover) and (pointer:fine){
-  .deck__list:hover .clip:not(:hover):not(.is-active){opacity:.5}
-}
-.clip{position:relative;display:grid;align-items:center;
-  grid-template-columns:auto auto minmax(8.5rem,13rem) minmax(0,1fr) auto;
-  grid-template-areas:"toggle no id wave time";
-  gap:clamp(.9rem,2vw,1.6rem);
-  padding:1.15rem clamp(1.1rem,2.6vw,1.8rem);
-  border-top:1px solid var(--line);
-  transition:opacity .35s var(--ease),background .45s var(--ease)}
-.clip:first-child{border-top:0}
-/* the live row: a 2px rule of the plugin's light down its leading edge */
-.clip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;
-  background:linear-gradient(180deg,var(--gold),var(--gold-deep));
-  transform:scaleY(0);transform-origin:50% 0;
-  transition:transform .5s var(--ease)}
-.clip.is-active{background:rgba(159,216,232,.10)}
-.clip.is-active::before{transform:scaleY(1)}
-
-/* play / pause — a flat square slab in the .btn--amber grammar */
-.clip__toggle{grid-area:toggle;width:48px;height:48px;flex:0 0 auto;
-  display:grid;place-items:center;cursor:pointer;
-  border:1px solid var(--line-2);color:var(--ink);
-  background:rgba(255,255,255,.7);
-  transition:background .25s,border-color .25s,color .25s,box-shadow .3s}
-.clip__toggle:hover{background:#fff;border-color:rgba(27,132,173,.55)}
-.clip.is-playing .clip__toggle{background:var(--ink);border-color:var(--ink);color:#fff;
-  box-shadow:0 0 30px -6px rgba(27,132,173,.65)}
-.clip__ico{width:20px;height:20px;fill:currentColor;grid-area:1/1}
-.clip__ico--pause{display:none}
-.clip.is-playing .clip__ico--play{display:none}
-.clip.is-playing .clip__ico--pause{display:block}
-
-.clip__no{grid-area:no;font-size:.78rem;color:var(--muted-2);transition:color .3s}
-.clip.is-active .clip__no{color:var(--gold);text-shadow:0 0 14px rgba(159,216,232,.7)}
-.clip__id{grid-area:id;min-width:0}
-.clip__id h3{font-size:1.65rem;color:var(--text);transition:color .3s}
-.clip.is-active .clip__id h3{color:var(--ink)}
-.clip__tag{margin-top:.3rem;font-size:.56rem;color:var(--muted-2);transition:color .3s}
-.clip.is-active .clip__tag{color:var(--gold)}
-
-/* ── waveform ── canvas paints measured peaks; the three spans on top are the
-   playhead, the hover scrub line, and its time label. */
-.clip__wave{grid-area:wave;position:relative;height:60px;min-width:0;cursor:pointer;
-  touch-action:pan-y}
-.clip__wave canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.clip__head{position:absolute;top:2px;bottom:2px;left:0;width:1px;z-index:2;
-  background:var(--gold-deep);box-shadow:0 0 10px rgba(27,132,173,.8);
-  opacity:0;transition:opacity .25s;will-change:transform}
-.clip.is-active .clip__head{opacity:1}
-.clip__ghost{position:absolute;top:6px;bottom:6px;left:0;width:1px;z-index:1;
-  background:rgba(11,16,24,.4);opacity:0;transition:opacity .2s;will-change:transform}
-.clip__scrub{position:absolute;top:-.15rem;left:0;z-index:3;font-size:.56rem;
-  color:var(--ink);background:rgba(255,255,255,.94);border:1px solid var(--line-2);
-  padding:.1rem .3rem;opacity:0;transition:opacity .2s;pointer-events:none;
-  white-space:nowrap;will-change:transform}
-@media (hover:hover) and (pointer:fine){
-  .clip__wave:hover .clip__ghost,.clip__wave:hover .clip__scrub{opacity:1}
-}
-.clip__wave:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-
-.clip__time{grid-area:time;font-size:.66rem;color:var(--muted-2);
-  font-variant-numeric:tabular-nums;transition:color .3s}
-.clip.is-active .clip__time{color:var(--text)}
-
-.deck__foot{position:relative;z-index:2;padding:.9rem clamp(1.1rem,2.6vw,1.8rem);
-  border-top:1px solid var(--line-2);font-size:.58rem;color:var(--muted-2);text-align:right}
-
-/* Tablet: the spectrum is the first thing to go — it is decoration. */
-@media (max-width:900px){
-  .deck__spectrum{display:none}
-  .deck__bar{gap:.75rem}
-}
-/* Phone: the waveform earns a full-width row of its own beneath the name. */
-@media (max-width:720px){
-  .clip{grid-template-columns:auto auto minmax(0,1fr) auto;
-    grid-template-areas:"toggle no id time" "wave wave wave wave";
-    row-gap:.85rem;padding:1rem var(--pad)}
-  .clip__wave{height:48px}
-  .clip__id h3{font-size:1.3rem}
-  .deck__bar,.deck__foot{padding-inline:var(--pad)}
-  .deck__now{font-size:.82rem}
-}
-@media (max-width:360px){
-  .clip__tag{display:none}
-  .clip__toggle{width:42px;height:42px}
-}
-
-@media (prefers-reduced-motion:reduce){
-  .deck.is-live .deck__lamp{animation:none}
-  .clip::before{transition:none}
-}
-
-/* ════════ 04 · PEDALBOARD — horizontal rail ════════ */
+/* ════════ 03 · PEDALBOARD — horizontal rail ════════ */
 .board{position:relative}
 .board__head{max-width:var(--maxw);margin:0 auto;padding:clamp(4rem,8vw,6.5rem) var(--pad) 1.6rem}
 .board__head h2{margin-bottom:1.1rem}
@@ -860,7 +713,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .board__progress{display:none}
 }
 
-/* ════════ 05 · STUDIO ════════ */
+/* ════════ 04 · STUDIO ════════ */
 .studio{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
   padding:clamp(5.5rem,11vw,9.5rem) var(--pad);
   display:grid;grid-template-columns:1.12fr .88fr;gap:clamp(2.2rem,5vw,5rem);align-items:center}
@@ -892,7 +745,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .vu{display:none}
 }
 
-/* ════════ 06 · CAB ════════ */
+/* ════════ 05 · CAB ════════ */
 .cab{max-width:var(--maxw);margin:0 auto;
   padding:clamp(3.5rem,8vw,6.5rem) var(--pad)}
 .cab__copy{max-width:56ch}
@@ -904,7 +757,7 @@ em{font-style:normal;color:var(--gold-hi)}
 .cab__media img{width:100%;display:block;
   filter:drop-shadow(0 30px 52px rgba(120,70,25,.35))}
 
-/* ════════ 07 · SPECS — the chain, then two ruled facts ════════ */
+/* ════════ 06 · SPECS — the chain, then two ruled facts ════════ */
 .specs{max-width:var(--maxw);margin:0 auto;padding:clamp(2.5rem,5vw,4rem) var(--pad)}
 .spectable{border-top:1px solid var(--line-2)}
 .specrow{display:grid;grid-template-columns:minmax(7.5rem,12%) 1fr;gap:clamp(1rem,3vw,2.5rem);
@@ -1037,7 +890,7 @@ em{font-style:normal;color:var(--gold-hi)}
     font-size:.56rem;letter-spacing:.2em;color:var(--muted-2);margin-left:.6rem}
 }
 
-/* ════════ 08 · DOWNLOAD ════════ */
+/* ════════ 07 · DOWNLOAD ════════ */
 .download{position:relative;max-width:var(--maxw);margin:0 auto;overflow:clip;
   padding:clamp(4.5rem,9vw,7rem) var(--pad) clamp(6rem,12vw,10rem)}
 .download__ghost{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);z-index:0;
