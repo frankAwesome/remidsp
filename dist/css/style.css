@@ -526,7 +526,11 @@ em{font-style:normal;color:var(--gold-hi)}
   border-bottom:1px solid var(--field-line)}
 .showcase{--field:#bfe0f2;--field-2:#ddeef8;--field-line:rgba(27,132,173,.36);--field-tilt:-3deg}
 .studio{--field:#f5c8bf;--field-2:#fadfd9;--field-line:rgba(190,84,70,.34);--field-tilt:3deg}
-.cab{--field:#c4e7d4;--field-2:#e0f3e9;--field-line:rgba(47,138,86,.34);--field-tilt:-3.2deg}
+.cab{--field:#f5d3ad;--field-2:#fae6cc;--field-line:rgba(196,120,42,.36);--field-tilt:-3.2deg}
+/* CAPTURES rides the .showcase shell, so it only needs its own field. Green,
+   tilted the other way, so it alternates against the blue showcase below it.
+   Declared after .showcase: same specificity, so source order decides. */
+.captures{--field:#c4e7d4;--field-2:#e0f3e9;--field-line:rgba(47,138,86,.34);--field-tilt:2.8deg}
 
 /* ════════ 01 · SHOWCASE — the product, full width ════════ */
 .showcase{max-width:calc(var(--maxw) + 4vw);margin:0 auto;
@@ -565,6 +569,27 @@ em{font-style:normal;color:var(--gold-hi)}
 .showcase__caption{margin:1.2rem auto 0;max-width:1040px;text-align:right;
   color:var(--muted-2);font-size:.62rem}
 .showcase__caption .led{color:var(--gold);font-size:.9em}
+.showcase__caption a{color:inherit;text-decoration:underline;text-underline-offset:3px;
+  text-decoration-color:var(--line-2);transition:color .3s}
+.showcase__caption a:hover{color:var(--ink)}
+
+/* the two blocks under the CAPTURES shot: the fact row, then the attribution
+   fine print. The attribution is required by TONE3000's API terms, so it is
+   styled to be read rather than tucked away at footer size. */
+.captures__facts{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;
+  gap:clamp(1.1rem,3.4vw,3rem);max-width:1040px;
+  margin:clamp(1.7rem,3.4vw,2.6rem) auto 0}
+.captures__facts li{display:flex;flex-direction:column;align-items:center;gap:.45rem;
+  text-align:center}
+.captures__facts .led{font-size:clamp(1.35rem,2.6vw,1.9rem);color:var(--gold);
+  text-shadow:0 0 20px rgba(159,216,232,.7)}
+.captures__facts i{font-family:var(--font-mono);font-style:normal;font-size:.56rem;
+  letter-spacing:.24em;color:var(--muted-2)}
+.captures__fine{max-width:64ch;margin:clamp(1.3rem,2.8vw,2rem) auto 0;text-align:center;
+  font-size:.78rem;line-height:1.75;color:var(--muted-2)}
+.captures__fine a{color:var(--muted);text-decoration:underline;text-underline-offset:3px;
+  text-decoration-color:var(--line-2);transition:color .3s}
+.captures__fine a:hover{color:var(--ink)}
 @media (max-width:880px){.showcase__head{grid-template-columns:1fr;align-items:start}}
 
 /* ════════ 02 · THE LINEUP — the dark showroom ════════

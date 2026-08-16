@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Maine, the all-in-one guitar rig</title>
-<meta name="description" content="Maine — REMI DSP's all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Standalone, VST3, AU & AAX on macOS; standalone & VST3 on Windows. Or play it live in your browser — no install, no guitar needed." />
+<meta name="description" content="Maine — REMI DSP's all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Runs any NAM (Neural Amp Modeler) capture, with a TONE3000 capture browser built in. Standalone, VST3, AU & AAX on macOS; standalone & VST3 on Windows. Or play it live in your browser — no install, no guitar needed." />
 <!-- Canonical earns its keep here: this page is reachable as remidsp.com/,
      remidsp.com/index.html, the retired /guitar.html (which now redirects
      here), and (via GitHub's redirect) the old project URL. Without it those
@@ -14,7 +14,7 @@
 <meta property="og:locale" content="en_US" />
 <meta property="og:url" content="https://remidsp.com/" />
 <meta property="og:title" content="REMI DSP — Maine, the all-in-one guitar rig" />
-<meta property="og:description" content="Three amplifiers captured from the real things. A pedalboard that reorders itself. A studio strip that finishes the job. And a live version that plays in your browser — right now." />
+<meta property="og:description" content="Three amplifiers captured from the real things — and it runs any NAM capture, with a TONE3000 browser built in. A pedalboard that reorders itself. A studio strip that finishes the job. And a live version that plays in your browser — right now." />
 <meta property="og:type" content="website" />
 <!-- the head renders carry alpha; social cards must be opaque, so point at the
      pre-flattened 1200x630 card rather than a plugin asset. Built from
@@ -77,6 +77,7 @@
       "softwareVersion": "1.0.3",
       "featureList": [
         "Three amplifiers, six voices, captured from real, mic'd-up rigs",
+        "Runs any NAM (Neural Amp Modeler) capture, with a capture browser Powered by TONE3000",
         "Ten-slot reorderable pedalboard",
         "Console EQ and FET compressor studio strip",
         "Strobe tuner accurate to a hundredth of a cent",
@@ -142,6 +143,7 @@
   </a>
   <nav class="nav__links" aria-label="Primary">
     <a href="#live" data-scramble>Play&nbsp;Live</a>
+    <a href="#captures" data-scramble>Captures</a>
     <a href="#amps" data-scramble>Amps</a>
     <a href="#board" data-scramble>Pedalboard</a>
     <a href="#studio" data-scramble>Studio</a>
@@ -216,10 +218,10 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
   </div>
 </section>
@@ -299,10 +301,72 @@
   <p class="film__cap mono" data-reveal>MAINE&nbsp;IN&nbsp;MOTION · 14&nbsp;S&nbsp;LOOP · SILENT</p>
 </section>
 
-<!-- ░░ 01 · THE PLUGIN — one product, so show the product ░░ -->
-<section class="showcase" id="plugin" data-bg="#ffffff">
+<!-- ░░ 01 · CAPTURES — the open format, and the browser that feeds it ░░
+     Placed first among the numbered sections on purpose: "runs NAM" is the
+     claim that travels furthest right now, and it is the one a visitor can
+     verify against their own capture folder.
+
+     Attribution here is not decoration. TONE3000's API terms require the
+     exact phrase "Powered by TONE3000" plus a link to tone3000.com, and
+     require that browsing be presented AS TONE3000 rather than white-labelled
+     into someone else's UI. The wording deliberately stops at what Maine
+     does — it loads from the catalogue — and never claims a partnership,
+     endorsement or certification, which the same terms reserve for written
+     approval. NAM is named the same way: nominative use, describing a file
+     format Maine reads, not a badge anyone granted us. -->
+<section class="showcase captures" id="captures" data-bg="#eef7f1">
   <header class="shead" data-reveal>
     <span class="shead__no led">01</span>
+    <p class="kicker">Captures</p>
+    <span class="shead__meta mono">NAM&nbsp;FORMAT&nbsp;·&nbsp;POWERED&nbsp;BY&nbsp;TONE3000</span>
+  </header>
+
+  <div class="showcase__head">
+    <h2 data-reveal>It runs NAM.<br>All of it.</h2>
+    <div class="showcase__lede" data-reveal style="--d:.08s">
+      <p>Maine's amps are <strong>NAM captures</strong> — the open Neural&nbsp;Amp&nbsp;Modeler
+         format. Any <span class="mono">.nam</span> file you already own drops straight in
+         and plays, at the rate it was trained at.</p>
+      <p>And you don't have to go hunting for them. The
+         <strong>TONE3000</strong> browser is built into the window: filter by amp,
+         amp&nbsp;+&nbsp;cab, cab&nbsp;IR or pedal, hit <strong>LOAD</strong>, and the capture
+         lands in the amp slot — saved with your preset like anything else.</p>
+    </div>
+  </div>
+
+  <div class="showcase__stage" data-reveal>
+    <div class="showcase__frame" data-tilt>
+      <picture>
+        <source srcset="assets/img/captures-tone3000.webp" type="image/webp">
+        <img src="assets/img/captures-tone3000.png" width="1920" height="1265"
+             alt="Maine's CAPTURES drawer, powered by TONE3000 — a filter row for amp, amp and cab, cab IR and pedal, above a scrolling list of captures. Each row shows the capture's artwork, its creator, its download count and a LOAD button." />
+      </picture>
+      <span class="showcase__glare" aria-hidden="true"></span>
+    </div>
+    <span class="bk bk--tl" aria-hidden="true"></span>
+    <span class="bk bk--tr" aria-hidden="true"></span>
+    <span class="bk bk--bl" aria-hidden="true"></span>
+    <span class="bk bk--br" aria-hidden="true"></span>
+  </div>
+  <p class="showcase__caption mono">THE&nbsp;CAPTURES&nbsp;DRAWER&nbsp;—&nbsp;AMP&nbsp;·&nbsp;AMP&nbsp;+&nbsp;CAB&nbsp;·&nbsp;CAB&nbsp;IR&nbsp;·&nbsp;PEDAL</p>
+
+  <ul class="captures__facts" data-reveal>
+    <li><span class="led">4</span><i>CAPTURE TYPES</i></li>
+    <li><span class="led">1</span><i>CLICK TO LOAD</i></li>
+    <li><span class="led">0</span><i>FILE CONVERSION</i></li>
+  </ul>
+
+  <p class="captures__fine" data-reveal>
+    Capture playback is built on <a href="https://github.com/sdatkinson/NeuralAmpModelerCore" target="_blank" rel="noopener">Neural&nbsp;Amp&nbsp;Modeler</a>&nbsp;(MIT).
+    Browsing is Powered&nbsp;by&nbsp;<a href="https://www.tone3000.com" target="_blank" rel="noopener">TONE3000</a> —
+    captures are delivered per-user, with their creators and licences attached, and are never cached or redistributed by Maine.
+  </p>
+</section>
+
+<!-- ░░ 02 · THE PLUGIN — one product, so show the product ░░ -->
+<section class="showcase" id="plugin" data-bg="#ffffff">
+  <header class="shead" data-reveal>
+    <span class="shead__no led">02</span>
     <p class="kicker">The Plugin</p>
     <span class="shead__meta mono">MAINE&nbsp;v1.0.3&nbsp;·&nbsp;MACOS&nbsp;&amp;&nbsp;WINDOWS</span>
   </header>
@@ -334,7 +398,7 @@
   <p class="showcase__caption mono">MAINE&nbsp;v1.0.3&nbsp;—&nbsp;CAPTURE&nbsp;ENGINE&nbsp;·&nbsp;<span class="led">44.1–96</span>&nbsp;kHz</p>
 </section>
 
-<!-- ░░ 02 · THE AMPLIFIERS — the whole lineup, side by side ░░
+<!-- ░░ 03 · THE AMPLIFIERS — the whole lineup, side by side ░░
      Deliberately NOT a switcher. The hero already does one-at-a-time; this
      section's whole job is the opposite — every head and all six voices on
      screen together, so the "6 voices" claim is shown rather than asserted.
@@ -342,7 +406,7 @@
 <!-- No data-bg: the dark showroom paints itself; the page behind stays paper. -->
 <section class="lineup" id="amps">
   <header class="shead" data-reveal>
-    <span class="shead__no led">02</span>
+    <span class="shead__no led">03</span>
     <p class="kicker">The Amplifiers</p>
     <span class="shead__meta mono">CAPTURED&nbsp;FULL-RIG&nbsp;·&nbsp;CAB&nbsp;BAKED&nbsp;IN</span>
   </header>
@@ -417,11 +481,11 @@
   </p>
 </section>
 
-<!-- ░░ 03 · THE PEDALBOARD — horizontal rail ░░ -->
+<!-- ░░ 04 · THE PEDALBOARD — horizontal rail ░░ -->
 <section class="board" id="board">
   <div class="board__head">
     <header class="shead" data-reveal>
-      <span class="shead__no led">03</span>
+      <span class="shead__no led">04</span>
       <p class="kicker">The Pedalboard</p>
       <span class="shead__meta mono">10&nbsp;SLOTS&nbsp;·&nbsp;ANY&nbsp;ORDER</span>
     </header>
@@ -486,7 +550,7 @@
   </div>
 </section>
 
-<!-- ░░ 04 · THE STUDIO STRIP ░░ -->
+<!-- ░░ 05 · THE STUDIO STRIP ░░ -->
 <section class="studio" id="studio" data-bg="#f9f1ef">
   <div class="studio__media" data-reveal-wipe>
     <img src="assets/img/studio.webp" width="1920" height="1208"
@@ -494,7 +558,7 @@
   </div>
   <div class="studio__copy">
     <header class="shead" data-reveal>
-      <span class="shead__no led">04</span>
+      <span class="shead__no led">05</span>
       <p class="kicker">The Studio Strip</p>
     </header>
     <h2 data-reveal style="--d:.06s">Mix-ready, the moment you plug in.</h2>
@@ -519,11 +583,11 @@
   </div>
 </section>
 
-<!-- ░░ 05 · THE CAB ░░ -->
-<section class="cab" id="cab" data-bg="#eef7f1">
+<!-- ░░ 06 · THE CAB ░░ -->
+<section class="cab" id="cab" data-bg="#fdf6ec">
   <div class="cab__copy">
     <header class="shead" data-reveal>
-      <span class="shead__no led">05</span>
+      <span class="shead__no led">06</span>
       <p class="kicker">The Cab</p>
       <span class="shead__meta mono">IR&nbsp;LOADER</span>
     </header>
@@ -540,10 +604,10 @@
   </div>
 </section>
 
-<!-- ░░ 06 · SPECS — the ten modules, then formats + rates ░░ -->
+<!-- ░░ 07 · SPECS — the ten modules, then formats + rates ░░ -->
 <section class="specs" id="specs">
   <header class="shead" data-reveal>
-    <span class="shead__no led">06</span>
+    <span class="shead__no led">07</span>
     <p class="kicker">Specs</p>
     <span class="shead__meta mono">MACOS&nbsp;11+&nbsp;·&nbsp;WINDOWS&nbsp;10/11&nbsp;·&nbsp;64-BIT</span>
   </header>
@@ -636,11 +700,11 @@
   </dl>
 </section>
 
-<!-- ░░ 07 · DOWNLOAD ░░ -->
+<!-- ░░ 08 · DOWNLOAD ░░ -->
 <section class="download" id="download">
   <div class="download__ghost" aria-hidden="true">PLAY</div>
   <header class="shead" data-reveal>
-    <span class="shead__no led">07</span>
+    <span class="shead__no led">08</span>
     <p class="kicker">Download</p>
     <span class="shead__meta mono">FREE&nbsp;OF&nbsp;ACCOUNTS&nbsp;·&nbsp;FULL&nbsp;VERSION</span>
   </header>
@@ -729,7 +793,7 @@
     <p class="footer__tag">Maine — the all-in-one guitar rig.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Maine</h4><a href="#live">Play live</a><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
+    <div><h4>Maine</h4><a href="#live">Play live</a><a href="#captures">Captures</a><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
     <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a><a href="/play/" data-placement="footer">Maine Live (browser)</a></div>
     <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3, AU &amp; AAX</a><a href="#download">Standalone</a><a href="#live">Browser — live</a></div>
   </div>
@@ -737,7 +801,7 @@
     © <span id="year">2026</span> REMI DSP. Built for players and producers.<br>
     <span class="footer__fine">REMI DSP is an independent audio studio.
     Capture playback is built on <a href="https://github.com/sdatkinson/NeuralAmpModelerCore" target="_blank" rel="noopener">Neural&nbsp;Amp&nbsp;Modeler</a> (MIT).
-    Capture browsing in the live rig is Powered&nbsp;by&nbsp;<a href="https://www.tone3000.com" target="_blank" rel="noopener">TONE3000</a>.</span>
+    Capture browsing is Powered&nbsp;by&nbsp;<a href="https://www.tone3000.com" target="_blank" rel="noopener">TONE3000</a>, in the plugin and in the live rig.</span>
   </p>
   <div class="footer__ghost" aria-hidden="true">REMI&nbsp;DSP</div>
 </footer>
