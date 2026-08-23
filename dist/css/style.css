@@ -189,10 +189,6 @@ em{font-style:normal;color:var(--gold-hi)}
 /* the live button carries the brand's one lamp — a point of the light, lit */
 .btn--live .btn__lamp{width:7px;height:7px;flex:0 0 auto;background:var(--gold);
   box-shadow:0 0 10px rgba(27,132,173,.8);animation:lamp 2.2s ease-in-out infinite}
-/* white slab for dark ground (the download section's live strip) */
-.btn--paper{background:#fff;color:var(--ink)}
-.btn--paper:hover{background:var(--ice);box-shadow:0 14px 40px -14px rgba(159,216,232,.6)}
-.btn--paper:hover::after{border-color:rgba(159,216,232,.65);transform:translate(5px,5px)}
 .btn:active{transform:scale(.97)}
 
 /* ════════ logo lockup (exact app wordmark) ════════ */
@@ -969,20 +965,6 @@ em{font-style:normal;color:var(--gold-hi)}
   color:var(--muted);background:rgba(201,132,32,.08);border:1px solid rgba(166,110,26,.35)}
 .dcard__warn strong{color:#8a5c12;font-weight:600}
 .dcard--box{border-color:rgba(27,132,173,.4);background:linear-gradient(180deg,#f2f9fc,var(--card))}
-/* the third road — no installer at all. An ink slab with the ice hairline,
-   so the live rig reads as an equal citizen of the download section. */
-.download__live{position:relative;z-index:1;margin-top:1.5rem;
-  display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap;
-  padding:1.8rem 2rem;clip-path:var(--notch);
-  background:linear-gradient(150deg,#10151d,#0b1018);
-  box-shadow:var(--shadow-deep)}
-.download__live::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(159,216,232,.8),transparent)}
-.download__livecopy h3{color:#fff;font-size:1.55rem;margin-bottom:.4rem}
-.download__livecopy p{color:#98a1ac;font-size:.94rem;max-width:52ch}
-.download__live .btn{flex:0 0 auto}
-@media (max-width:720px){.download__live{padding:1.5rem var(--pad)}
-  .download__live .btn{width:100%;justify-content:center}}
 .dcard__list{list-style:none;display:flex;flex-direction:column;gap:.62rem;margin-top:.2rem}
 .dcard__list li{position:relative;padding-left:1.7rem;color:var(--text);font-size:.94rem}
 .dcard__list li::before{content:"";position:absolute;left:0;top:.18em;width:1.05rem;height:1.05rem;

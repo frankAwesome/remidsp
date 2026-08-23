@@ -142,12 +142,12 @@
     <span class="logo__word">REMI DSP</span>
   </a>
   <nav class="nav__links" aria-label="Primary">
-    <a href="#live" data-scramble>Try&nbsp;It&nbsp;Live</a>
     <a href="#captures" data-scramble>Captures</a>
     <a href="#amps" data-scramble>Amps</a>
     <a href="#board" data-scramble>Pedalboard</a>
     <a href="#studio" data-scramble>Studio</a>
     <a href="#free" data-scramble>Free</a>
+    <a href="#live" data-scramble>Try&nbsp;It&nbsp;Live</a>
   </nav>
   <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download</span></a>
 </header>
@@ -224,48 +224,6 @@
       <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
   </div>
-</section>
-
-<!-- ░░ THE LIVE RIG — the proof, before the pitch ░░
-     Unnumbered like the creed: a declaration, not a chapter. The whole rig
-     runs live at /play — one site, one repo — and the LISTEN FIRST door needs no
-     guitar, no mic and no account — so this band sits directly under the
-     hero, where "try it right now" earns the most. The shot wears a drawn
-     browser chrome (tab dots + URL bar) so "it runs in a tab" is read
-     before a single word is. Screenshot of the web rig itself, not a mock. -->
-<section class="live" id="live" data-bg="#e9f3f8">
-  <header class="live__bar" data-reveal>
-    <span class="badge mono">LIVE&nbsp;NOW</span>
-    <p class="kicker">The Live Rig</p>
-    <span class="live__barmeta mono">REMIDSP.COM/PLAY&nbsp;·&nbsp;CHROME&nbsp;/&nbsp;EDGE</span>
-  </header>
-
-  <div class="live__head">
-    <h2 data-reveal>Demo it right now.<br><span class="live__lit">No guitar needed.</span></h2>
-    <div class="live__lede" data-reveal style="--d:.08s">
-      <p>The whole rig also runs <strong>live in a browser tab</strong> — the same
-         captured heads, the dual-engine delay, the shimmer reverb, a multitrack
-         looper — nothing to download, nobody to sign up to.</p>
-      <p>Press <strong>Play It Live</strong> and the rig opens right here in
-         your browser — a demo track plays through it even with no guitar
-         plugged in, and your own interface takes over the moment you're
-         ready.</p>
-      <div class="live__doors" data-reveal style="--d:.16s">
-        <a class="door door--demo" href="/play/" data-placement="live" data-label="Live · Play It Live">
-          <span class="door__main">Play&nbsp;It&nbsp;Live</span>
-          <span class="door__sub">in your browser · no guitar needed · no account</span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <ul class="live__tally" data-reveal>
-    <li><span class="led">0</span><i>INSTALLS</i></li>
-    <li><span class="led">0</span><i>ACCOUNTS</i></li>
-    <li><span class="led">1</span><i>BROWSER TAB</i></li>
-    <li><span class="led">3</span><i>AMPS LIVE</i></li>
-  </ul>
-
 </section>
 
 <!-- ░░ THE CREED — the part the others put in the fine print ░░
@@ -767,19 +725,47 @@
     </article>
   </div>
 
-  <!-- the third road: no installer at all. An ink slab, so it reads as an
-       equal citizen of the download section rather than a footnote. -->
-  <aside class="download__live" data-reveal>
-    <div class="download__livecopy">
-      <h3>Nothing to install here?</h3>
-      <p>The live rig plays in a browser tab — same captures, same delay, same
-         reverb, plus a looper. Demo it with no guitar, or plug in and play.</p>
+</section>
+
+<!-- ░░ THE LIVE RIG — the encore, after the pitch ░░
+     Deliberately last: the plugin is the product, so the page closes on the
+     download. This band is the safety net for whoever reached the end
+     without installing — the same rig runs live at /play, no guitar, no
+     mic, no account. (It replaced the download section's "nothing to
+     install?" aside — one closing mention, not two.) -->
+<section class="live" id="live" data-bg="#e9f3f8">
+  <header class="live__bar" data-reveal>
+    <span class="badge mono">LIVE&nbsp;NOW</span>
+    <p class="kicker">The Live Rig</p>
+    <span class="live__barmeta mono">REMIDSP.COM/PLAY&nbsp;·&nbsp;CHROME&nbsp;/&nbsp;EDGE</span>
+  </header>
+
+  <div class="live__head">
+    <h2 data-reveal>Can't install today?<br><span class="live__lit">Demo it in a tab.</span></h2>
+    <div class="live__lede" data-reveal style="--d:.08s">
+      <p>A live demo of the rig runs <strong>in a browser tab</strong> — the same
+         captured heads, the dual-engine delay, the shimmer reverb, a multitrack
+         looper — nothing to download, nobody to sign up to.</p>
+      <p>Press <strong>Play It Live</strong> and the demo opens right here in
+         your browser — a demo track plays through it even with no guitar
+         plugged in. When it hooks you, the real thing is one
+         <a href="#download">download</a> up the page.</p>
+      <div class="live__doors" data-reveal style="--d:.16s">
+        <a class="door door--demo" href="/play/" data-placement="live" data-label="Live · Play It Live">
+          <span class="door__main">Play&nbsp;It&nbsp;Live</span>
+          <span class="door__sub">in your browser · no guitar needed · no account</span>
+        </a>
+      </div>
     </div>
-    <a class="btn btn--paper" href="/play/"
-       data-magnetic data-placement="download" data-label="Download · Open the live rig">
-      <span>Open&nbsp;The&nbsp;Live&nbsp;Rig</span>
-    </a>
-  </aside>
+  </div>
+
+  <ul class="live__tally" data-reveal>
+    <li><span class="led">0</span><i>INSTALLS</i></li>
+    <li><span class="led">0</span><i>ACCOUNTS</i></li>
+    <li><span class="led">1</span><i>BROWSER TAB</i></li>
+    <li><span class="led">3</span><i>AMPS LIVE</i></li>
+  </ul>
+
 </section>
 
 </main>
