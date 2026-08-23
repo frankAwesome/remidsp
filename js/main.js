@@ -157,11 +157,8 @@
   const hudPct    = $("#hudPct");
   const heroInner = $(".hero__inner");
   const heroStage = $(".hero__stage");
-  const boardPin  = $("#boardPin");
-  const boardTrack= $("#boardTrack");
-  const boardFill = $("#boardFill");
-  const boardCount= $("#boardCount");
-  const cards     = $$(".pcard");
+  const deckEl    = $("#deck");
+  const deckCards = $$(".deckcard");
   const ghost     = $(".download__ghost");
   const vuNeedle  = $("#vuNeedle");
   const marqBand  = $(".marquee__band");
@@ -175,26 +172,26 @@
   const BASE_BG   = "#f6f8fa";
 
   const M = { vh: 0, docH: 1, hero: 0,
-              boardTop: 0, boardTravel: 1, boardDist: 0,
-              ghostMid: 0, marqW: 1, ranges: [] };
+              deck: [], ghostMid: 0, marqW: 1, ranges: [] };
 
   function measure() {
     M.vh = innerHeight;
-    // board pin height first — it shifts everything below it
-    if (boardPin && boardTrack) {
-      if (mqWide.matches) {
-        M.boardDist = Math.max(0, boardTrack.scrollWidth - innerWidth + 48);
-        // 1:1 map — vertical scroll through the section == horizontal rail travel.
-        boardPin.style.height = Math.round(M.vh + M.boardDist) + "px";
-      } else {
-        boardPin.style.height = "";
-        M.boardDist = 0;
-      }
-    }
     const top = el => el.getBoundingClientRect().top + scrollY;
     M.docH   = document.documentElement.scrollHeight - M.vh;
     M.hero   = M.vh;
-    if (boardPin){ M.boardTop = top(boardPin); M.boardTravel = Math.max(1, boardPin.offsetHeight - M.vh); }
+    // Deck geometry: layout tops are derived from the (static) container plus
+    // accumulated card heights — a stuck card's own rect lies about where it
+    // lives, its flow position doesn't. sTop is the resolved sticky offset.
+    if (deckEl && deckCards.length) {
+      const gap = parseFloat(getComputedStyle(deckEl).rowGap) || 0;
+      let cy = top(deckEl);
+      M.deck = deckCards.map(el => {
+        const g = { el, top: cy, h: el.offsetHeight,
+                    sTop: parseFloat(getComputedStyle(el).top) || 0, cover: -1 };
+        cy += g.h + gap;
+        return g;
+      });
+    }
     if (ghost)   { const g = $(".download"); M.ghostMid = top(g) + g.offsetHeight / 2; }
     if (marqTracks[0]) M.marqW = marqTracks[0].scrollWidth;
     // theme ranges: every [data-bg] section + board + the hero reel
@@ -215,18 +212,18 @@
      THE LOOP — one rAF for everything scroll/velocity-driven
      ──────────────────────────────────────────────────────────── */
   let lastY = scrollY, vel = 0, curBg = "", navStuck = null, lastPct = -1;
-  let lastBoardCount = "", marqX = 0, marqDir = -1;
+  let deckIdx = 0, marqX = 0, marqDir = -1;
   let stringsOn = false;
 
   function setBg(bg) {
     if (bg && bg !== curBg) { document.body.style.backgroundColor = curBg = bg; }
   }
 
-  function themeAt(mid, boardP) {
+  function themeAt(mid) {
     for (const r of M.ranges) {
       if (mid < r.top || mid >= r.bot) continue;
       if (r.kind === "rig")   return AMP_BGS[clamp(rig.i, 0, 2)];   // page washes with the live head
-      if (r.kind === "board") return mqWide.matches ? CARD_BGS[clamp(Math.floor(boardP * 5), 0, 4)] : BASE_BG;
+      if (r.kind === "board") return CARD_BGS[clamp(deckIdx, 0, CARD_BGS.length - 1)];
       return r.bg;
     }
     return BASE_BG;
@@ -256,17 +253,20 @@
         if (heroStage) heroStage.style.transform = `translate3d(0,${(y * 0.08).toFixed(1)}px,0)`;
       }
 
-      /* pedal rail — 1:1, live rect, with velocity skew */
-      let boardP = 0;
-      if (boardTrack && mqWide.matches) {
-        const r = boardPin.getBoundingClientRect();
-        if (r.top < M.vh && r.bottom > 0) {
-          boardP = clamp(-r.top / M.boardTravel, 0, 1);
-          const sk = clamp(-vel * 0.06, -4, 4);
-          boardTrack.style.transform = `translate3d(${(-boardP * M.boardDist).toFixed(1)}px,0,0) skewX(${sk.toFixed(2)}deg)`;
-          if (boardFill) boardFill.style.transform = `scaleX(${boardP.toFixed(4)})`;
-          const c = pad(1 + Math.min(cards.length - 1, Math.floor(boardP * cards.length)));
-          if (c !== lastBoardCount && boardCount) { boardCount.textContent = c; lastBoardCount = c; }
+      /* the deck — each settled card sinks and dims as the next lands on it.
+         Sticky does the pinning; this only feeds --cover from cached geometry. */
+      if (M.deck.length > 1) {
+        deckIdx = 0;
+        for (let i = 0; i < M.deck.length; i++) {
+          const cur = M.deck[i];
+          if (y >= cur.top - cur.sTop) deckIdx = i;      // card i has locked in
+          if (i === M.deck.length - 1) break;
+          const nxt = M.deck[i + 1];
+          // nxt's top edge travels from cur's stuck bottom down to its own stick line
+          const start = nxt.top - (cur.sTop + cur.h);
+          const end   = nxt.top - nxt.sTop;
+          const c = clamp((y - start) / Math.max(1, end - start), 0, 1);
+          if (c !== cur.cover) { cur.cover = c; cur.el.style.setProperty("--cover", c.toFixed(3)); }
         }
       }
 
@@ -295,7 +295,7 @@
       }
 
       /* theme morph */
-      setBg(themeAt(y + M.vh * 0.5, boardP));
+      setBg(themeAt(y + M.vh * 0.5));
 
       /* hero strings */
       if (stringsOn) strings.step(now);
@@ -479,7 +479,7 @@
   // shifts every cached offset below the hero — re-measure once it lands.
   document.fonts?.ready.then(() => measure());
   // Lazy lineup/pedal images settle the section heights too.
-  $$(".ampcol__shot img,.pcard__img img").forEach(img => {
+  $$(".ampcol__shot img,.deckcard__img img").forEach(img => {
     if (img.complete) return;
     img.addEventListener("load", () => measure(), { once: true });
   });
