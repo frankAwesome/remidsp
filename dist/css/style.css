@@ -689,53 +689,60 @@ em{font-style:normal;color:var(--gold-hi)}
   .ampcol__voices li span{display:none}
 }
 
-/* ════════ 03 · PEDALBOARD — horizontal rail ════════ */
-.board{position:relative}
-.board__head{max-width:var(--maxw);margin:0 auto;padding:clamp(4rem,8vw,6.5rem) var(--pad) 1.6rem}
+/* ════════ 03 · PEDALBOARD — the deck ════════
+   Five sticky cards that stack and settle over one another on native
+   scroll — "a board that reorders itself", performed by the section.
+   position:sticky does all the pinning; JS only feeds each card a
+   --cover amount (0..1, how far the next card has landed on it) so the
+   buried card sinks back and dims like a pedal slotted under another.
+   Each card hangs at its own slight tilt (--r) — a loose deck, not a
+   grid — and straightens under the pointer. */
+.board{position:relative;max-width:var(--maxw);margin:0 auto;
+  padding:clamp(4rem,8vw,6.5rem) var(--pad) clamp(4.5rem,9vw,7rem)}
+.board__head{padding:0 0 clamp(2rem,4vw,3rem)}
 .board__head h2{margin-bottom:1.1rem}
 .board__sub{color:var(--muted);font-size:1.06rem;max-width:38em}
-.board__pin{position:relative}
-.board__viewport{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:clip}
-.board__track{display:flex;gap:clamp(1.5rem,3.2vw,3rem);padding-left:max(var(--pad),calc((100vw - var(--maxw))/2));
-  padding-right:8vw;will-change:transform}
-.pcard{flex:0 0 min(76vw,470px);position:relative;overflow:hidden;
+.deck{--peek:.9rem;display:flex;flex-direction:column;gap:clamp(2.4rem,5vw,4rem)}
+.deckcard{position:sticky;top:calc(4.8rem + var(--k)*var(--peek));
+  display:grid;grid-template-columns:1.4fr 1fr;overflow:hidden;
   background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line-2);
-  clip-path:var(--notch);
-  box-shadow:var(--shadow-lift);will-change:transform;
-  --mx:50%;--my:30%}
-.pcard::before{content:"";position:absolute;inset:0;z-index:0;opacity:.14;
-  background:radial-gradient(90% 70% at 50% 0%,var(--tint),transparent 70%)}
-.pcard::after{content:"";position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;
-  background:radial-gradient(340px circle at var(--mx) var(--my),rgba(159,216,232,.16),transparent 60%);
+  clip-path:var(--notch);box-shadow:var(--shadow-deep);
+  transform:rotate(var(--r,0deg)) scale(calc(1 - .045*var(--cover,0)));
+  filter:brightness(calc(1 - .28*var(--cover,0)));
+  transform-origin:50% 20%;will-change:transform,filter;
+  transition:transform .5s var(--ease);
+  --mx:50%;--my:30%;--cover:0}
+.deckcard:hover{transform:rotate(0deg) scale(calc(1 - .045*var(--cover,0)))}
+/* the pedal's own tint runs the card's top edge — the wiring harness */
+.deckcard::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;z-index:4;
+  background:linear-gradient(90deg,var(--tint),color-mix(in srgb,var(--tint) 30%,transparent) 70%,transparent)}
+.deckcard::after{content:"";position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;
+  background:radial-gradient(420px circle at var(--mx) var(--my),rgba(159,216,232,.14),transparent 60%);
   transition:opacity .35s}
-.pcard:hover::after{opacity:1}
-/* Pedal shots are pre-cropped to the pedal panel; the image well matches the
-   shot's native ratio so the whole pedal shows at full width, no side crop.
-   The well stays dark on purpose — each pedal is photographed in its own
+.deckcard:hover::after{opacity:1}
+/* Pedal shots are pre-cropped to the pedal panel; the well keeps their native
+   ratio and stays dark on purpose — each pedal is photographed in its own
    lamplight, a lit window set into the white card. */
-.pcard__img{position:relative;z-index:1;aspect-ratio:1920/907;overflow:hidden;background:#0a0a0b}
-.pcard__img img{width:100%;height:100%;object-fit:contain;object-position:center}
-.pcard__meta{position:relative;z-index:2;padding:1.4rem 1.7rem 1.8rem;border-top:1px solid var(--line);
+.deckcard__img{position:relative;z-index:1;aspect-ratio:1920/907;overflow:hidden;background:#0a0a0b;
+  border-right:1px solid var(--line)}
+.deckcard__img::before{content:"";position:absolute;inset:0;z-index:1;opacity:.32;
+  background:radial-gradient(80% 90% at 50% 0%,color-mix(in srgb,var(--tint) 40%,transparent),transparent 70%)}
+.deckcard__img img{position:relative;z-index:2;width:100%;height:100%;object-fit:contain;object-position:center}
+.deckcard__meta{position:relative;z-index:2;display:flex;flex-direction:column;
+  padding:clamp(1.2rem,2.4vw,2rem) clamp(1.2rem,2.4vw,2rem) clamp(1.1rem,2vw,1.6rem);
   background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.85))}
-.pcard__no{font-size:1.4rem;line-height:1;display:inline-block;
+.deckcard__no{font-size:clamp(1.8rem,3vw,2.6rem);line-height:1;margin-bottom:.7rem;
   color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--tint) 65%,var(--ink));
-  text-shadow:0 0 16px color-mix(in oklab,var(--tint) 40%,transparent)}
-.pcard__meta h3{margin:.4rem 0 .2rem;font-size:1.7rem}
-.pcard__tag{margin-bottom:.6rem;color:color-mix(in srgb,var(--tint) 60%,var(--ink));font-size:.64rem}
-.pcard__meta > p:last-child{color:var(--muted);font-size:.95rem}
-.board__progress{position:absolute;left:50%;bottom:5vh;transform:translateX(-50%);z-index:5;
-  display:flex;align-items:center;gap:1rem;pointer-events:none}
-.board__count{font-size:.85rem;color:var(--gold);text-shadow:0 0 10px rgba(159,216,232,.7)}
-.board__bar{width:min(30vw,280px);height:2px;background:rgba(11,16,24,.14);overflow:hidden}
-.board__bar span{display:block;height:100%;width:100%;background:var(--gold);transform:scaleX(0);
-  transform-origin:0 50%;will-change:transform;box-shadow:0 0 10px rgba(27,132,173,.5)}
-
+  text-shadow:0 0 18px color-mix(in oklab,var(--tint) 40%,transparent)}
+.deckcard__meta h3{font-size:clamp(1.7rem,2.4vw,2.2rem);margin-bottom:.25rem}
+.deckcard__tag{margin-bottom:.75rem;color:color-mix(in srgb,var(--tint) 60%,var(--ink));font-size:.64rem}
+.deckcard__copy{color:var(--muted);font-size:.95rem}
+.deckcard__ix{margin-top:auto;padding-top:1rem;font-size:.58rem;color:var(--muted-2)}
 @media (max-width:880px){
-  .board__viewport{position:static;height:auto;overflow-x:auto;overscroll-behavior-x:contain;
-    scroll-snap-type:x mandatory;padding-bottom:1.5rem;-webkit-overflow-scrolling:touch}
-  .board__track{transform:none!important;padding-left:var(--pad);padding-right:var(--pad)}
-  .pcard{scroll-snap-align:center;flex-basis:80vw}
-  .board__progress{display:none}
+  .deck{--peek:.55rem}
+  .deckcard{grid-template-columns:1fr;top:calc(4.2rem + var(--k)*var(--peek))}
+  .deckcard__img{border-right:0;border-bottom:1px solid var(--line)}
+  .deckcard__ix{padding-top:.8rem}
 }
 
 /* ════════ 04 · STUDIO ════════ */
@@ -1051,7 +1058,6 @@ em{font-style:normal;color:var(--gold-hi)}
   .rig__sheen{display:none}
   .lineup__row:hover .ampcol:not(:hover){opacity:1}
   .ampcol,.ampcol::before{transition:none}
-  .board__viewport{position:static;height:auto;overflow-x:auto}
-  .board__track{transform:none!important}
-  .board__progress{display:none}
+  /* the deck lies flat: no tilt, no sink, no stacking — a plain column */
+  .deckcard{position:static;transform:none!important;filter:none!important;transition:none}
 }
