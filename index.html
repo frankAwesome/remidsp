@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Maine, the all-in-one guitar rig</title>
-<meta name="description" content="Maine — REMI DSP's all-in-one guitar rig. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Runs any NAM (Neural Amp Modeler) capture, with a TONE3000 capture browser built in. Standalone, VST3, AU & AAX on macOS; standalone & VST3 on Windows. Or play it live in your browser — no install, no guitar needed." />
+<meta name="description" content="Maine — the free all-in-one guitar rig plugin. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Runs any NAM (Neural Amp Modeler) capture, with a TONE3000 capture browser built in. The full version, free — no account, no trial timer: standalone, VST3, AU & AAX on macOS; standalone & VST3 on Windows. Hear it first in your browser — no install, no guitar needed." />
 <!-- Canonical earns its keep here: this page is reachable as remidsp.com/,
      remidsp.com/index.html, the retired /guitar.html (which now redirects
      here), and (via GitHub's redirect) the old project URL. Without it those
@@ -14,7 +14,7 @@
 <meta property="og:locale" content="en_US" />
 <meta property="og:url" content="https://remidsp.com/" />
 <meta property="og:title" content="REMI DSP — Maine, the all-in-one guitar rig" />
-<meta property="og:description" content="Three amplifiers captured from the real things — and it runs any NAM capture, with a TONE3000 browser built in. A pedalboard that reorders itself. A studio strip that finishes the job. And a live version that plays in your browser — right now." />
+<meta property="og:description" content="The free all-in-one guitar rig plugin — three amps captured from the real things, any NAM capture, a TONE3000 browser built in. Full version, every format, no account, no trial timer. Hear it in your browser before you download." />
 <meta property="og:type" content="website" />
 <!-- the head renders carry alpha; social cards must be opaque, so point at the
      pre-flattened 1200x630 card rather than a plugin asset. Built from
@@ -29,7 +29,7 @@
 <meta property="og:image:alt" content="The Portland amplifier head — black tolex and gold, with brass corners" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="REMI DSP — Maine, the all-in-one guitar rig" />
-<meta name="twitter:description" content="Three amplifiers captured from the real things." />
+<meta name="twitter:description" content="The free all-in-one guitar rig plugin — full version, every format, no account. Hear it in your browser first." />
 <meta name="twitter:image" content="https://remidsp.com/assets/img/og-card-daylight.jpg" />
 <meta name="twitter:image:alt" content="The Portland amplifier head — black tolex and gold, with brass corners" />
 <meta name="theme-color" content="#f6f8fa" />
@@ -142,12 +142,12 @@
     <span class="logo__word">REMI DSP</span>
   </a>
   <nav class="nav__links" aria-label="Primary">
-    <a href="#live" data-scramble>Play&nbsp;Live</a>
     <a href="#captures" data-scramble>Captures</a>
     <a href="#amps" data-scramble>Amps</a>
     <a href="#board" data-scramble>Pedalboard</a>
     <a href="#studio" data-scramble>Studio</a>
     <a href="#free" data-scramble>Free</a>
+    <a href="#live" data-scramble>Try&nbsp;It&nbsp;Live</a>
   </nav>
   <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download</span></a>
 </header>
@@ -169,18 +169,15 @@
            gradient-clipped element itself makes Chromium composite it and
            paint the background-clip:text gradient as a solid box -->
       <span class="line"><span data-reveal-line style="--d:.05s"><span class="hero__mast">Maine</span></span></span>
-      <span class="line"><span data-reveal-line class="hero__sub" style="--d:.18s">Three amps&nbsp;·&nbsp;One window&nbsp;·&nbsp;The whole rig</span></span>
+      <span class="line"><span data-reveal-line class="hero__sub" style="--d:.18s">Three captured amps&nbsp;·&nbsp;The whole rig&nbsp;·&nbsp;Free forever</span></span>
     </h1>
     <div class="hero__cta" data-reveal style="--d:.32s">
       <a href="#download" class="btn btn--amber btn--lg" data-magnetic>
         <span>Download&nbsp;—&nbsp;Free</span>
       </a>
-      <a href="/play/" class="btn btn--ghost btn--lg btn--live" data-magnetic data-placement="hero" data-label="Hero · Play It Live">
-        <span class="btn__lamp" aria-hidden="true"></span><span>Play&nbsp;It&nbsp;Live</span>
-      </a>
-      <span class="hero__formats mono">VST3 · AU · AAX · STANDALONE · BROWSER</span>
+      <span class="hero__formats mono">VST3 · AU · AAX · STANDALONE</span>
     </div>
-    <p class="hero__note mono" data-reveal style="--d:.42s">FULL&nbsp;VERSION · NO&nbsp;ACCOUNT · NO&nbsp;ILOK · DEMO&nbsp;IT&nbsp;WITH&nbsp;NO&nbsp;GUITAR</p>
+    <p class="hero__note mono" data-reveal style="--d:.42s">FULL&nbsp;VERSION · NO&nbsp;ACCOUNT · NO&nbsp;ILOK · NO&nbsp;TRIAL&nbsp;TIMER</p>
   </div>
 
   <div class="rig__stage" id="rig" data-card>
@@ -224,48 +221,6 @@
       <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
   </div>
-</section>
-
-<!-- ░░ THE LIVE RIG — the proof, before the pitch ░░
-     Unnumbered like the creed: a declaration, not a chapter. The whole rig
-     runs live at /play — one site, one repo — and the LISTEN FIRST door needs no
-     guitar, no mic and no account — so this band sits directly under the
-     hero, where "try it right now" earns the most. The shot wears a drawn
-     browser chrome (tab dots + URL bar) so "it runs in a tab" is read
-     before a single word is. Screenshot of the web rig itself, not a mock. -->
-<section class="live" id="live" data-bg="#e9f3f8">
-  <header class="live__bar" data-reveal>
-    <span class="badge mono">LIVE&nbsp;NOW</span>
-    <p class="kicker">The Live Rig</p>
-    <span class="live__barmeta mono">REMIDSP.COM/PLAY&nbsp;·&nbsp;CHROME&nbsp;/&nbsp;EDGE</span>
-  </header>
-
-  <div class="live__head">
-    <h2 data-reveal>Demo it right now.<br><span class="live__lit">No guitar needed.</span></h2>
-    <div class="live__lede" data-reveal style="--d:.08s">
-      <p>The whole rig also runs <strong>live in a browser tab</strong> — the same
-         captured heads, the dual-engine delay, the shimmer reverb, a multitrack
-         looper — nothing to download, nobody to sign up to.</p>
-      <p>Press <strong>Play It Live</strong> and the rig opens right here in
-         your browser — a demo track plays through it even with no guitar
-         plugged in, and your own interface takes over the moment you're
-         ready.</p>
-      <div class="live__doors" data-reveal style="--d:.16s">
-        <a class="door door--demo" href="/play/" data-placement="live" data-label="Live · Play It Live">
-          <span class="door__main">Play&nbsp;It&nbsp;Live</span>
-          <span class="door__sub">in your browser · no guitar needed · no account</span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <ul class="live__tally" data-reveal>
-    <li><span class="led">0</span><i>INSTALLS</i></li>
-    <li><span class="led">0</span><i>ACCOUNTS</i></li>
-    <li><span class="led">1</span><i>BROWSER TAB</i></li>
-    <li><span class="led">3</span><i>AMPS LIVE</i></li>
-  </ul>
-
 </section>
 
 <!-- ░░ THE CREED — the part the others put in the fine print ░░
@@ -338,8 +293,8 @@
     <div class="showcase__frame" data-tilt>
       <picture>
         <source srcset="assets/img/captures-tone3000.webp" type="image/webp">
-        <img src="assets/img/captures-tone3000.png" width="1920" height="1265"
-             alt="Maine's CAPTURES drawer, powered by TONE3000 — a filter row for amp, amp and cab, cab IR and pedal, above a scrolling list of captures. Each row shows the capture's artwork, its creator, its download count and a LOAD button." />
+        <img src="assets/img/captures-tone3000.png" width="1920" height="1208"
+             alt="Maine's CAPTURES drawer, powered by TONE3000, slid open over the amp inside the plugin window — a sidebar for Trending, Newest and your own favorites, downloads and uploads, a filter row for amp, amp and cab, cab IR and pedal, and a scrolling list of captures. Each row shows the capture's artwork, its creator, its download count and a LOAD button." />
       </picture>
       <span class="showcase__glare" aria-hidden="true"></span>
     </div>
@@ -481,7 +436,12 @@
   </p>
 </section>
 
-<!-- ░░ 04 · THE PEDALBOARD — horizontal rail ░░ -->
+<!-- ░░ 04 · THE PEDALBOARD — the deck ░░
+     Five sticky cards that stack and settle over one another on native
+     scroll — the board "reordering itself", made literal. No pin, no
+     scroll-hijack: position:sticky does the stacking, and the only JS is
+     a cover amount (--cover) that lets each settled card sink back as the
+     next one lands on it. -->
 <section class="board" id="board">
   <div class="board__head">
     <header class="shead" data-reveal>
@@ -492,61 +452,57 @@
     <h2 data-reveal style="--d:.06s">A board that reorders itself.</h2>
     <p class="board__sub" data-reveal style="--d:.12s">Ten slots, any order — drag a block, rewire the rig. Every pedal hand-drawn, photoreal, built from scratch.</p>
   </div>
-  <div class="board__pin" id="boardPin">
-    <div class="board__viewport">
-      <div class="board__track" id="boardTrack">
-        <article class="pcard" style="--tint:#d2a43a" data-card>
-          <div class="pcard__img"><img src="assets/img/pedal.webp" width="1920" height="907" alt="REMI DSP Drive pedal — Victory! gold enclosure with drive, treble, bass and level" /></div>
-          <div class="pcard__meta">
-            <span class="pcard__no led">01</span>
-            <h3>Drive</h3>
-            <p class="pcard__tag mono">CAPTURED PEDAL</p>
-            <p>A captured transparent overdrive out of the box, with a real two-band tone stack — treble and bass, flat at noon. Drop your own capture profile straight in.</p>
-          </div>
-        </article>
-        <article class="pcard" style="--tint:#c9682c" data-card>
-          <div class="pcard__img"><img src="assets/img/chorus.webp" width="1920" height="907" alt="REMI DSP Chorus pedal — burnt-orange enclosure with WWII aviation artwork" /></div>
-          <div class="pcard__meta">
-            <span class="pcard__no led">02</span>
-            <h3>Chorus</h3>
-            <p class="pcard__tag mono">BBD ANALOG · MONO-SAFE STEREO</p>
-            <p>One chorus, modelled deep — a triangle LFO swings the bucket-brigade clock rather than the delay time, so the sweep leans the way real analog does, with companding and a touch of drift riding along. Mono-safe, stereo-wide, thick as paint.</p>
-          </div>
-        </article>
-        <article class="pcard" style="--tint:#3fa8a8" data-card>
-          <div class="pcard__img"><img src="assets/img/delay.webp" width="1920" height="907" alt="REMI DSP Delay — tape-warm echo with astronaut artwork" /></div>
-          <div class="pcard__meta">
-            <span class="pcard__no led">03</span>
-            <h3>Delay</h3>
-            <p class="pcard__tag mono">TAPE-WARM ECHO · A/B ENGINES</p>
-            <p>Dual engines in series or parallel, tempo-synced, with a GRIT knob that drives the repeats into beautiful decay — plus wet-only HP/LP to EQ the echoes, and a live tempo lamp whose two LEDs pulse out each engine's echo pattern.</p>
-          </div>
-        </article>
-        <article class="pcard" style="--tint:#5b8fd4" data-card>
-          <div class="pcard__img"><img src="assets/img/reverb.webp" width="1920" height="907" alt="REMI DSP Reverb — astronaut on the moon artwork" /></div>
-          <div class="pcard__meta">
-            <span class="pcard__no led">04</span>
-            <h3>Reverb</h3>
-            <p class="pcard__tag mono">ONE LUSH SPACE · 3-D</p>
-            <p>Early reflections into a 16-line modulated hall — three-dimensional, enveloping tails, a shimmer that actually blooms, opt-in ducking, and wet-only HP/LP to shape the tail.</p>
-          </div>
-        </article>
-        <article class="pcard" style="--tint:#a8402e" data-card>
-          <div class="pcard__img"><img src="assets/img/sauce.webp" width="1920" height="907" alt="REMI DSP Sauce — spectral finalizer with a live before/after analyser" /></div>
-          <div class="pcard__meta">
-            <span class="pcard__no led">05</span>
-            <h3>Sauce</h3>
-            <p class="pcard__tag mono">SPECTRAL FINALIZER</p>
-            <p>Tone shaping on steroids, with a live before/after spectrum analyser: a synthesized sub-harmonic for real low-end weight, a threshold-tracked high-end de-esser, transient PUNCH and a dynamic 3&nbsp;kHz de-harsh — watch every push and cut in real time.</p>
-          </div>
-        </article>
+  <div class="deck" id="deck">
+    <article class="deckcard" style="--tint:#d2a43a;--k:0;--r:-.45deg" data-card>
+      <div class="deckcard__img"><img src="assets/img/pedal.webp" width="1920" height="907" alt="REMI DSP Drive pedal — Victory! gold enclosure with drive, treble, bass and level" /></div>
+      <div class="deckcard__meta">
+        <span class="deckcard__no led">01</span>
+        <h3>Drive</h3>
+        <p class="deckcard__tag mono">CAPTURED PEDAL</p>
+        <p class="deckcard__copy">A captured transparent overdrive out of the box, with a real two-band tone stack — treble and bass, flat at noon. Drop your own capture profile straight in.</p>
+        <span class="deckcard__ix mono">SLOT&nbsp;01&nbsp;/&nbsp;05</span>
       </div>
-    </div>
-    <div class="board__progress" aria-hidden="true">
-      <span class="board__count led" id="boardCount">01</span>
-      <div class="board__bar"><span id="boardFill"></span></div>
-      <span class="board__count led">05</span>
-    </div>
+    </article>
+    <article class="deckcard" style="--tint:#c9682c;--k:1;--r:.4deg" data-card>
+      <div class="deckcard__img"><img src="assets/img/chorus.webp" width="1920" height="907" alt="REMI DSP Chorus pedal — burnt-orange enclosure with WWII aviation artwork" /></div>
+      <div class="deckcard__meta">
+        <span class="deckcard__no led">02</span>
+        <h3>Chorus</h3>
+        <p class="deckcard__tag mono">BBD ANALOG · MONO-SAFE STEREO</p>
+        <p class="deckcard__copy">One chorus, modelled deep — a triangle LFO swings the bucket-brigade clock rather than the delay time, so the sweep leans the way real analog does, with companding and a touch of drift riding along. Mono-safe, stereo-wide, thick as paint.</p>
+        <span class="deckcard__ix mono">SLOT&nbsp;02&nbsp;/&nbsp;05</span>
+      </div>
+    </article>
+    <article class="deckcard" style="--tint:#3fa8a8;--k:2;--r:-.35deg" data-card>
+      <div class="deckcard__img"><img src="assets/img/delay.webp" width="1920" height="907" alt="REMI DSP Delay — tape-warm echo with astronaut artwork" /></div>
+      <div class="deckcard__meta">
+        <span class="deckcard__no led">03</span>
+        <h3>Delay</h3>
+        <p class="deckcard__tag mono">TAPE-WARM ECHO · A/B ENGINES</p>
+        <p class="deckcard__copy">Dual engines in series or parallel, tempo-synced, with a GRIT knob that drives the repeats into beautiful decay — plus wet-only HP/LP to EQ the echoes, and a live tempo lamp whose two LEDs pulse out each engine's echo pattern.</p>
+        <span class="deckcard__ix mono">SLOT&nbsp;03&nbsp;/&nbsp;05</span>
+      </div>
+    </article>
+    <article class="deckcard" style="--tint:#5b8fd4;--k:3;--r:.35deg" data-card>
+      <div class="deckcard__img"><img src="assets/img/reverb.webp" width="1920" height="907" alt="REMI DSP Reverb — astronaut on the moon artwork" /></div>
+      <div class="deckcard__meta">
+        <span class="deckcard__no led">04</span>
+        <h3>Reverb</h3>
+        <p class="deckcard__tag mono">ONE LUSH SPACE · 3-D</p>
+        <p class="deckcard__copy">Early reflections into a 16-line modulated hall — three-dimensional, enveloping tails, a shimmer that actually blooms, opt-in ducking, and wet-only HP/LP to shape the tail.</p>
+        <span class="deckcard__ix mono">SLOT&nbsp;04&nbsp;/&nbsp;05</span>
+      </div>
+    </article>
+    <article class="deckcard" style="--tint:#a8402e;--k:4;--r:-.3deg" data-card>
+      <div class="deckcard__img"><img src="assets/img/sauce.webp" width="1920" height="907" alt="REMI DSP Sauce — spectral finalizer with a live before/after analyser" /></div>
+      <div class="deckcard__meta">
+        <span class="deckcard__no led">05</span>
+        <h3>Sauce</h3>
+        <p class="deckcard__tag mono">SPECTRAL FINALIZER</p>
+        <p class="deckcard__copy">Tone shaping on steroids, with a live before/after spectrum analyser: a synthesized sub-harmonic for real low-end weight, a threshold-tracked high-end de-esser, transient PUNCH and a dynamic 3&nbsp;kHz de-harsh — watch every push and cut in real time.</p>
+        <span class="deckcard__ix mono">SLOT&nbsp;05&nbsp;/&nbsp;05</span>
+      </div>
+    </article>
   </div>
 </section>
 
@@ -766,19 +722,47 @@
     </article>
   </div>
 
-  <!-- the third road: no installer at all. An ink slab, so it reads as an
-       equal citizen of the download section rather than a footnote. -->
-  <aside class="download__live" data-reveal>
-    <div class="download__livecopy">
-      <h3>Nothing to install here?</h3>
-      <p>The live rig plays in a browser tab — same captures, same delay, same
-         reverb, plus a looper. Demo it with no guitar, or plug in and play.</p>
+</section>
+
+<!-- ░░ THE LIVE RIG — the encore, after the pitch ░░
+     Deliberately last: the plugin is the product, so the page closes on the
+     download. This band is the safety net for whoever reached the end
+     without installing — the same rig runs live at /play, no guitar, no
+     mic, no account. (It replaced the download section's "nothing to
+     install?" aside — one closing mention, not two.) -->
+<section class="live" id="live" data-bg="#e9f3f8">
+  <header class="live__bar" data-reveal>
+    <span class="badge mono">LIVE&nbsp;NOW</span>
+    <p class="kicker">The Live Rig</p>
+    <span class="live__barmeta mono">REMIDSP.COM/PLAY&nbsp;·&nbsp;CHROME&nbsp;/&nbsp;EDGE</span>
+  </header>
+
+  <div class="live__head">
+    <h2 data-reveal>Can't install today?<br><span class="live__lit">Demo it in a tab.</span></h2>
+    <div class="live__lede" data-reveal style="--d:.08s">
+      <p>A live demo of the rig runs <strong>in a browser tab</strong> — the same
+         captured heads, the dual-engine delay, the shimmer reverb, a multitrack
+         looper — nothing to download, nobody to sign up to.</p>
+      <p>Press <strong>Play It Live</strong> and the demo opens right here in
+         your browser — a demo track plays through it even with no guitar
+         plugged in. When it hooks you, the real thing is one
+         <a href="#download">download</a> up the page.</p>
+      <div class="live__doors" data-reveal style="--d:.16s">
+        <a class="door door--demo" href="/play/" data-placement="live" data-label="Live · Play It Live">
+          <span class="door__main">Play&nbsp;It&nbsp;Live</span>
+          <span class="door__sub">in your browser · no guitar needed · no account</span>
+        </a>
+      </div>
     </div>
-    <a class="btn btn--paper" href="/play/"
-       data-magnetic data-placement="download" data-label="Download · Open the live rig">
-      <span>Open&nbsp;The&nbsp;Live&nbsp;Rig</span>
-    </a>
-  </aside>
+  </div>
+
+  <ul class="live__tally" data-reveal>
+    <li><span class="led">0</span><i>INSTALLS</i></li>
+    <li><span class="led">0</span><i>ACCOUNTS</i></li>
+    <li><span class="led">1</span><i>BROWSER TAB</i></li>
+    <li><span class="led">3</span><i>AMPS LIVE</i></li>
+  </ul>
+
 </section>
 
 </main>
