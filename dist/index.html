@@ -147,7 +147,8 @@
     <a href="#board" data-scramble>Pedalboard</a>
     <a href="#studio" data-scramble>Studio</a>
     <a href="#free" data-scramble>Free</a>
-    <a href="#live" data-scramble>Try&nbsp;It&nbsp;Live</a>
+    <!-- web rig entry hidden for now (1.1.0) — markup kept, unhide by dropping hidden/style -->
+    <a href="#live" data-scramble hidden style="display:none">Try&nbsp;It&nbsp;Live</a>
   </nav>
   <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download</span></a>
 </header>
@@ -730,7 +731,9 @@
      without installing — the same rig runs live at /play, no guitar, no
      mic, no account. (It replaced the download section's "nothing to
      install?" aside — one closing mention, not two.) -->
-<section class="live" id="live" data-bg="#e9f3f8">
+<!-- Whole band hidden for now (1.1.0) — the web rig is unpublished from the
+     page; markup kept intact, unhide by dropping hidden/style below. -->
+<section class="live" id="live" data-bg="#e9f3f8" hidden style="display:none">
   <header class="live__bar" data-reveal>
     <span class="badge mono">LIVE&nbsp;NOW</span>
     <p class="kicker">The Live Rig</p>
@@ -770,9 +773,9 @@
     <p class="footer__tag">Maine — the all-in-one guitar rig.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Maine</h4><a href="#live">Play live</a><a href="#captures">Captures</a><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a><a href="/play/" data-placement="footer">Maine Live (browser)</a></div>
-    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3, AU &amp; AAX</a><a href="#download">Standalone</a><a href="#live">Browser — live</a></div>
+    <div><h4>Maine</h4><a href="#live" hidden style="display:none">Play live</a><a href="#captures">Captures</a><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a><a href="/play/" data-placement="footer" hidden style="display:none">Maine Live (browser)</a></div>
+    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3, AU &amp; AAX</a><a href="#download">Standalone</a><a href="#live" hidden style="display:none">Browser — live</a></div>
   </div>
   <p class="footer__legal">
     © <span id="year">2026</span> REMI DSP. Built for players and producers.<br>
