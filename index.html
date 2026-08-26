@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>REMI DSP — Maine, the all-in-one guitar rig</title>
-<meta name="description" content="Maine — the free all-in-one guitar rig plugin. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Runs any NAM (Neural Amp Modeler) capture, with a TONE3000 capture browser built in. The full version, free — no account, no trial timer: standalone, VST3, AU & AAX on macOS; standalone & VST3 on Windows. Hear it first in your browser — no install, no guitar needed." />
+<meta name="description" content="Maine — the free all-in-one guitar rig plugin. Three amplifiers captured from the real things, a pedalboard that reorders itself, a console studio strip and a strobe tuner. Runs any NAM (Neural Amp Modeler) capture, with a TONE3000 capture browser built in. The full version, free — no account, no trial timer: standalone, VST3, AU & AAX on macOS; standalone & VST3 on Windows." />
 <!-- Canonical earns its keep here: this page is reachable as remidsp.com/,
      remidsp.com/index.html, the retired /guitar.html (which now redirects
      here), and (via GitHub's redirect) the old project URL. Without it those
@@ -14,7 +14,7 @@
 <meta property="og:locale" content="en_US" />
 <meta property="og:url" content="https://remidsp.com/" />
 <meta property="og:title" content="REMI DSP — Maine, the all-in-one guitar rig" />
-<meta property="og:description" content="The free all-in-one guitar rig plugin — three amps captured from the real things, any NAM capture, a TONE3000 browser built in. Full version, every format, no account, no trial timer. Hear it in your browser before you download." />
+<meta property="og:description" content="The free all-in-one guitar rig plugin — three amps captured from the real things, any NAM capture, a TONE3000 browser built in. Full version, every format, no account, no trial timer." />
 <meta property="og:type" content="website" />
 <!-- the head renders carry alpha; social cards must be opaque, so point at the
      pre-flattened 1200x630 card rather than a plugin asset. Built from
@@ -29,7 +29,7 @@
 <meta property="og:image:alt" content="The Portland amplifier head — black tolex and gold, with brass corners" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="REMI DSP — Maine, the all-in-one guitar rig" />
-<meta name="twitter:description" content="The free all-in-one guitar rig plugin — full version, every format, no account. Hear it in your browser first." />
+<meta name="twitter:description" content="The free all-in-one guitar rig plugin — full version, every format, no account." />
 <meta name="twitter:image" content="https://remidsp.com/assets/img/og-card-daylight.jpg" />
 <meta name="twitter:image:alt" content="The Portland amplifier head — black tolex and gold, with brass corners" />
 <meta name="theme-color" content="#f6f8fa" />
@@ -76,14 +76,13 @@
       "description": "An all-in-one guitar rig: three amplifiers captured from real, mic'd-up rigs, a pedalboard that reorders itself and a studio strip that finishes the job.",
       "softwareVersion": "1.1.0",
       "featureList": [
-        "Three amplifiers, six voices, captured from real, mic'd-up rigs",
+        "Three amplifiers, one capture each, from real, mic'd-up rigs",
         "Runs any NAM (Neural Amp Modeler) capture, with a capture browser Powered by TONE3000",
         "Ten-slot reorderable pedalboard",
         "Console EQ and FET compressor studio strip",
         "Strobe tuner accurate to a hundredth of a cent",
         "Standalone, VST3, Audio Unit and AAX on macOS; standalone and VST3 on Windows",
-        "Runs at 44.1–96 kHz",
-        "Live web version — the same rig playable in a browser tab"
+        "Runs at 44.1–96 kHz"
       ],
       "publisher": { "@id": "https://remidsp.com/#org" }
     },
@@ -157,7 +156,7 @@
 
 <!-- ░░ HERO — the rig ░░
      The head cycles Camden → Portland → Katahdin. Everything that carries the
-     amp's identity (glow, tab, voice chips, page wash) is driven off one
+     amp's identity (glow, tab, capture chips, page wash) is driven off one
      --amp-glow custom property set by js/main.js. -->
 <section class="hero rig" id="home">
   <canvas class="hero__strings" id="strings" aria-hidden="true"></canvas>
@@ -199,11 +198,11 @@
         <li><button data-goto="2" role="tab" aria-selected="false">KATAHDIN</button></li>
       </ul>
       <div class="rig__voices" id="rigVoices">
-        <div class="rig__voiceset is-active"><span>CLEAN</span><span>DRIVEN</span><span>MAX</span></div>
-        <div class="rig__voiceset"><span>BLOOM</span><span>PUSHED</span></div>
-        <div class="rig__voiceset"><span>RED</span></div>
+        <div class="rig__voiceset is-active"><span>CHIME</span><span>FULL&nbsp;RIG</span></div>
+        <div class="rig__voiceset"><span>CRANKED</span><span>BRITISH&nbsp;STACK</span></div>
+        <div class="rig__voiceset"><span>HIGH&nbsp;GAIN</span></div>
       </div>
-      <p class="rig__cap mono">3&nbsp;AMPS · 6&nbsp;VOICES · CAPTURED FROM REAL&nbsp;RIGS</p>
+      <p class="rig__cap mono">3&nbsp;AMPS · ONE&nbsp;CAPTURE&nbsp;EACH · FROM REAL&nbsp;RIGS</p>
     </div>
   </div>
 
@@ -216,10 +215,10 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span hidden style="display:none">Plays In A Browser Tab</span><i hidden style="display:none">✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span hidden style="display:none">Demo It — No Guitar Needed</span><i hidden style="display:none">✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Camden</span><i>✦</i><span>Plays In A Browser Tab</span><i>✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span>Demo It — No Guitar Needed</span><i>✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span hidden style="display:none">Plays In A Browser Tab</span><i hidden style="display:none">✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span hidden style="display:none">Demo It — No Guitar Needed</span><i hidden style="display:none">✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
   </div>
 </section>
@@ -232,7 +231,7 @@
   <h2 class="creed__title" data-reveal style="--d:.06s">The full version.<br><span class="creed__lit">Free. No account.</span></h2>
   <p class="creed__sub" data-reveal style="--d:.14s">No iLok. No per-amp upsell. No trial timer counting down in the corner.
      Download it, plug in, keep it — every amp, every pedal, every format.
-     And if you can't install today, <a href="#live">the same rig plays live in your browser</a>.</p>
+     <span hidden style="display:none">And if you can't install today, <a href="#live">the same rig plays live in your browser</a>.</span></p>
 </section>
 
 <!-- ░░ THE FILM — Maine in motion ░░
@@ -342,7 +341,7 @@
       <picture>
         <source srcset="assets/img/amp-window-portland.webp" type="image/webp">
         <img src="assets/img/amp-window-portland.png" width="1920" height="1208"
-             alt="The Maine plugin window on its Pushed Crunch patch — the Portland head in black tolex and gold, the effects chain along the top and the Pushed voice selected below" />
+             alt="The Maine plugin window — the Portland head in black tolex and gold, the effects chain along the top and the capture drawer below" />
       </picture>
       <span class="showcase__glare" aria-hidden="true"></span>
     </div>
@@ -356,22 +355,22 @@
 
 <!-- ░░ 03 · THE AMPLIFIERS — the whole lineup, side by side ░░
      Deliberately NOT a switcher. The hero already does one-at-a-time; this
-     section's whole job is the opposite — every head and all six voices on
-     screen together, so the "6 voices" claim is shown rather than asserted.
+     section's whole job is the opposite — every head on screen together,
+     each with its one capture, so the claim is shown rather than asserted.
      Hover solos a column (siblings dim); nothing is ever hidden behind a tab. -->
 <!-- No data-bg: the dark showroom paints itself; the page behind stays paper. -->
 <section class="lineup" id="amps">
   <header class="shead" data-reveal>
     <span class="shead__no led">03</span>
     <p class="kicker">The Amplifiers</p>
-    <span class="shead__meta mono">CAPTURED&nbsp;FULL-RIG&nbsp;·&nbsp;CAB&nbsp;BAKED&nbsp;IN</span>
+    <span class="shead__meta mono">ONE&nbsp;CAPTURE&nbsp;PER&nbsp;HEAD&nbsp;·&nbsp;FACTORY&nbsp;CAB&nbsp;MATCHED</span>
   </header>
 
   <div class="lineup__intro">
     <h2 data-reveal>All three.<br>All at once.</h2>
     <p data-reveal style="--d:.08s">
-      Six voices across three heads, every one captured from a real, mic'd-up rig —
-      <strong>cab baked in</strong>, ready the moment you plug in.
+      Three heads, one capture each — every one shot from a real, mic'd-up rig,
+      <strong>its factory cab matched</strong>, ready the moment you plug in.
     </p>
   </div>
 
@@ -386,11 +385,10 @@
         <h3>Camden</h3>
         <p class="ampcol__tag mono">BRITISH CHIME</p>
         <p class="ampcol__copy">The chime that built the British Invasion — and the
-           delay-soaked stadiums after it. One chimey British combo, pushed three ways.</p>
+           delay-soaked stadiums after it. One chimey British combo, captured right
+           at the edge of breakup.</p>
         <ul class="ampcol__voices">
-          <li><span class="mono">01</span>Clean</li>
-          <li><span class="mono">02</span>Driven</li>
-          <li><span class="mono">03</span>Max</li>
+          <li><span class="mono">01</span>Edge-of-breakup chime · full rig, cab baked in</li>
         </ul>
       </div>
     </article>
@@ -404,11 +402,10 @@
         <span class="ampcol__no led">02</span>
         <h3>Portland</h3>
         <p class="ampcol__tag mono">BRITISH CRUNCH</p>
-        <p class="ampcol__copy">Two voices in one head: a big British stack right at the
-           edge of breakup, and the same rig with everything turned up.</p>
+        <p class="ampcol__copy">A big British stack with everything turned up — one
+           cranked capture, its factory cab seated the moment it loads.</p>
         <ul class="ampcol__voices">
-          <li><span class="mono">01</span>Bloom</li>
-          <li><span class="mono">02</span>Pushed</li>
+          <li><span class="mono">01</span>Cranked crunch · factory cab matched</li>
         </ul>
       </div>
     </article>
@@ -426,14 +423,14 @@
            it is the right one. Tight lows, endless sustain — palm mutes that land like a
            dropped anvil.</p>
         <ul class="ampcol__voices">
-          <li><span class="mono">01</span>Red</li>
+          <li><span class="mono">01</span>Modern high gain · factory cab matched</li>
         </ul>
       </div>
     </article>
   </div>
 
   <p class="lineup__tally mono" data-reveal>
-    <span class="led">3</span>&nbsp;HEADS&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">6</span>&nbsp;VOICES&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">7</span>&nbsp;CAPTURES&nbsp;&nbsp;·&nbsp;&nbsp;ONE&nbsp;WINDOW
+    <span class="led">3</span>&nbsp;HEADS&nbsp;&nbsp;·&nbsp;&nbsp;<span class="led">3</span>&nbsp;CAPTURES&nbsp;&nbsp;·&nbsp;&nbsp;ONE&nbsp;WINDOW
   </p>
 </section>
 
@@ -597,7 +594,7 @@
         <span class="chain__no led">03</span>
         <span class="chain__ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 5 13h5l-2 9 9-12h-5l2-8z"/></svg></span>
         <h4>Drive</h4>
-        <span class="chain__tag mono">DUAL NAM CAPTURE</span>
+        <span class="chain__tag mono">NAM PEDAL CAPTURE</span>
       </li>
       <li class="chain__node" style="--c:#e9eef4;--i:3" data-card>
         <span class="chain__bar" aria-hidden="true"></span><span class="chain__pulse" aria-hidden="true"></span>
@@ -679,7 +676,7 @@
         <picture>
           <source srcset="assets/img/amp-hero.webp" type="image/webp">
           <img src="assets/img/amp-hero.png" width="1920" height="1208"
-               alt="The Maine plugin window — the Camden amplifier head with its voice selector, the effects chain along the top and the capture readout below" />
+               alt="The Maine plugin window — the Camden amplifier head, the effects chain along the top and the capture drawer below" />
         </picture>
         <span class="showcase__glare" aria-hidden="true"></span>
       </div>
@@ -715,9 +712,9 @@
       <p class="dcard__req mono">NO ACCOUNT · NO SIGN-UP</p>
       <ul class="dcard__list">
         <li>Standalone, VST3, Audio Unit &amp; AAX</li>
-        <li>3 amps · 6 voices · 7 captures</li>
+        <li>3 captured amps · factory cabs · runs any NAM capture</li>
         <li>Pedalboard, studio strip &amp; the Sauce finalizer</li>
-        <li>11 signature presets · strobe tuner</li>
+        <li>11 presets · strobe tuner</li>
         <li>Runs at 44.1–96&nbsp;kHz</li>
       </ul>
     </article>
