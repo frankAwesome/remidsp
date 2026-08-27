@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>REMI DSP — back in a day or two</title>
+<meta name="description" content="A new version of Maine is on its way. The site is down for a day or two while we build it." />
+<meta name="theme-color" content="#f6f8fa" />
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<style>
+/* Self-contained holding page — the two house fonts ship alongside it,
+   everything else is inline. Same daylight tokens as the real site. */
+@font-face{font-family:"Oswald";src:url("/OswaldBold.ttf") format("truetype");font-weight:700;font-display:swap}
+@font-face{font-family:"Space Grotesk";src:url("/SpaceGroteskMedium.ttf") format("truetype");font-weight:400 500;font-display:swap}
+:root{
+  --paper:#f6f8fa;
+  --card:#ffffff;
+  --line:rgba(11,16,24,.09);
+  --line-2:rgba(11,16,24,.16);
+  --gold:#1b84ad;
+  --gold-deep:#0b5273;
+  --ice:#9fd8e8;
+  --ink:#0b1018;
+  --text:#131a24;
+  --muted:#57616e;
+  --font-display:"Oswald","Arial Narrow",system-ui,sans-serif;
+  --font-body:"Space Grotesk","Helvetica Neue",-apple-system,system-ui,sans-serif;
+  --font-mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+  --notch:polygon(0 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:var(--font-body);
+  background:var(--paper);
+  color:var(--text);
+  display:grid;
+  place-items:center;
+  padding:clamp(1.2rem,5vw,3.2rem);
+}
+::selection{background:var(--ice);color:var(--ink)}
+.card{
+  max-width:38rem;
+  background:var(--card);
+  border:1px solid var(--line-2);
+  clip-path:var(--notch);
+  padding:clamp(2rem,6vw,3.4rem);
+}
+.kicker{
+  font-size:.74rem;
+  font-weight:600;
+  letter-spacing:.46em;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+h1{
+  font-family:var(--font-display);
+  font-weight:700;
+  line-height:.92;
+  color:var(--ink);
+  text-transform:uppercase;
+  font-size:clamp(2.6rem,9vw,4.4rem);
+  margin-top:1.1rem;
+}
+.meter{
+  height:3px;
+  margin:1.6rem 0;
+  background:linear-gradient(90deg,var(--ice),var(--gold),var(--gold-deep));
+}
+p{line-height:1.65;color:var(--text)}
+p+p{margin-top:.8rem}
+strong{color:var(--ink);font-weight:600}
+.status{
+  margin-top:1.8rem;
+  padding-top:1.2rem;
+  border-top:1px solid var(--line);
+  font-family:var(--font-mono);
+  font-size:.68rem;
+  letter-spacing:.22em;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+.status b{color:var(--gold);font-weight:400}
+</style>
+</head>
+<body>
+<main class="card">
+  <p class="kicker">REMI DSP</p>
+  <h1>A new Maine is on the way</h1>
+  <div class="meter" role="presentation"></div>
+  <p>We're building the next version of <strong>Maine</strong>, our all-in-one guitar rig — and the site is resting while we do it.</p>
+  <p>Stay put for a day or two, then come back. It'll be worth the wait.</p>
+  <p class="status">STATUS · <b>NEW VERSION IN PROGRESS</b></p>
+</main>
+</body>
+</html>

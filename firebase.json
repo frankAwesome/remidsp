@@ -1,46 +1,23 @@
 {
   "hosting": {
+    "_comment": [
+      "TEMPORARY holding configuration — this branch (maintenance-holding)",
+      "serves a single 'new version on its way' page while the next Maine",
+      "is built. Every path rewrites to it. To restore the real site:",
+      "checkout main and `npm run deploy`."
+    ],
     "site": "remidsp-maine",
-    "public": "dist",
+    "public": "holding",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }],
     "headers": [
       {
         "_comment": [
-          "Cross-origin isolation is scoped to the RIG DOCUMENT (/play), not",
-          "to '**'. It is the document that needs it — the NAM wasm is a",
-          "pthread / SharedArrayBuffer build — and same-origin subresources",
-          "need no CORP of their own, so nothing is lost by narrowing it.",
-          "The landing at / and /signin.html stay un-isolated: under",
-          "require-corp every document in the frame tree must carry its own",
-          "compatible COEP, and Firebase's auth helper at /__/auth/iframe",
-          "carries none. Hosting serves that path from a reserved namespace",
-          "no header rule can touch, so sign-in can only happen on a page",
-          "that is not isolated."
+          "no-cache on everything so the holding page shows immediately and",
+          "the real site comes back immediately when main is redeployed."
         ],
-        "source": "/play{,/,/index.html}",
-        "headers": [
-          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
-          { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
-        ]
-      },
-      {
-        "source": "{/,**/*.html}",
+        "source": "**",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
-      },
-      {
-        "_comment": [
-          "The landing's css/js are un-hashed files edited in place, so they",
-          "must revalidate; the app's /assets bundles are content-hashed and",
-          "the landing's images change under new filenames by convention."
-        ],
-        "source": "{/css/**,/js/**}",
-        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
-      },
-      {
-        "source": "{/assets/**,/t3k-wasm-module.*,/worklet/**}",
-        "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
-        ]
       }
     ]
   },

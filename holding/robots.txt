@@ -1,0 +1,4 @@
+# REMI DSP — temporary holding page. No sitemap while the site is down;
+# the real robots.txt returns with the main deploy.
+User-agent: *
+Allow: /
