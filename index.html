@@ -178,6 +178,16 @@
       <span class="hero__formats mono">VST3 · AU · AAX · STANDALONE</span>
     </div>
     <p class="hero__note mono" data-reveal style="--d:.42s">FULL&nbsp;VERSION · NO&nbsp;ACCOUNT · NO&nbsp;ILOK · NO&nbsp;TRIAL&nbsp;TIMER</p>
+
+    <!-- The format the amps are, and the library they come from, stated in the
+         hero rather than buried: both are load-bearing reasons to download.
+         The mark is TONE3000's official wordmark, never re-typeset, and it
+         points at section 01 — which carries the "Powered by TONE3000"
+         attribution and the link to tone3000.com the API terms ask for. -->
+    <a class="hero__t3k" href="#captures" data-reveal style="--d:.5s">
+      <span class="mono">RUNS&nbsp;ANY&nbsp;NAM&nbsp;CAPTURE&nbsp;·&nbsp;POWERED&nbsp;BY</span>
+      <img src="assets/img/tone3000-logo.png" alt="TONE3000" width="1050" height="160" loading="lazy">
+    </a>
   </div>
 
   <div class="rig__stage" id="rig" data-card>
@@ -215,10 +225,10 @@
 <section class="marquee" aria-hidden="true">
   <div class="marquee__band">
     <div class="marquee__track">
-      <span>Camden</span><i>✦</i><span hidden style="display:none">Plays In A Browser Tab</span><i hidden style="display:none">✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span hidden style="display:none">Demo It — No Guitar Needed</span><i hidden style="display:none">✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span hidden style="display:none">Plays In A Browser Tab</span><i hidden style="display:none">✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>TONE3000 Browser Built In</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span hidden style="display:none">Demo It — No Guitar Needed</span><i hidden style="display:none">✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
     <div class="marquee__track" aria-hidden="true">
-      <span>Camden</span><i>✦</i><span hidden style="display:none">Plays In A Browser Tab</span><i hidden style="display:none">✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span hidden style="display:none">Demo It — No Guitar Needed</span><i hidden style="display:none">✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
+      <span>Camden</span><i>✦</i><span hidden style="display:none">Plays In A Browser Tab</span><i hidden style="display:none">✦</i><span>Portland</span><i>✦</i><span>Runs Any NAM Capture</span><i>✦</i><span>TONE3000 Browser Built In</span><i>✦</i><span>Captured, Not Modelled</span><i>✦</i><span>Katahdin</span><i>✦</i><span hidden style="display:none">Demo It — No Guitar Needed</span><i hidden style="display:none">✦</i><span>Ten-Slot Pedalboard</span><i>✦</i><span>Studio Strip</span><i>✦</i><span>Strobe Tuner</span><i>✦</i><span>macOS &amp; Windows · Every Format</span><i>✦</i>
     </div>
   </div>
 </section>
@@ -243,9 +253,9 @@
   <div class="film__frame" data-reveal>
     <video muted autoplay loop playsinline preload="metadata"
            poster="assets/img/film-poster.jpg" src="assets/video/maine-film.mp4"
-           aria-label="A silent film cycling through Maine's three amplifiers, pedals, studio strip and cabinet"></video>
+           aria-label="A silent film cycling through Maine's three amplifiers, the TONE3000 capture browser loading a NAM capture onto the amp, then the pedals, studio strip and cabinet"></video>
   </div>
-  <p class="film__cap mono" data-reveal>MAINE&nbsp;IN&nbsp;MOTION · 14&nbsp;S&nbsp;LOOP · SILENT</p>
+  <p class="film__cap mono" data-reveal>MAINE&nbsp;IN&nbsp;MOTION · 22&nbsp;S&nbsp;LOOP · SILENT</p>
 </section>
 
 <!-- ░░ 01 · CAPTURES — the open format, and the browser that feeds it ░░
@@ -277,7 +287,10 @@
       <p>And you don't have to go hunting for them. The
          <strong>TONE3000</strong> browser is built into the window: filter by amp,
          amp&nbsp;+&nbsp;cab, cab&nbsp;IR or pedal, hit <strong>LOAD</strong>, and the capture
-         lands in the amp slot — saved with your preset like anything else.</p>
+         lands in the slot — saved with your preset like anything else.</p>
+      <p>It opens from wherever you already are. The amp block, the drive pedal and
+         the cab loader each carry their own <strong>TONE3000</strong> button, and each
+         one opens the browser already filtered to what that slot can take.</p>
     </div>
   </div>
 
@@ -299,6 +312,7 @@
 
   <ul class="captures__facts" data-reveal>
     <li><span class="led">4</span><i>CAPTURE TYPES</i></li>
+    <li><span class="led">3</span><i>SLOTS, 3 T3K BUTTONS</i></li>
     <li><span class="led">1</span><i>CLICK TO LOAD</i></li>
     <li><span class="led">0</span><i>FILE CONVERSION</i></li>
   </ul>
@@ -363,14 +377,15 @@
   <header class="shead" data-reveal>
     <span class="shead__no led">03</span>
     <p class="kicker">The Amplifiers</p>
-    <span class="shead__meta mono">ONE&nbsp;CAPTURE&nbsp;PER&nbsp;HEAD&nbsp;·&nbsp;FACTORY&nbsp;CAB&nbsp;MATCHED</span>
+    <span class="shead__meta mono">ONE&nbsp;NAM&nbsp;CAPTURE&nbsp;PER&nbsp;HEAD&nbsp;·&nbsp;FACTORY&nbsp;CAB&nbsp;MATCHED</span>
   </header>
 
   <div class="lineup__intro">
     <h2 data-reveal>All three.<br>All at once.</h2>
     <p data-reveal style="--d:.08s">
-      Three heads, one capture each — every one shot from a real, mic'd-up rig,
-      <strong>its factory cab matched</strong>, ready the moment you plug in.
+      Three heads, one <strong>NAM capture</strong> each — every one shot from a real,
+      mic'd-up rig, <strong>its factory cab matched</strong>, ready the moment you plug in.
+      Swap any of them for a capture of your own, or one off <a href="#captures">TONE3000</a>.
     </p>
   </div>
 
@@ -452,12 +467,12 @@
   </div>
   <div class="deck" id="deck">
     <article class="deckcard" style="--tint:#d2a43a;--k:0;--r:-.45deg" data-card>
-      <div class="deckcard__img"><img src="assets/img/pedal.webp" width="1920" height="907" alt="REMI DSP Drive pedal — Victory! gold enclosure with drive, treble, bass and level" /></div>
+      <div class="deckcard__img"><img src="assets/img/pedal.webp" width="1920" height="907" alt="REMI DSP Drive pedal — Victory! gold enclosure with drive, treble, bass and level, and a TONE3000 button on the capture plate that opens the pedal-capture browser" /></div>
       <div class="deckcard__meta">
         <span class="deckcard__no led">01</span>
         <h3>Drive</h3>
-        <p class="deckcard__tag mono">CAPTURED PEDAL</p>
-        <p class="deckcard__copy">A captured transparent overdrive out of the box, with a real two-band tone stack — treble and bass, flat at noon. Drop your own capture profile straight in.</p>
+        <p class="deckcard__tag mono">NAM PEDAL CAPTURE · TONE3000 BUTTON</p>
+        <p class="deckcard__copy">A captured transparent overdrive out of the box, with a real two-band tone stack — treble and bass, flat at noon. Drop your own capture profile straight in, or hit the <strong>TONE3000</strong> button on the plate and pull a new pedal out of the library without leaving the pedal.</p>
         <span class="deckcard__ix mono">SLOT&nbsp;01&nbsp;/&nbsp;05</span>
       </div>
     </article>
@@ -649,6 +664,7 @@
   </div>
 
   <dl class="spectable" data-reveal style="--d:.06s">
+    <div class="specrow"><dt>Captures</dt><dd>Reads any <span class="mono">.nam</span> file — the open Neural&nbsp;Amp&nbsp;Modeler format — in the amp, drive and cab slots. Each of those three carries its own <a href="https://www.tone3000.com" target="_blank" rel="noopener">TONE3000</a> button that opens the browser filtered to what the slot takes; picks save with the preset, with their creator and licence attached.</dd></div>
     <div class="specrow"><dt>Formats</dt><dd>macOS: standalone, VST3, Audio Unit and AAX for Pro&nbsp;Tools. Windows: standalone and VST3. One installer per platform.</dd></div>
     <div class="specrow"><dt>Sample rates</dt><dd>44.1, 48, 88.2 and 96&nbsp;kHz. Captures resample to their trained rate; every effect follows the host. No 48k lock-in.</dd></div>
   </dl>
@@ -713,6 +729,7 @@
       <ul class="dcard__list">
         <li>Standalone, VST3, Audio Unit &amp; AAX</li>
         <li>3 captured amps · factory cabs · runs any NAM capture</li>
+        <li>TONE3000 browser on the amp, drive &amp; cab slots</li>
         <li>Pedalboard, studio strip &amp; the Sauce finalizer</li>
         <li>11 presets · strobe tuner</li>
         <li>Runs at 44.1–96&nbsp;kHz</li>
