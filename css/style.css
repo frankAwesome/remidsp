@@ -265,6 +265,15 @@ em{font-style:normal;color:var(--gold-hi)}
   gap:1.2rem;margin-bottom:.9rem}
 .hero__formats{padding:.4rem 0}
 .hero__note{color:var(--muted-2);text-align:center}
+/* the format + library line. A hairline rule above it keeps it a footnote to
+   the CTA rather than a second call to action; the wordmark is the only colour
+   the hero carries, so it reads as a credential, not a button. */
+.hero__t3k{display:flex;align-items:center;justify-content:center;gap:.8rem;
+  width:fit-content;margin:1.5rem auto 0;padding-top:1.2rem;text-decoration:none;
+  border-top:1px solid var(--line-2);transition:opacity .3s}
+.hero__t3k:hover{opacity:.72}
+.hero__t3k span{font-size:.58rem;letter-spacing:.22em;color:var(--muted-2)}
+.hero__t3k img{height:clamp(17px,1.8vw,21px);width:auto;display:block}
 
 /* THE STAGE — the first field on the page, and it is black. The head renders
    carry luminance-keyed alpha (built for darkness), so the hero seats them
