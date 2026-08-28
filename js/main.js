@@ -168,7 +168,7 @@
   // cool seafoam, Portland's gold-on-black, Katahdin's warm carving. The hero
   // reel washes the page with whichever head is live.
   const AMP_BGS   = ["#edf6f4", "#f6f2e9", "#f6efe8"];
-  const CARD_BGS  = ["#f7f2e4", "#f7efe7", "#e9f4f3", "#eaf1f8", "#f7edea"]; // drive/chorus/delay/reverb/sauce
+  const CARD_BGS  = ["#f7f2e4", "#f7efe7", "#e9f4f3", "#eaf1f8"]; // drive/chorus/delay/reverb
   const BASE_BG   = "#f6f8fa";
 
   const M = { vh: 0, docH: 1, hero: 0,

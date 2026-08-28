@@ -814,7 +814,7 @@ em{font-style:normal;color:var(--gold-hi)}
   .specrow{grid-template-columns:1fr;gap:.3rem;padding:.85rem .25rem}
 }
 
-/* ════════ SIGNAL CHAIN — the ten modules, wired ════════
+/* ════════ SIGNAL CHAIN — the nine modules, wired ════════
    A live signal wire flows across the header; cursor-spotlit tiles (shared
    [data-card] --mx/--my handler), an accent bar that draws under the pointer,
    corner-notched chips, and a pulse of light that travels the chain in slot
