@@ -18,17 +18,25 @@
 
   const yEl = $("#year"); if (yEl) yEl.textContent = new Date().getFullYear();
 
-  /* reduced motion: the film must not run on its own — hand it a transport */
+  /* the film ships with a data-src, not a src, so that nothing downloads
+     until it is wanted — see the note on the <video> in index.html */
+  const attach = v => { if (v.dataset.src) { v.src = v.dataset.src; delete v.dataset.src; } };
+
+  /* reduced motion: the film must not run on its own — hand it a transport.
+     Attaching the src costs nothing here: preload="none" means the browser
+     fetches only once the visitor works the transport. */
   if (reduce) $$("video[autoplay]").forEach(v => {
-    v.removeAttribute("autoplay"); v.pause?.(); v.controls = true;
+    v.removeAttribute("autoplay"); v.pause?.(); v.controls = true; attach(v);
   });
   /* otherwise keep the film running whenever it's on screen — browsers park
-     offscreen/backgrounded loops and don't always resume them on their own */
+     offscreen/backgrounded loops and don't always resume them on their own.
+     The same observer does the fetching: rootMargin buys the download a head
+     start so the loop is running by the time the frame is properly in view. */
   if (!reduce) $$("video[autoplay]").forEach(v =>
     new IntersectionObserver(es => es.forEach(e => {
-      if (e.isIntersecting) v.play().catch(() => {});
+      if (e.isIntersecting) { attach(v); v.play().catch(() => {}); }
       else v.pause();
-    }), { threshold: 0.15 }).observe(v));
+    }), { threshold: 0.15, rootMargin: "400px 0px" }).observe(v));
 
   /* VU meter ticks (drawn once) */
   (() => {

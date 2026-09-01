@@ -29,6 +29,25 @@
       },
       {
         "_comment": [
+          "The web rig and its sign-in page are no longer deployed at all",
+          "(SHIP_RIG in tools/assemble-dist.mjs) and now answer 404; the OAuth",
+          "callback is still served but is not a published page. All must stay",
+          "out of search, and these rules keep reaching anything already in an",
+          "index. noindex, NOT a robots.txt Disallow: a Disallow",
+          "stops the crawl, which stops Google ever seeing the noindex, and a",
+          "bare URL can then sit in the results indefinitely. robots.txt keeps",
+          "allowing these paths ON PURPOSE so the directive below is read.",
+          "",
+          "A header rather than only a <meta> because it also covers the",
+          "non-HTML under /play (the wasm, the bundles, the UI art), which a",
+          "meta tag cannot reach. The pages carry the meta too, so the",
+          "directive survives a move to a host that ignores this file."
+        ],
+        "source": "{/play,/play/**,/signin.html,/t3k-callback.html}",
+        "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      },
+      {
+        "_comment": [
           "The landing's css/js are un-hashed files edited in place, so they",
           "must revalidate; the app's /assets bundles are content-hashed and",
           "the landing's images change under new filenames by convention."
@@ -37,9 +56,19 @@
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
+        "_comment": [
+          "A year, immutable. The convention named just above — new art ships",
+          "under a new filename — is what makes that safe, so it is now",
+          "load-bearing rather than merely tidy: NEVER change the bytes behind",
+          "a name under /assets; ship the new file under a new name and",
+          "repoint the markup (maine-film-v2.mp4 was exactly that).",
+          "This was a day's max-age, which meant every returning visitor",
+          "re-pulled the whole media set — most of what walked this project up",
+          "to the Spark plan's 10 GB/month egress cap."
+        ],
         "source": "{/assets/**,/t3k-wasm-module.*,/worklet/**}",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
         ]
       }
     ]

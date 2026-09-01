@@ -3,6 +3,13 @@
 # on the pages themselves, NOT by Disallow here. A Disallow would block crawling,
 # which would stop Google from ever *reading* the noindex — the page could then
 # still be listed as a bare URL. Let them be crawled so the noindex is obeyed.
+#
+# As of 2026-09-01 the web rig is not deployed at all: /play and /signin.html
+# are gone from dist and now answer 404, which is itself a removal signal.
+# /t3k-callback.html is still served (a registered OAuth redirect URI) and is
+# noindexed. All three keep X-Robots-Tag: noindex from firebase.json, so the
+# directive still reaches anything already in an index. Do NOT "tidy up" by
+# adding a Disallow for them — it would defeat the removal, not reinforce it.
 
 User-agent: *
 Allow: /
