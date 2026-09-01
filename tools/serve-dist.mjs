@@ -14,7 +14,7 @@ const MIME = {
   '.wasm': 'application/wasm', '.json': 'application/json', '.webp': 'image/webp',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
-  '.nam': 'application/json', '.txt': 'text/plain',
+  '.nam': 'application/json', '.txt': 'text/plain', '.mp4': 'video/mp4',
 };
 
 createServer(async (req, res) => {

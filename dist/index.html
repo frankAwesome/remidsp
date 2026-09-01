@@ -85,18 +85,6 @@
         "Runs at 44.1–96 kHz"
       ],
       "publisher": { "@id": "https://remidsp.com/#org" }
-    },
-    {
-      "@type": "WebApplication",
-      "@id": "https://remidsp.com/#maine-live",
-      "name": "Maine Live",
-      "url": "https://remidsp.com/play/",
-      "applicationCategory": "MultimediaApplication",
-      "operatingSystem": "Any",
-      "browserRequirements": "Requires WebAssembly and AudioWorklet; Chrome or Edge recommended",
-      "isAccessibleForFree": true,
-      "description": "The Maine guitar rig running live in a browser tab: three captured amplifiers, a dual-engine delay, a stereo shimmer reverb, a multitrack looper and a studio strip. Plays any NAM capture. Demo it with no guitar, or plug in and play — no install, no account.",
-      "publisher": { "@id": "https://remidsp.com/#org" }
     }
   ]
 }
@@ -146,8 +134,6 @@
     <a href="#board" data-scramble>Pedalboard</a>
     <a href="#studio" data-scramble>Studio</a>
     <a href="#free" data-scramble>Free</a>
-    <!-- web rig entry hidden for now (1.1.0) — markup kept, unhide by dropping hidden/style -->
-    <a href="#live" data-scramble hidden style="display:none">Try&nbsp;It&nbsp;Live</a>
   </nav>
   <a href="#download" class="btn btn--amber nav__cta" data-magnetic><span>Download</span></a>
 </header>
@@ -240,19 +226,25 @@
   <p class="creed__kicker mono" data-reveal>THE&nbsp;PART&nbsp;THE&nbsp;OTHERS&nbsp;PUT&nbsp;IN&nbsp;THE&nbsp;FINE&nbsp;PRINT</p>
   <h2 class="creed__title" data-reveal style="--d:.06s">The full version.<br><span class="creed__lit">Free. No account.</span></h2>
   <p class="creed__sub" data-reveal style="--d:.14s">No iLok. No per-amp upsell. No trial timer counting down in the corner.
-     Download it, plug in, keep it — every amp, every pedal, every format.
-     <span hidden style="display:none">And if you can't install today, <a href="#live">the same rig plays live in your browser</a>.</span></p>
+     Download it, plug in, keep it — every amp, every pedal, every format.</p>
 </section>
 
 <!-- ░░ THE FILM — Maine in motion ░░
      Unnumbered, like the marquee and the creed: a band, not a chapter.
      The film is silent by design AND muted besides — autoplay policy allows
      muted loops, and there is no soundtrack to miss. Loops on a still of
-     the masthead so the seam is invisible. -->
+     the masthead so the seam is invisible.
+
+     The film is by far the heaviest thing the landing serves, and it sits
+     well below the fold, so it is withheld until it is about to be seen:
+     `preload="none"` and a data-src that main.js promotes to a real src on
+     approach. A visitor who never scrolls this far downloads none of it —
+     only the poster. `autoplay` stays on the tag: with no src it does
+     nothing, and once the src is attached it is what starts the loop. -->
 <section class="film" aria-label="Maine in motion">
   <div class="film__frame" data-reveal>
-    <video muted autoplay loop playsinline preload="metadata"
-           poster="assets/img/film-poster.jpg" src="assets/video/maine-film.mp4"
+    <video muted autoplay loop playsinline preload="none"
+           poster="assets/img/film-poster.jpg" data-src="assets/video/maine-film-v2.mp4"
            aria-label="A silent film cycling through Maine's three amplifiers, the TONE3000 capture browser loading a NAM capture onto the amp, then the pedals, studio strip and cabinet"></video>
   </div>
   <p class="film__cap mono" data-reveal>MAINE&nbsp;IN&nbsp;MOTION · 22&nbsp;S&nbsp;LOOP · SILENT</p>
@@ -298,7 +290,7 @@
     <div class="showcase__frame" data-tilt>
       <picture>
         <source srcset="assets/img/captures-tone3000.webp" type="image/webp">
-        <img src="assets/img/captures-tone3000.png" width="1920" height="1208"
+        <img src="assets/img/captures-tone3000.jpg" width="1920" height="1208"
              alt="Maine's CAPTURES drawer, powered by TONE3000, slid open over the amp inside the plugin window — a sidebar for Trending, Newest and your own favorites, downloads and uploads, a filter row for amp, amp and cab, cab IR and pedal, and a scrolling list of captures. Each row shows the capture's artwork, its creator, its download count and a LOAD button." />
       </picture>
       <span class="showcase__glare" aria-hidden="true"></span>
@@ -354,7 +346,7 @@
     <div class="showcase__frame" data-tilt>
       <picture>
         <source srcset="assets/img/amp-window-portland.webp" type="image/webp">
-        <img src="assets/img/amp-window-portland.png" width="1920" height="1208"
+        <img src="assets/img/amp-window-portland.jpg" width="1920" height="1208"
              alt="The Maine plugin window — the Portland head in black tolex and gold, the effects chain along the top and the capture drawer below" />
       </picture>
       <span class="showcase__glare" aria-hidden="true"></span>
@@ -674,7 +666,7 @@
       <div class="showcase__frame" data-tilt>
         <picture>
           <source srcset="assets/img/amp-hero.webp" type="image/webp">
-          <img src="assets/img/amp-hero.png" width="1920" height="1208"
+          <img src="assets/img/amp-hero.jpg" width="1920" height="1208"
                alt="The Maine plugin window — the Camden amplifier head, the effects chain along the top and the capture drawer below" />
         </picture>
         <span class="showcase__glare" aria-hidden="true"></span>
@@ -722,41 +714,6 @@
 
 </section>
 
-<!-- ░░ THE LIVE RIG — the encore, after the pitch ░░
-     Deliberately last: the plugin is the product, so the page closes on the
-     download. This band is the safety net for whoever reached the end
-     without installing — the same rig runs live at /play, no guitar, no
-     mic, no account. (It replaced the download section's "nothing to
-     install?" aside — one closing mention, not two.) -->
-<!-- Whole band hidden for now (1.1.0) — the web rig is unpublished from the
-     page; markup kept intact, unhide by dropping hidden/style below. -->
-<section class="live" id="live" data-bg="#e9f3f8" hidden style="display:none">
-  <header class="live__bar" data-reveal>
-    <span class="badge mono">LIVE&nbsp;NOW</span>
-    <p class="kicker">The Live Rig</p>
-    <span class="live__barmeta mono">REMIDSP.COM/PLAY&nbsp;·&nbsp;CHROME&nbsp;/&nbsp;EDGE</span>
-  </header>
-
-  <div class="live__head">
-    <h2 data-reveal>Can't install today?<br><span class="live__lit">Demo it in a tab.</span></h2>
-    <div class="live__lede" data-reveal style="--d:.08s">
-      <p>A live demo of the rig runs <strong>in a browser tab</strong> — the same
-         captured heads, the dual-engine delay, the shimmer reverb, a multitrack
-         looper — nothing to download, nobody to sign up to.</p>
-      <p>Press <strong>Play It Live</strong> and the demo opens right here in
-         your browser — a demo track plays through it even with no guitar
-         plugged in. When it hooks you, the real thing is one
-         <a href="#download">download</a> up the page.</p>
-      <div class="live__doors" data-reveal style="--d:.16s">
-        <a class="door door--demo" href="/play/" data-placement="live" data-label="Live · Play It Live">
-          <span class="door__main">Play&nbsp;It&nbsp;Live</span>
-          <span class="door__sub">in your browser · no guitar needed · no account</span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-</section>
 
 </main>
 
@@ -770,9 +727,9 @@
     <p class="footer__tag">Maine — the all-in-one guitar rig.</p>
   </div>
   <div class="footer__cols">
-    <div><h4>Maine</h4><a href="#live" hidden style="display:none">Play live</a><a href="#captures">Captures</a><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
-    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a><a href="/play/" data-placement="footer" hidden style="display:none">Maine Live (browser)</a></div>
-    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3, AU &amp; AAX</a><a href="#download">Standalone</a><a href="#live" hidden style="display:none">Browser — live</a></div>
+    <div><h4>Maine</h4><a href="#captures">Captures</a><a href="#plugin">The plugin</a><a href="#amps">Amps</a><a href="#board">Pedalboard</a><a href="#studio">Studio strip</a></div>
+    <div><h4>Download</h4><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-macOS.pkg" data-placement="footer">Maine (macOS)</a><a href="https://github.com/frankAwesome/remi-amps-downloads/releases/latest/download/REMI-Amps-Windows-Setup.exe" data-placement="footer">Maine (Windows)</a></div>
+    <div><h4>Formats</h4><a href="#download">macOS</a><a href="#download">Windows</a><a href="#download">VST3, AU &amp; AAX</a><a href="#download">Standalone</a></div>
   </div>
   <p class="footer__legal">
     © <span id="year">2026</span> REMI DSP. Built for players and producers.<br>

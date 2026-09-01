@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <!-- The web rig is not a published page: nothing on the landing links to
+       it any more, and it must not turn up in search. noindex, NOT a
+       robots.txt Disallow — a Disallow stops the crawl, which stops Google
+       ever READING this tag, and the bare URL can stay listed for good.
+       Let it be crawled so the noindex is seen and obeyed. Firebase also
+       sends X-Robots-Tag: noindex for /play/** (see firebase.json); this
+       tag is the copy that survives a move to any other host. -->
+  <meta name="robots" content="noindex, nofollow" />
   <!-- Cross-origin isolation, client side (see /coi-sw.js). GitHub Pages
        cannot set COOP/COEP headers, and without them SharedArrayBuffer does
        not exist — so the pthreads wasm engine cannot start. The worker
